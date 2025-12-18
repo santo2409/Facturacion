@@ -4,12 +4,14 @@ import os
 import polars as pl
 
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
-from src.scrapping.infrastructure.scrapers.datos_gov_scraper import DatosGovScraper
+from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
+    RuesPlaywrightScraper,
+)
 from src.shared.utils.console import console
 
 
 def execute_web_scrapping():
-    scraper = DatosGovScraper()
+    scraper = RuesPlaywrightScraper()
     use_case = SearchNitsUseCase(scraper)
 
     route_book = os.path.join(os.getenv("BOOK_ROUTE"), os.getenv("BOOK_NAME"))
