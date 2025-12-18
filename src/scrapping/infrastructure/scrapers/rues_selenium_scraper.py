@@ -18,7 +18,9 @@ class RuesPlaywrightScraper(NitScraperRepository):
     def __init__(self, logger: LoggerAdapter = None):
         self.logger = logger or LoggerAdapter(__name__)
 
-    async def _search_nits_async(self, nits: list, show_progress: bool = False) -> list[NitResult]:
+    async def _search_nits_async(
+        self, nits: list, show_progress: bool = False
+    ) -> list[NitResult]:
         """Método asíncrono interno para realizar el scraping"""
         if not isinstance(nits, list):
             nits = [nits]
@@ -46,7 +48,11 @@ class RuesPlaywrightScraper(NitScraperRepository):
                 except PlaywrightTimeoutError:
                     self.logger.info("No se encontró el modal de bienvenida.")
 
-                iterator = track(nits, description="Buscando NITs", console=console) if show_progress else nits
+                iterator = (
+                    track(nits, description="Buscando NITs", console=console)
+                    if show_progress
+                    else nits
+                )
                 for nit in iterator:
                     if nit[0] is None or (
                         isinstance(nit[0], float) and np.isnan(nit[0])
@@ -76,7 +82,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
 
                     # Esperar resultados
                     try:
-                        card_result = page.locator(".card-result")
+                        card_result = page.locator(".card-result").first
                         await card_result.wait_for(timeout=10000)
 
                         # Obtener el HTML del contenedor
