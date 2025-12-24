@@ -7,6 +7,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from src.billers.infrastructure.console.import_billers_controller import import_billers
+from src.dataProcessing.infrastructure.console.import_information_controller import (
+    import_information,
+)
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
 from src.shared.logging.config.logging_config import setup_logging
 
@@ -56,8 +59,8 @@ def console_app():
             console.print("[green]Cargando Facturadores...[/green]")
             import_billers(logger)
         elif option == "6":
-            console.print("[green]Cargando Tarifas Especiales...[/green]")
-            console.print("[green]Información exportada[/green]")
+            console.print("[green]Validando y Organizando información...[/green]")
+            import_information(logger)
         elif option == "7":
             console.print("[green]Ejecutando Web Scrapping...[/green]")
             execute_web_scrapping()
