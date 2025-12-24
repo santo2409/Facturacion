@@ -1,7 +1,6 @@
 from src.billers.application.use_cases.import_billers_from_excel import (
     ImportBillersFromExcel,
 )
-from src.billers.infrastructure.excel.excel_loader import ExcelLoader
 from src.billers.infrastructure.external_services.nit_service import RUESNitService
 from src.billers.infrastructure.persistence.mysql_biller_company_repository import (
     MySQLBillerCompanyRepository,
@@ -16,6 +15,7 @@ from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
 from src.shared.database.mysql_connection import get_connection
+from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 
 
