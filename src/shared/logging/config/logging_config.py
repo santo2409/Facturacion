@@ -20,6 +20,5 @@ def setup_logging():
                 maxBytes=10485760,  # 10MB
                 backupCount=5,
             ),
-            logging.StreamHandler(),
         ],
     )
