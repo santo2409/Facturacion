@@ -1,8 +1,11 @@
 from src.billers.domain.entities.biller import Biller
+from src.billers.domain.repositories.import_biller_from_excel_repository import (
+    ImportBillerFromExcelRepository,
+)
 from src.company.domain.entities.company import Company
 
 
-class ImportBillersFromExcel:
+class ImportBillersFromExcel(ImportBillerFromExcelRepository):
     def __init__(
         self,
         biller_repo,
@@ -25,11 +28,11 @@ class ImportBillersFromExcel:
 
     def _process_billers(self, df):
         gestores = df["GESTOR"].drop_nulls().unique()
+        catalog = self.biller_repo.all()
 
         with self.progress("Cargando facturadores", total=len(gestores)):
             for gestor in gestores:
                 name = gestor.strip().upper()
-                catalog = self.biller_repo.all()
                 if name in ("NAN", "NONE"):
                     continue
 
