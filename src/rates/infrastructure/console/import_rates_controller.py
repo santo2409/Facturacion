@@ -1,3 +1,7 @@
+from cup.infrastructure.persistence.mysql_cup_repository import MySQLCupRepository
+from src.activity.infrastructure.mysql_activity_type_repository import (
+    MySQLActivityRepository,
+)
 from src.city.infrastructure.persistence.mysql_city_repository import (
     MySQLCityRepository,
 )
@@ -30,6 +34,8 @@ def import_rates(logger):
         provider_repo=MySQLProviderRepository(conn, logger),
         special_repo=MySQLSpecialRepository(conn, logger),
         city_repo=MySQLCityRepository(conn, logger),
+        activities_repo=MySQLActivityRepository(conn, logger),
+        cup_repo=MySQLCupRepository(),
         progress=RichProgress(),
         loader=loader,
         fuzz=RapidFuzzBiller(conn, logger),
