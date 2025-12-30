@@ -1,3 +1,6 @@
+from src.city.infrastructure.persistence.mysql_city_repository import (
+    MySQLCityRepository,
+)
 from src.package.infrastructure.persistence.mysql_package_repository import (
     MySQLPackageRepository,
 )
@@ -26,6 +29,7 @@ def import_rates(logger):
         package_repo=MySQLPackageRepository(conn, logger),
         provider_repo=MySQLProviderRepository(conn, logger),
         special_repo=MySQLSpecialRepository(conn, logger),
+        city_repo=MySQLCityRepository(conn, logger),
         progress=RichProgress(),
         loader=loader,
         fuzz=RapidFuzzBiller(conn, logger),
