@@ -10,6 +10,7 @@ from src.billers.infrastructure.console.import_billers_controller import import_
 from src.dataProcessing.infrastructure.console.import_information_controller import (
     import_information,
 )
+from src.rates.infrastructure.console.import_rates_controller import import_rates
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
 from src.shared.logging.config.logging_config import setup_logging
 
@@ -31,13 +32,11 @@ def console_app():
         table.add_column("Opción", justify="center")
         table.add_column("Descripción")
 
-        table.add_row("1", "Cargar Tarifas Especiales")
-        table.add_row("2", "Cargar Tarifas Paquetes")
-        table.add_row("3", "Cargar Tarifas Proveedores")
-        table.add_row("4", "Registrar Empresas - Paquetes")
-        table.add_row("5", "Facturadores")
-        table.add_row("6", "Tratamiento Información")
-        table.add_row("7", "Web Scrapping")
+        table.add_row("1", "Web Scrapping")
+        table.add_row("2", "Facturadores")
+        table.add_row("3", "Tratamiento Información")
+        table.add_row("4", "Cargar Tarifas")
+        table.add_row("5", "Registrar Empresas - Paquetes")
         table.add_row("0", "Salir")
 
         console.print(table)
@@ -45,25 +44,19 @@ def console_app():
         option = Prompt.ask("[bold yellow]Seleccione una opción", default="0")
 
         if option == "1":
-            console.print("[green]Cargando Tarifas Especiales...[/green]")
-            # insert_rates_specials()
-        elif option == "2":
-            console.print("[green]Cargando Tarifas Especiales...[/green]")
-            # insert_rates_packages()
-        elif option == "3":
-            console.print("[green]Cargando Tarifas Especiales...[/green]")
-            # insert_rates_providers()
-        elif option == "4":
-            console.print("[green]Registrando Empresas...[/green]")
-        elif option == "5":
-            console.print("[green]Cargando Facturadores...[/green]")
-            import_billers(logger)
-        elif option == "6":
-            console.print("[green]Validando y Organizando información...[/green]")
-            import_information(logger)
-        elif option == "7":
             console.print("[green]Ejecutando Web Scrapping...[/green]")
             execute_web_scrapping()
+        elif option == "2":
+            console.print("[green]Cargando Facturadores...[/green]")
+            import_billers(logger)
+        elif option == "3":
+            console.print("[green]Validando y Organizando información...[/green]")
+            import_information(logger)
+        elif option == "4":
+            console.print("[green]Cargando Tarifas...[/green]")
+            import_rates(logger)
+        elif option == "5":
+            console.print("[green]Registrando Empresas...[/green]")
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
