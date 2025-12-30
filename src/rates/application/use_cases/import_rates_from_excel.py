@@ -1,3 +1,4 @@
+from src.city.domain.entities.city import City
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.shared.console.progress import RichProgress
@@ -12,6 +13,7 @@ class ImportRatesFromExcel:
         package_repo,
         provider_repo,
         special_repo,
+        city_repo,
         fuzz,
         progress: RichProgress = None,
         loader: ExcelLoader = None,
@@ -20,15 +22,36 @@ class ImportRatesFromExcel:
         self.package_repo = package_repo
         self.provider_repo = provider_repo
         self.special_repo = special_repo
+        self.city_repo = city_repo
         self.progress = progress
         self.loader = loader
         self.fuzz = fuzz
         self.mega = mega
 
     def execute(self, excel):
+        self._progress_city(excel)
         self._progress_packages(excel)
         self._progress_providers(excel)
         self._progress_specials(excel)
+
+    def _progress_city(self, excel):
+        df = self.mega.total_dataframe(self.loader, excel, "Ciudades")
+        cities = df["CIUDAD"].unique()
+        city_all = self.city_repo.all()
+
+        with self.progress("Importando ciudades", total=len(cities)):
+            for city in cities:
+                city_upper = city.upper()
+                if city_upper not in city_all and len(city_all) > 0:
+                    slug = self.fuzz.fuzz_property(city_upper, city_all)
+                    if not slug:
+                        slug = city_upper
+                else:
+                    slug = city_upper
+
+                if not self.city_repo.find_by_name(slug):
+                    self.city_repo.save(City(slug))
+                self.progress.advance()
 
     def _progress_packages(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Paquetes")
