@@ -22,3 +22,16 @@ class MySQLCupRepository(CupRepository):
         finally:
             cursor.close()
             connection.close()
+
+    def get_all(self):
+        connection = get_connection()
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT id, code, name FROM cups")
+            return [
+                {"id": row[0], "code": row[1], "name": row[2]}
+                for row in cursor.fetchall()
+            ]
+        finally:
+            cursor.close()
+            connection.close()
