@@ -17,7 +17,7 @@ class MySQLBillerRepository:
             self.logger.error(f"Error finding biller by name: {excep}", exc_info=True)
             return None
 
-    def save(self, biller):
+    def save(self, biller: Biller):
         try:
             with self.conn.cursor(buffered=True) as cursor:
                 exists = self.find_by_name(biller.name)
@@ -29,7 +29,7 @@ class MySQLBillerRepository:
                         (biller.name, biller_id),
                     )
                     self.conn.commit()
-                    return Biller(id=exists["id"], name=biller.name)
+                    return Biller(id=biller_id, name=biller.name)
 
                 cursor.execute("INSERT INTO billers (name) VALUES (%s)", (biller.name,))
                 self.conn.commit()
