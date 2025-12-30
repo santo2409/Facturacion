@@ -1,3 +1,5 @@
+import polars as pl
+
 from src.city.domain.entities.city import City
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
@@ -14,6 +16,8 @@ class ImportRatesFromExcel:
         provider_repo,
         special_repo,
         city_repo,
+        activities_repo,
+        cup_repo,
         fuzz,
         progress: RichProgress = None,
         loader: ExcelLoader = None,
@@ -23,6 +27,8 @@ class ImportRatesFromExcel:
         self.provider_repo = provider_repo
         self.special_repo = special_repo
         self.city_repo = city_repo
+        self.activities_repo = activities_repo
+        self.cup_repo = cup_repo
         self.progress = progress
         self.loader = loader
         self.fuzz = fuzz
@@ -73,6 +79,8 @@ class ImportRatesFromExcel:
                     self.package_repo.save(Package(slug))
                 self.progress.advance()
 
+        self.__relationships_packages(df, package_all)
+
     def _progress_providers(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Proveedores")
         providers = df["CONTRATO"].unique()
@@ -110,3 +118,32 @@ class ImportRatesFromExcel:
                 if not self.special_repo.find_by_name(slug):
                     self.special_repo.save(Special(slug))
                 self.progress.advance()
+
+    def __relationships_rates(
+        self,
+        df: pl.DataFrame,
+        contract_all,
+    ):
+        city_all = self.city_repo.all()
+        activities_all = self.activity_repo.all()
+        cups_all = self.cup_repo.get_all()
+        df = df.fillna("")
+
+        try:
+            with self.progress("Importando tarifas", total=len(df)):
+                for index, row in df.iterrows():
+                    city = row["CIUDAD"].upper()
+                    contract = row["CONTRATO"].upper()
+                    activity = row["ACTIVIDAD"].upper()
+                    cup = row["CUP"].upper()
+
+                    contract_id = contract_all
+                    city_id = city_all
+                    cup_id = cups_all
+                    activity_id = activities_all
+
+                    self.progress.advance()
+            pass
+        except Exception as error:
+            self.logger.error(f"Error saving rates: {error}", exc_info=True)
+            pass
