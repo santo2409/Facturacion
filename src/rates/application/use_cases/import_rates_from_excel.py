@@ -1,0 +1,89 @@
+from src.package.domain.entities.package import Package
+from src.provider.domain.entities.provider import Provider
+from src.shared.console.progress import RichProgress
+from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.utils.mega_dataframes import MegaDataFrames
+from src.special.domain.entities.special import Special
+
+
+class ImportRatesFromExcel:
+    def __init__(
+        self,
+        package_repo,
+        provider_repo,
+        special_repo,
+        fuzz,
+        progress: RichProgress = None,
+        loader: ExcelLoader = None,
+        mega: MegaDataFrames = None,
+    ):
+        self.package_repo = package_repo
+        self.provider_repo = provider_repo
+        self.special_repo = special_repo
+        self.progress = progress
+        self.loader = loader
+        self.fuzz = fuzz
+        self.mega = mega
+
+    def execute(self, excel):
+        self._progress_packages(excel)
+        self._progress_providers(excel)
+        self._progress_specials(excel)
+
+    def _progress_packages(self, excel):
+        df = self.mega.total_dataframe(self.loader, excel, "Paquetes")
+
+        packages = df["CONTRATO"].unique()
+        package_all = self.package_repo.all()
+
+        with self.progress("Importando paquetes", total=len(packages)):
+            for package in packages:
+                package_upper = package.upper()
+                if package_upper not in package_all and len(package_all) > 0:
+                    slug = self.fuzz.fuzz_property(package_upper, package_all)
+                    if not slug:
+                        slug = package_upper
+                else:
+                    slug = package_upper
+
+                if not self.package_repo.find_by_name(slug):
+                    self.package_repo.save(Package(slug))
+                self.progress.advance()
+
+    def _progress_providers(self, excel):
+        df = self.mega.total_dataframe(self.loader, excel, "Proveedores")
+        providers = df["CONTRATO"].unique()
+        provider_all = self.provider_repo.all()
+
+        with self.progress("Importando proveedores", total=len(providers)):
+            for provider in providers:
+                provider_upper = provider.upper()
+                if provider_upper not in provider_all and len(provider_all) > 0:
+                    slug = self.fuzz.fuzz_property(provider_upper, provider_all)
+                    if not slug:
+                        slug = provider_upper
+                else:
+                    slug = provider_upper
+
+                if not self.provider_repo.find_by_name(slug):
+                    self.provider_repo.save(Provider(slug))
+                self.progress.advance()
+
+    def _progress_specials(self, excel):
+        df = self.mega.total_dataframe(self.loader, excel, "TarifasEspeciales")
+        specials = df["CONTRATO"].unique()
+        special_all = self.special_repo.all()
+
+        with self.progress("Importando tarifas especiales", total=len(specials)):
+            for special in specials:
+                special_upper = special.upper()
+                if special_upper not in special_all and len(special_all) > 0:
+                    slug = self.fuzz.fuzz_property(special_upper, special_all)
+                    if not slug:
+                        slug = special_upper
+                else:
+                    slug = special_upper
+
+                if not self.special_repo.find_by_name(slug):
+                    self.special_repo.save(Special(slug))
+                self.progress.advance()
