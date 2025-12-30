@@ -7,7 +7,9 @@ class MegaDataFrames:
     def __init__(self, conn):
         self.conn = conn
 
-    def total_dataframe(self, loader: ExcelLoader, excel, callback) -> pl.DataFrame:
+    def total_dataframe(
+        self, loader: ExcelLoader, excel, callback: str
+    ) -> pl.DataFrame:
         df_packages = loader.load_sheet(excel, "Paquetes")
         df_providers = loader.load_sheet(excel, "Proveedores")
         df_specials = loader.load_sheet(excel, "TarifasEspeciales")
@@ -119,3 +121,7 @@ class MegaDataFrames:
             df_providers = pl.concat([df_specials, df_providers, df_packages])
 
             return df_providers
+
+        else:
+            df_cities = pl.concat([df_specials, df_providers, df_packages])
+            return df_cities
