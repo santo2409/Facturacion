@@ -3,6 +3,7 @@ import polars as pl
 from src.city.domain.entities.city import City
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
+from src.rates.domain.entities.rate import Rate
 from src.shared.console.progress import RichProgress
 from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.mega_dataframes import MegaDataFrames
@@ -22,6 +23,8 @@ class ImportRatesFromExcel:
         progress: RichProgress = None,
         loader: ExcelLoader = None,
         mega: MegaDataFrames = None,
+        rates_repo=None,
+        logger=None,
     ):
         self.package_repo = package_repo
         self.provider_repo = provider_repo
@@ -33,6 +36,8 @@ class ImportRatesFromExcel:
         self.loader = loader
         self.fuzz = fuzz
         self.mega = mega
+        self.rates_repo = rates_repo
+        self.logger = logger
 
     def execute(self, excel):
         self._progress_city(excel)
@@ -79,7 +84,7 @@ class ImportRatesFromExcel:
                     self.package_repo.save(Package(slug))
                 self.progress.advance()
 
-        self.__relationships_packages(df, package_all)
+        self.__relationships_rates(df, package_all, Package.__name__)
 
     def _progress_providers(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Proveedores")
@@ -100,6 +105,8 @@ class ImportRatesFromExcel:
                     self.provider_repo.save(Provider(slug))
                 self.progress.advance()
 
+        self.__relationships_rates(df, provider_all, Provider.__name__)
+
     def _progress_specials(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "TarifasEspeciales")
         specials = df["CONTRATO"].unique()
@@ -119,31 +126,58 @@ class ImportRatesFromExcel:
                     self.special_repo.save(Special(slug))
                 self.progress.advance()
 
-    def __relationships_rates(
-        self,
-        df: pl.DataFrame,
-        contract_all,
-    ):
+        self.__relationships_rates(df, special_all, Special.__name__)
+
+    def __relationships_rates(self, df: pl.DataFrame, contract_all, model):
         city_all = self.city_repo.all()
-        activities_all = self.activity_repo.all()
+        activities_all = self.activities_repo.all()
         cups_all = self.cup_repo.get_all()
-        df = df.fillna("")
+
+        contract_map = {c["name"]: c["id"] for c in contract_all}
+        city_map = {c["name"]: c["id"] for c in city_all}
+        cup_map = {c["code"]: c["id"] for c in cups_all}
+        activity_map = {c["name"]: c["id"] for c in activities_all}
+
+        batch_size = 1000
+        rates_batch = []
 
         try:
             with self.progress("Importando tarifas", total=len(df)):
-                for index, row in df.iterrows():
-                    city = row["CIUDAD"].upper()
-                    contract = row["CONTRATO"].upper()
-                    activity = row["ACTIVIDAD"].upper()
-                    cup = row["CUP"].upper()
+                for row in df.iter_rows(named=True):
+                    contract_id = contract_map.get(row["CONTRATO"].upper())
+                    city_id = city_map.get(row["CIUDAD"].upper())
+                    cup_id = cup_map.get(row["CUP"].upper())
+                    activity_id = activity_map.get(row["INTRA O EXTRA"].upper())
+                    rate_value = row["VALOR"]
 
-                    contract_id = contract_all
-                    city_id = city_all
-                    cup_id = cups_all
-                    activity_id = activities_all
+                    if all(
+                        [
+                            contract_id,
+                            city_id,
+                            cup_id,
+                            activity_id,
+                            rate_value is not None,
+                        ]
+                    ):
+                        rates_batch.append(
+                            Rate(
+                                rateable_id=contract_id,
+                                city_id=city_id,
+                                cup_id=cup_id,
+                                rate=rate_value,
+                                activity_id=activity_id,
+                                rateable_type=model,
+                            )
+                        )
+
+                    if len(rates_batch) >= batch_size:
+                        self.rates_repo.save_batch(rates_batch)
+                        rates_batch = []
 
                     self.progress.advance()
-            pass
+
+                if rates_batch:
+                    self.rates_repo.save_batch(rates_batch)
+
         except Exception as error:
             self.logger.error(f"Error saving rates: {error}", exc_info=True)
-            pass
