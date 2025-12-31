@@ -73,11 +73,11 @@ class MegaDataFrames:
             )
 
             df_packages = df_packages.filter(
-                pl.col("CONTRATO").str.starts_with("PROVEEDOR")
+                pl.col("CONTRATO").str.contains("PROVEEDOR")
             )
 
             df_specials = df_specials.filter(
-                pl.col("CONTRATO").str.starts_with("PROVEEDOR")
+                pl.col("CONTRATO").str.contains("PROVEEDOR")
             )
 
             df_providers = pl.concat([df_providers, df_packages, df_specials])
@@ -92,35 +92,13 @@ class MegaDataFrames:
                 .str.to_uppercase()
             )
 
-            df_providers = df_providers.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.strip_chars()
-                .str.to_uppercase()
+            df_specials = df_specials.filter(
+                ~pl.col("CONTRATO").str.contains("PROVEEDOR")
+                | ~pl.col("CONTRATO").str.contains("PAQUETE")
+                | ~pl.col("CONTRATO").str.contains("TARIFA")
             )
 
-            df_packages = df_packages.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
-
-            df_packages = df_packages.filter(
-                ~pl.col("CONTRATO").str.starts_with("PROVEEDOR")
-                | ~pl.col("CONTRATO").str.starts_with("TARIFA")
-                | ~pl.col("CONTRATO").str.starts_with("PAQUETE")
-            )
-
-            df_providers = df_providers.filter(
-                ~pl.col("CONTRATO").str.starts_with("PROVEEDOR")
-                | ~pl.col("CONTRATO").str.starts_with("TARIFA")
-                | ~pl.col("CONTRATO").str.starts_with("PAQUETE")
-            )
-
-            df_providers = pl.concat([df_specials, df_providers, df_packages])
-
-            return df_providers
+            return df_specials
 
         else:
             df_cities = pl.concat([df_specials, df_providers, df_packages])
