@@ -1,7 +1,6 @@
 from src.billers.application.use_cases.import_billers_from_excel import (
     ImportBillersFromExcel,
 )
-from src.billers.infrastructure.external_services.nit_service import RUESNitService
 from src.billers.infrastructure.persistence.mysql_biller_company_repository import (
     MySQLBillerCompanyRepository,
 )
@@ -11,6 +10,7 @@ from src.billers.infrastructure.persistence.mysql_biller_repository import (
 from src.company.infrastructure.persistence.mysql_company_repository import (
     MySQLCompanyRepository,
 )
+from src.scrapping.infrastructure.console.nit_service import RUESNitService
 from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
