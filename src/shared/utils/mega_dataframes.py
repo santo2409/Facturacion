@@ -18,6 +18,7 @@ class MegaDataFrames:
             df_packages = df_packages.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -25,6 +26,7 @@ class MegaDataFrames:
             df_providers = df_providers.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -32,6 +34,7 @@ class MegaDataFrames:
             df_specials = df_specials.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -54,6 +57,7 @@ class MegaDataFrames:
             df_providers = df_providers.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -61,6 +65,7 @@ class MegaDataFrames:
             df_packages = df_packages.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -68,6 +73,7 @@ class MegaDataFrames:
             df_specials = df_specials.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
@@ -88,6 +94,7 @@ class MegaDataFrames:
             df_specials = df_specials.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
+                .str.replace_all("PAQUETES", "PAQUETE")
                 .str.strip_chars()
                 .str.to_uppercase()
             )
