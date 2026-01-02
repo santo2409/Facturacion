@@ -10,7 +10,7 @@ class MySQLCompanyRepository:
         try:
             with self.conn.cursor(buffered=True) as cursor:
                 cursor.execute(
-                    "SELECT id, nit, name FROM company WHERE nit = %s", (nit,)
+                    "SELECT id, nit, name FROM companies WHERE nit = %s", (nit,)
                 )
                 registered = cursor.fetchone()
                 return registered
@@ -28,14 +28,14 @@ class MySQLCompanyRepository:
                 if exists:
                     company_id = exists[0]
                     cursor.execute(
-                        "UPDATE company SET name = %s WHERE id = %s",
+                        "UPDATE companies SET name = %s WHERE id = %s",
                         (company.name, company_id),
                     )
                     self.conn.commit()
                     return
 
                 cursor.execute(
-                    "INSERT INTO company (nit, name) VALUES (%s, %s)",
+                    "INSERT INTO companies (nit, name) VALUES (%s, %s)",
                     (
                         company.nit,
                         company.name,
@@ -46,7 +46,7 @@ class MySQLCompanyRepository:
                 company_id = cursor.lastrowid
 
                 cursor.execute(
-                    "SELECT id, nit, name FROM company WHERE id = %s", (company_id,)
+                    "SELECT id, nit, name FROM companies WHERE id = %s", (company_id,)
                 )
 
                 return cursor.fetchone()
@@ -58,7 +58,7 @@ class MySQLCompanyRepository:
         try:
             with self.conn.cursor(buffered=True) as cursor:
                 cursor = self.conn.cursor(buffered=True)
-                cursor.execute("SELECT id, nit, name FROM company")
+                cursor.execute("SELECT id, nit, name FROM companies")
                 results = cursor.fetchall()
                 return [
                     {"id": row[0], "nit": row[1], "name": row[2].upper()}
