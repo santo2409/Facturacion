@@ -1,3 +1,9 @@
+import json
+import os
+from pathlib import Path
+
+import polars as pl
+
 from src.billers.domain.entities.biller import Biller
 from src.billers.domain.repositories.import_biller_from_excel_repository import (
     ImportBillerFromExcelRepository,
@@ -46,19 +52,49 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
                 self.progress.advance()
 
     def _process_companies(self, df):
+        file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
+
+        df_companies = pl.DataFrame(self.company_repo.all())
         rows = df.select(["NIT", "GESTOR", "EMPRESA"]).drop_nulls()
 
+        rows = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
+        result_scrapping = None
+
+        if not Path(file_path).exists():
+            result_scrapping = self.nit_service.search(rows["NIT"].to_list())
+            self.nit_service.writer(result_scrapping, file_path)
+        else:
+            with open(file_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+                result_scrapping = [Company(**d) for d in data]
+
+        nit_df = pl.DataFrame(
+            {
+                "NIT": [result.nit for result in result_scrapping if result.company],
+                "EMPRESA_NUEVA": [
+                    result.company for result in result_scrapping if result.company
+                ],
+            }
+        )
+
+        rows = rows.with_columns(pl.col("NIT").cast(pl.Utf8))
+        nit_df = nit_df.with_columns(pl.col("NIT").cast(pl.Utf8))
+
+        df_updated = (
+            rows.join(nit_df, on="NIT", how="left")
+            .with_columns(pl.coalesce(["EMPRESA_NUEVA", "EMPRESA"]).alias("EMPRESA"))
+            .drop("EMPRESA_NUEVA")
+        )
+
         with self.progress("Vinculando compañías", total=len(rows)):
-            for row in rows.iter_rows(named=True):
+            for row in df_updated.iter_rows(named=True):
                 nit = row["NIT"][:9]
                 gestor = row["GESTOR"]
-                empresa = row["EMPRESA"]
+                empresa = row["EMPRESA"].upper()
 
                 company = self.company_repo.find_by_nit(nit)
                 if not company:
-                    data = self.nit_service.search(nit)
-                    name = data.name if data.name else empresa
-                    company = self.company_repo.save(Company(nit, name.upper()))
+                    company = self.company_repo.save(Company(nit, empresa))
 
                 biller = self.biller_repo.find_by_name(gestor)
                 if biller:
