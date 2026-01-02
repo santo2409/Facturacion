@@ -34,11 +34,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
             page = await browser.new_page()
 
             try:
-                await page.goto(
-                    "https://www.rues.org.co/", wait_until="domcontentloaded"
-                )
-
-                assert "RUES Registro Unico Empresarial y Social" in await page.title()
+                await page.goto("https://www.rues.org.co/", wait_until="networkidle")
 
                 # Cerrar modal si existe
                 try:
@@ -46,7 +42,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
                     await close_button.wait_for(timeout=10000)
                     await close_button.click()
                 except PlaywrightTimeoutError:
-                    self.logger.info("No se encontró el modal de bienvenida.")
+                    None
 
                 iterator = (
                     track(nits, description="Buscando NITs", console=console)
@@ -68,7 +64,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
                     my_nit = str(nit_int)[:9]
 
                     # Ingresar NIT en el campo de búsqueda
-                    input_box = page.locator("#search")
+                    input_box = page.locator("input[type='search'], input#search")
                     await input_box.wait_for(timeout=5000)
                     await input_box.clear()
                     await input_box.fill(my_nit)
