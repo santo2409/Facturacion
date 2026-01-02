@@ -7,6 +7,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from src.billers.infrastructure.console.import_billers_controller import import_billers
+from src.company.infrastructure.console.import_companies_rates_controller import (
+    import_companies,
+)
 from src.dataProcessing.infrastructure.console.import_information_controller import (
     import_information,
 )
@@ -57,6 +60,7 @@ def console_app():
             import_rates(logger)
         elif option == "5":
             console.print("[green]Registrando Empresas...[/green]")
+            import_companies(logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
