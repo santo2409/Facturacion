@@ -32,3 +32,13 @@ class MySQLBillerCompanyRepository:
                 exc_info=True,
             )
             return None
+
+    def all(self):
+        try:
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute("SELECT biller_id, company_id FROM companies_billers")
+                results = cursor.fetchall()
+                return [{"biller": row[0], "company": row[1]} for row in results]
+        except Exception as excep:
+            self.logger.error(f"Error retrieving all billers: {excep}", exc_info=True)
+            return None
