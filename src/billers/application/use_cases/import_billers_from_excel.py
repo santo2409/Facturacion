@@ -57,7 +57,9 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         df_companies = pl.DataFrame(self.company_repo.all())
         rows = df.select(["NIT", "GESTOR", "EMPRESA"]).drop_nulls()
 
-        rows = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
+        if df_companies.height > 0:
+            rows = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
+
         result_scrapping = None
 
         if not Path(file_path).exists():
