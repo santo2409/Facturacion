@@ -5,4 +5,4 @@ from dataclasses import dataclass
 class NitResult:
     nit: int
     is_company: bool
-    company: str | None = None
+    name: str | None = None
