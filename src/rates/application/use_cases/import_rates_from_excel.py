@@ -138,6 +138,13 @@ class ImportRatesFromExcel:
         cup_map = {c["code"]: c["id"] for c in cups_all}
         activity_map = {c["name"]: c["id"] for c in activities_all}
 
+        df = df.with_columns(
+            pl.col("VALOR").cast(pl.Utf8).str.replace_all(r"\D", "").alias("VALOR")
+        )
+        df = df.with_columns(
+            pl.col("INTRA O EXTRA").fill_null("INTRA").alias("INTRA O EXTRA")
+        )
+
         batch_size = 1000
         rates_batch = []
 
