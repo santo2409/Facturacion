@@ -66,13 +66,13 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         else:
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
-                result_scrapping = [Company(**d) for d in data]
+                result_scrapping = [Company(d.get("nit"), d.get("name")) for d in data]
 
         nit_df = pl.DataFrame(
             {
-                "NIT": [result.nit for result in result_scrapping if result.company],
+                "NIT": [result.nit for result in result_scrapping if result.name],
                 "EMPRESA_NUEVA": [
-                    result.company for result in result_scrapping if result.company
+                    result.name for result in result_scrapping if result.name
                 ],
             }
         )
