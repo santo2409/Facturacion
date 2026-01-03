@@ -9,6 +9,7 @@ from src.billers.domain.repositories.import_biller_from_excel_repository import 
     ImportBillerFromExcelRepository,
 )
 from src.company.domain.entities.company import Company
+from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
 
 class ImportBillersFromExcel(ImportBillerFromExcelRepository):
@@ -20,6 +21,7 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         nit_service,
         progress,
         fuzz,
+        logger=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
@@ -27,6 +29,7 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         self.nit_service = nit_service
         self.progress = progress
         self.fuzz = fuzz
+        self.logger = logger or LoggerAdapter(__name__)
 
     def execute(self, df):
         self._process_billers(df)
@@ -54,16 +57,17 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
     def _process_companies(self, df):
         file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
 
-        df_companies = pl.DataFrame(self.company_repo.all())
         rows = df.select(["NIT", "GESTOR", "EMPRESA"]).drop_nulls()
 
+        df_companies = pl.DataFrame(self.company_repo.all())
+        new_nits = rows
         if df_companies.height > 0:
-            rows = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
+            new_nits = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
 
         result_scrapping = None
 
-        if not Path(file_path).exists():
-            result_scrapping = self.nit_service.search(rows["NIT"].to_list())
+        if not Path(file_path).exists() and len(new_nits) > 0:
+            result_scrapping = self.nit_service.search(new_nits["NIT"].to_list())
             self.nit_service.writer(result_scrapping, file_path)
         else:
             with open(file_path, "r", encoding="utf-8") as file:
@@ -88,17 +92,28 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
             .drop("EMPRESA_NUEVA")
         )
 
-        with self.progress("Vinculando compañías", total=len(rows)):
+        biller_catalog = self.biller_repo.all()
+
+        with self.progress("Vinculando compañías", total=len(df_updated)):
             for row in df_updated.iter_rows(named=True):
                 nit = row["NIT"][:9]
-                gestor = row["GESTOR"]
+                gestor = row["GESTOR"].strip().upper()
                 empresa = row["EMPRESA"].upper()
 
                 company = self.company_repo.find_by_nit(nit)
                 if not company:
                     company = self.company_repo.save(Company(nit, empresa))
 
-                biller = self.biller_repo.find_by_name(gestor)
-                if biller:
+                biller_name = self.fuzz.fuzz_property(gestor, biller_catalog)
+                if not biller_name:
+                    biller_name = gestor
+
+                biller = self.biller_repo.find_by_name(biller_name)
+                if biller and company:
                     self.biller_company_repo.link_or_update(company[0], biller[0])
+                elif not biller:
+                    self.logger.error(
+                        f"Biller not found: '{gestor}' -> '{biller_name}'"
+                    )
+
                 self.progress.advance()
