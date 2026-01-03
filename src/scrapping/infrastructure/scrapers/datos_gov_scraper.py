@@ -45,19 +45,19 @@ class DatosGovScraper(NitScraperRepository):
 
                 if not data:
                     list_nits.append(
-                        NitResult(nit=nit_int, is_company=False, company=None)
+                        NitResult(nit=nit_int, is_company=False, name=None)
                     )
                 else:
                     empresa = data[0]
                     razon_social = empresa.get("razon_social", "Sin nombre")
                     list_nits.append(
-                        NitResult(nit=nit_int, is_company=True, company=razon_social)
+                        NitResult(nit=nit_int, is_company=True, name=razon_social)
                     )
 
             except requests.exceptions.RequestException as e:
                 self.logger.error(
                     f"Error fetching data for NIT {nit_int}: {e}", exc_info=True
                 )
-                list_nits.append(NitResult(nit=nit_int, is_company=False, company=None))
+                list_nits.append(NitResult(nit=nit_int, is_company=False, name=None))
 
         return list_nits
