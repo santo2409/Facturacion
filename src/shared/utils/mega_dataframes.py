@@ -101,8 +101,8 @@ class MegaDataFrames:
 
             df_specials = df_specials.filter(
                 ~pl.col("CONTRATO").str.contains("PROVEEDOR")
-                | ~pl.col("CONTRATO").str.contains("PAQUETE")
-                | ~pl.col("CONTRATO").str.contains("TARIFA")
+                & ~pl.col("CONTRATO").str.contains("PAQUETE")
+                & ~pl.col("CONTRATO").str.contains("TARIFA")
             )
 
             return df_specials
