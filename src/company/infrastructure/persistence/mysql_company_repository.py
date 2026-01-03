@@ -98,3 +98,20 @@ class MySQLCompanyRepository:
                 f"Error saving companies_packages: {excep}", exc_info=True
             )
             return None
+
+    def companies_packages_all(self):
+        try:
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute(
+                    "SELECT company_id, package_id, model FROM companies_packages"
+                )
+                results = cursor.fetchall()
+                return [
+                    {"company": row[0], "package": row[1], "model": row[2]}
+                    for row in results
+                ]
+        except Exception as excep:
+            self.logger.error(
+                f"Error searching companies_packages: {excep}", exc_info=True
+            )
+            return None
