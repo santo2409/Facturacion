@@ -57,7 +57,6 @@ class MySQLCompanyRepository:
     def all(self):
         try:
             with self.conn.cursor(buffered=True) as cursor:
-                cursor = self.conn.cursor(buffered=True)
                 cursor.execute("SELECT id, nit, name FROM companies")
                 results = cursor.fetchall()
                 return [
@@ -66,4 +65,36 @@ class MySQLCompanyRepository:
                 ]
         except Exception as excep:
             self.logger.error(f"Error retrieving all companies: {excep}", exc_info=True)
+            return None
+
+    def find_by_id(self, id):
+        try:
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute(
+                    "SELECT company_id, package_id, model FROM companies_packages WHERE company_id = %s",
+                    (id,),
+                )
+                registered = cursor.fetchone()
+                return registered
+        except Exception as excep:
+            self.logger.error(f"Error retrieving company by id: {excep}", exc_info=True)
+            return None
+
+    def companies_packages(self, relations):
+        try:
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute(
+                    "INSERT INTO companies_packages(company_id, package_id, model) values (%s, %s, %s) ON DUPLICATE KEY UPDATE package_id = VALUES(package_id), model = VALUES(model)",
+                    (
+                        relations.company_id,
+                        relations.package_id,
+                        relations.model,
+                    ),
+                )
+                self.conn.commit()
+
+        except Exception as excep:
+            self.logger.error(
+                f"Error saving companies_packages: {excep}", exc_info=True
+            )
             return None
