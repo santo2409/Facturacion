@@ -97,7 +97,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
                                 NitResult(
                                     nit=nit_int,
                                     is_company=True,
-                                    company=name_company,
+                                    name=name_company,
                                 )
                             )
                             break
