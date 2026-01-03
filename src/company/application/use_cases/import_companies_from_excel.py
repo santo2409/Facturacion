@@ -5,9 +5,11 @@ from pathlib import Path
 import polars as pl
 
 from src.company.domain.entities.company import Company
+from src.company.domain.entities.company_package import CompanyPackage
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.shared.console.progress import RichProgress
+from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.special.domain.entities.special import Special
 
 
@@ -21,7 +23,7 @@ class ImportCompaniesFromExcel:
         fuzz,
         nit_service,
         progress: RichProgress,
-        logger,
+        logger: LoggerAdapter,
     ):
         self.company_repo = company_repo
         self.package_repo = package_repo
@@ -30,11 +32,11 @@ class ImportCompaniesFromExcel:
         self.fuzz = fuzz
         self.nit_service = nit_service
         self.progress = progress
-        self.logger = logger
+        self.logger = logger or LoggerAdapter(__name__)
 
     def execute(self, df: pl.DataFrame):
         self._progress_companies(df)
-        # self._progress_companies_to_packages(df)
+        self._progress_companies_to_packages(df)
 
     def _progress_companies(self, df: pl.DataFrame):
         file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
@@ -47,13 +49,15 @@ class ImportCompaniesFromExcel:
         else:
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
-                result_scrapping = [Company(**d) for d in data]
+                result_scrapping = [
+                    Company(d.get("nit"), d.get("company")) for d in data
+                ]
 
         nit_df = pl.DataFrame(
             {
-                "NIT": [result.nit for result in result_scrapping if result.company],
+                "NIT": [result.nit for result in result_scrapping if result.name],
                 "EMPRESA_NUEVA": [
-                    result.company for result in result_scrapping if result.company
+                    result.name for result in result_scrapping if result.name
                 ],
             }
         )
@@ -89,6 +93,35 @@ class ImportCompaniesFromExcel:
 
         todo = pl.concat([pkg, prov, spec], how="vertical")
 
-        comp = pl.DataFrame(self.company_repo.all())
+        df = df.with_columns(
+            pl.col("NIT")
+            .cast(pl.Utf8)
+            .str.replace_all(r"\D", "")
+            .str.slice(0, 9)
+            .alias("NIT")
+        )
 
-        print(todo, comp)
+        catalog = [{"name": n} for n in todo["name"].to_list()]
+        catalog_local = catalog
+
+        df = df.with_columns(
+            pl.col("PAQUETE")
+            .map_elements(lambda x, c=catalog_local: self.fuzz.fuzz_property(x, c) or x)
+            .alias("PAQUETE")
+        )
+
+        with self.progress("Vinculando empresas a paquetes", total=df.height):
+            for row in df.iter_rows(named=True):
+                company_id = self.company_repo.find_by_nit(row["NIT"][:9].strip())[0]
+
+                package = todo.filter(pl.col("name") == row["PAQUETE"])
+
+                if not package.is_empty():
+                    package = package.select("id", "model").to_dicts()[0]
+                    package_id, model = package["id"], package["model"]
+                    self.company_repo.companies_packages(
+                        CompanyPackage(company_id, package_id, model)
+                    )
+                else:
+                    self.logger.warning(f"Package not found: {row['PAQUETE']}")
+                self.progress.advance()
