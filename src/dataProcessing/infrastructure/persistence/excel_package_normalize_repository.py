@@ -86,6 +86,29 @@ class NormalizePackage:
         return df_pkg
 
     def _validate_cups_with_db(self, df_pkg):
+        def _is_success(x: str) -> pl.Int64:
+            if x is None:
+                return None
+
+            s = str(x)
+
+            # Limpieza básica
+            s = s.replace("\u00a0", "").replace(" ", "").replace("$", "")
+
+            try:
+                if len(s) >= 7:
+                    price = int(s.split(".")[0])
+                    return price
+                else:
+                    price = int(s.replace(".", ""))
+            except ValueError:
+                return None
+
+            try:
+                return int(float(s))
+            except ValueError:
+                return None
+
         if not self.cup_repository:
             return df_pkg
 
@@ -130,12 +153,7 @@ class NormalizePackage:
         df_result = df_result.with_columns(
             pl.col("VALOR")
             .cast(pl.Utf8)
-            .str.replace_all(r"[\u00A0\s]", "")  # espacios raros
-            .str.replace_all(r"\$", "")  # símbolo moneda
-            .str.replace_all(r"\.", "")  # miles
-            .str.replace(",", ".")  # decimal
-            .cast(pl.Float64, strict=False)
-            .floor()
+            .map_elements(_is_success, return_dtype=pl.Int64)
             .cast(pl.Int64)
             .alias("VALOR")
         )
