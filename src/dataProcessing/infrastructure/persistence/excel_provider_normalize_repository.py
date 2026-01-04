@@ -148,6 +148,16 @@ class NormalizeProvider:
         for row in invalid_rows.select(["CUP"]).iter_rows():
             self.logger.error(f"CUP no existe en base de datos: '{row[0]}'")
 
+        df_result = df_result.with_columns(
+            pl.col("VALOR")
+            .cast(pl.Utf8)
+            .str.replace(",", ".")
+            .cast(pl.Float64)
+            .floor()
+            .cast(pl.Int64)
+            .alias("VALOR")
+        )
+
         # Validacion Final
         return df_result.with_columns(
             pl.when(~pl.col("CUP").is_in(valid_cups))
