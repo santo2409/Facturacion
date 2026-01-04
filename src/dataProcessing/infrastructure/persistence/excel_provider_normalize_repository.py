@@ -151,8 +151,11 @@ class NormalizeProvider:
         df_result = df_result.with_columns(
             pl.col("VALOR")
             .cast(pl.Utf8)
-            .str.replace(",", ".")
-            .cast(pl.Float64)
+            .str.replace_all(r"[\u00A0\s]", "")  # espacios raros
+            .str.replace_all(r"\$", "")  # símbolo moneda
+            .str.replace_all(r"\.", "")  # miles
+            .str.replace(",", ".")  # decimal
+            .cast(pl.Float64, strict=False)
             .floor()
             .cast(pl.Int64)
             .alias("VALOR")
