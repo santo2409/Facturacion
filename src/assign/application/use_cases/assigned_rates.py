@@ -59,6 +59,13 @@ class AssignRatesFromExcel:
             result = self.fuzz.fuzz_property(str(x).upper(), cities_all)
             return result if result is not None else str(x)
 
+        def __name_company(nit, companies_all):
+            company_name = next(
+                (c["name"] for c in companies_all if c["nit"] == nit), None
+            )
+
+            return company_name
+
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
             company_id = next((c["id"] for c in companies_all if c["nit"] == nit), None)
             biller_id = next(
@@ -184,7 +191,10 @@ class AssignRatesFromExcel:
 
                 df = df.with_columns(
                     pl.col("Ciudad")
-                    .map_elements(lambda x: __normalize_city(x, cities_catalog))
+                    .map_elements(
+                        lambda x: __normalize_city(x, cities_catalog),
+                        return_dtype=pl.Utf8,
+                    )
                     .alias("Ciudad")
                 )
 
@@ -194,7 +204,20 @@ class AssignRatesFromExcel:
                     .str.strip_chars()
                     .str.extract_all(r"\d+")
                     .list.first()
+                    .str.slice(0, 9)
                     .alias("NIT")
+                )
+
+                df = df.with_columns(
+                    pl.coalesce(
+                        [
+                            pl.col("NIT").map_elements(
+                                lambda nit: __name_company(nit, companies_catalog),
+                                return_dtype=pl.Utf8,
+                            ),
+                            pl.col("Empresa"),
+                        ]
+                    ).alias("Empresa")
                 )
 
                 df = df.with_columns(
