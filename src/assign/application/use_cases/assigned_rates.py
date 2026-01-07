@@ -294,8 +294,7 @@ class AssignRatesFromExcel:
                 )
 
                 df = df.with_columns(
-                    pl.col("FACTURADOR")
-                    .when(pl.col("FACTURADOR") == "GENERAL")
+                    pl.when(pl.col("FACTURADOR") == "GENERAL")
                     .then(pl.col("GENERAL"))
                     .otherwise(pl.col("ESPECIAL"))
                     .alias("Especial / General")
