@@ -294,6 +294,14 @@ class AssignRatesFromExcel:
                 )
 
                 df = df.with_columns(
+                    pl.col("FACTURADOR")
+                    .when(pl.col("FACTURADOR") == "GENERAL")
+                    .then(pl.col("GENERAL"))
+                    .otherwise(pl.col("ESPECIAL"))
+                    .alias("Especial / General")
+                )
+
+                df = df.with_columns(
                     pl.col("NIT")
                     .map_elements(
                         lambda nit: __package_assign(
