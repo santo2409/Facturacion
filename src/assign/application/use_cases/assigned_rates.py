@@ -280,23 +280,9 @@ class AssignRatesFromExcel:
                 )
 
                 df = df.with_columns(
-                    pl.col("NIT")
-                    .map_elements(
-                        lambda nit: __biller_assign(
-                            nit,
-                            companies_catalog,
-                            biller_companies_catalog,
-                            billers_catalog,
-                        ),
-                        return_dtype=pl.Utf8,
-                    )
-                    .alias("FACTURADOR")
-                )
-
-                df = df.with_columns(
                     pl.when(pl.col("FACTURADOR") == "GENERAL")
-                    .then(pl.col("GENERAL"))
-                    .otherwise(pl.col("ESPECIAL"))
+                    .then(pl.lit("GENERAL"))
+                    .otherwise(pl.lit("ESPECIAL"))
                     .alias("Especial / General")
                 )
 
