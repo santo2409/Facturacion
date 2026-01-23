@@ -102,11 +102,13 @@ class NormalizePackage:
                 else:
                     price = int(s.replace(".", ""))
             except ValueError:
+                self.logger.error(f"Valor de precio inválido: '{s}'")
                 return None
 
             try:
                 return int(float(s))
             except ValueError:
+                self.logger.error(f"Valor de precio inválido: '{s}'")
                 return None
 
         if not self.cup_repository:
