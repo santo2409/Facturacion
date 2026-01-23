@@ -10,6 +10,7 @@ load_dotenv(override=True)
 
 def setup_logging():
     logs = Path(os.getenv("DIRECTORY")) / "logs.txt"
+    logs.parent.mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(
         level=logging.INFO,
