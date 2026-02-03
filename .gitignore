@@ -214,3 +214,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+cspell.json
+node_modules/
+.cspell/
+package*
