@@ -47,6 +47,23 @@ class MySQLSpecialRepository:
             self.logger.error(f"Error saving special: {excep}", exc_info=True)
             return None
 
+    def update(self, special: Special) -> bool:
+        try:
+            if not special.id:
+                self.logger.error("Special ID is required for update")
+                return False
+
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute(
+                    "UPDATE specials SET name = %s WHERE id = %s",
+                    (special.name, special.id),
+                )
+                self.conn.commit()
+                return cursor.rowcount > 0
+        except Exception as excep:
+            self.logger.error(f"Error updating special: {excep}", exc_info=True)
+            return False
+
     def all(self):
         try:
             with self.conn.cursor(buffered=True) as cursor:
