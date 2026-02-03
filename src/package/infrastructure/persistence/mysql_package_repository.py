@@ -1,8 +1,9 @@
 from src.package.domain.entities.package import Package
+from src.package.domain.repositories.package_repository import PackageRepository
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
 
-class MySQLPackageRepository:
+class MySQLPackageRepository(PackageRepository):
     def __init__(self, conn, logger: LoggerAdapter = None):
         self.conn = conn
         self.logger = logger or LoggerAdapter(__name__)
@@ -46,6 +47,23 @@ class MySQLPackageRepository:
         except Exception as excep:
             self.logger.error(f"Error saving package: {excep}", exc_info=True)
             return None
+
+    def update(self, package: Package) -> bool:
+        try:
+            if not package.id:
+                self.logger.error("Package ID is required for update")
+                return False
+                
+            with self.conn.cursor(buffered=True) as cursor:
+                cursor.execute(
+                    "UPDATE packages SET name = %s WHERE id = %s",
+                    (package.name, package.id),
+                )
+                self.conn.commit()
+                return cursor.rowcount > 0
+        except Exception as excep:
+            self.logger.error(f"Error updating package: {excep}", exc_info=True)
+            return False
 
     def all(self):
         try:
