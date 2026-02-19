@@ -59,12 +59,20 @@ class AssignRatesFromExcel:
             result = self.fuzz.fuzz_property(str(x).upper(), cities_all)
             return result if result is not None else str(x)
 
-        def __name_company(nit, companies_all):
-            company_name = next(
-                (c["name"] for c in companies_all if c["nit"] == nit), None
-            )
+        def __match_company(nit, empresa, companies_all):
+            company = next((c for c in companies_all if c["nit"] == nit), None)
+            if company:
+                return company["nit"], company["name"]
 
-            return company_name
+            matched_name = self.fuzz.fuzz_property(empresa, companies_all)
+            if matched_name:
+                company = next(
+                    (c for c in companies_all if c["name"] == matched_name), None
+                )
+                if company:
+                    return company["nit"], company["name"]
+
+            return nit, empresa
 
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
             company_id = next((c["id"] for c in companies_all if c["nit"] == nit), None)
@@ -208,16 +216,28 @@ class AssignRatesFromExcel:
                     .alias("NIT")
                 )
 
+                matched_data = []
+                for row in df.iter_rows(named=True):
+                    nit, empresa = __match_company(
+                        row["NIT"], row["Empresa"], companies_catalog
+                    )
+                    matched_data.append({"NIT": nit, "Empresa": empresa})
+
+                matched_df = pl.DataFrame(matched_data)
                 df = df.with_columns(
-                    pl.coalesce(
-                        [
-                            pl.col("NIT").map_elements(
-                                lambda nit: __name_company(nit, companies_catalog),
-                                return_dtype=pl.Utf8,
-                            ),
-                            pl.col("Empresa"),
-                        ]
-                    ).alias("Empresa")
+                    [
+                        matched_df["NIT"].alias("NIT"),
+                        matched_df["Empresa"].alias("Empresa"),
+                    ]
+                )
+
+                df = df.with_columns(
+                    pl.col("Empresa")
+                    .str.to_uppercase()
+                    .str.replace_all(r"[^A-Z&Ñ0-9\s]", "")
+                    .str.replace_all(r"\s+", " ")
+                    .str.strip_chars()
+                    .alias("Empresa")
                 )
 
                 df = df.with_columns(
@@ -325,11 +345,9 @@ class AssignRatesFromExcel:
                     .alias("PAQUETE")
                 )
 
-                # Convertir columnas de headers a Float64
                 for header in headers:
                     df = df.with_columns(pl.col(str(header)).cast(pl.Int64))
 
-                # Procesar tarifas fila por fila
                 for idx, row in enumerate(df.iter_rows(named=True)):
                     nit = row["NIT"]
                     city = row["Ciudad"]
