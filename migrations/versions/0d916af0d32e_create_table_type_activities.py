@@ -26,7 +26,7 @@ def upgrade() -> None:
                 `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `name` (`name`)
-                ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             """)
 
 
