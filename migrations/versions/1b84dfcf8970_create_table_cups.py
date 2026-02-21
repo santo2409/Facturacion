@@ -28,7 +28,7 @@ def upgrade() -> None:
                     PRIMARY KEY (`id`),
                     UNIQUE KEY `code` (`code`),
                     UNIQUE KEY `name` (`name`)
-                    ) ENGINE=InnoDB AUTO_INCREMENT=490 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             """)
 
 
