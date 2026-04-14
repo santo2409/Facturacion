@@ -60,9 +60,15 @@ class MegaDataFrames:
         elif callback == "Proveedores":
             frames_to_concat = []
 
-            df_packages = df_packages.filter(
-                pl.col("CONTRATO").str.contains("PROVEEDOR")
-            )
+            if not df_providers.is_empty():
+                df_providers = df_providers.with_columns(
+                    pl.col("CONTRATO")
+                    .str.replace_all("TARIFAS", "TARIFA")
+                    .str.replace_all("PAQUETES", "PAQUETE")
+                    .str.strip_chars()
+                    .str.to_uppercase()
+                )
+                frames_to_concat.append(df_providers)
 
             df_specials = df_specials.filter(
                 pl.col("CONTRATO").str.contains("PROVEEDOR")
