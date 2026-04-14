@@ -1,3 +1,6 @@
+import json
+import os
+
 import polars as pl
 
 from src.package.domain.entities.package import Package
@@ -196,6 +199,12 @@ class AssignRatesFromExcel:
                 packages = packages_all
                 providers = providers_all
                 specials = special_all
+
+                scraped_nits = []
+                json_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+                if os.path.exists(json_path):
+                    with open(json_path, encoding="utf-8") as f:
+                        scraped_nits = json.load(f)
 
                 df = df.with_columns(
                     pl.col("Ciudad")
