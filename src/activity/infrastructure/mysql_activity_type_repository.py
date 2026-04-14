@@ -15,7 +15,11 @@ class MySQLActivityRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding activity by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding activity by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar el tipo de actividad. {name}",
+            )
             return None
 
     def all(self):
@@ -26,6 +30,8 @@ class MySQLActivityRepository:
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
             self.logger.error(
-                f"Error retrieving all activities: {excep}", exc_info=True
+                f"Error retrieving all activities: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de actividades.",
             )
             return None

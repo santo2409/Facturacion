@@ -23,7 +23,7 @@ class MySQLRatesRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding city by name: {excep}", exc_info=True)
+            self.logger.error(f"Error finding city by name: {excep}", exc_info=True, user_msg="No se pudo consultar la tarifa.")
             return None
 
     def save_batch(self, rates: list[Rate]):
@@ -50,5 +50,5 @@ class MySQLRatesRepository:
                 self.conn.commit()
                 return cursor.rowcount
         except Exception as excep:
-            self.logger.error(f"Error saving batch rates: {excep}", exc_info=True)
+            self.logger.error(f"Error saving batch rates: {excep}", exc_info=True, user_msg="No se pudieron guardar las tarifas.")
             return 0

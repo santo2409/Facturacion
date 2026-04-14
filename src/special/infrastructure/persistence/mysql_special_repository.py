@@ -14,7 +14,11 @@ class MySQLSpecialRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding special by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding special by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar el contrato especial. {name}",
+            )
             return None
 
     def save(self, special):
@@ -44,13 +48,20 @@ class MySQLSpecialRepository:
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving special: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving special: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar el contrato especial. {special.name}",
+            )
             return None
 
     def update(self, special: Special) -> bool:
         try:
             if not special.id:
-                self.logger.error("Special ID is required for update")
+                self.logger.error(
+                    "Special ID is required for update",
+                    user_msg="No se puede actualizar sin identificador.",
+                )
                 return False
 
             with self.conn.cursor(buffered=True) as cursor:
@@ -61,7 +72,11 @@ class MySQLSpecialRepository:
                 self.conn.commit()
                 return cursor.rowcount > 0
         except Exception as excep:
-            self.logger.error(f"Error updating special: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error updating special: {excep}",
+                exc_info=True,
+                user_msg="No se pudo actualizar el contrato especial.",
+            )
             return False
 
     def all(self):
@@ -72,6 +87,8 @@ class MySQLSpecialRepository:
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
             self.logger.error(
-                f"Error retrieving all rates specials: {excep}", exc_info=True
+                f"Error retrieving all rates specials: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de contratos especiales.",
             )
             return None

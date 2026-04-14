@@ -123,5 +123,5 @@ class ImportCompaniesFromExcel:
                         CompanyPackage(company_id, package_id, model)
                     )
                 else:
-                    self.logger.warning(f"Package not found: {row['PAQUETE']}")
+                    self.logger.warning(f"Package not found: {row['PAQUETE']}", user_msg=f"No se encontró el paquete '{row['PAQUETE']}'. Verifique los datos.")
                 self.progress.advance()

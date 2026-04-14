@@ -30,6 +30,7 @@ class MySQLBillerCompanyRepository:
             self.logger.error(
                 f"Error linking or updating biller-company relationship: {excep}",
                 exc_info=True,
+                user_msg="No se pudo vincular el facturador con la empresa.",
             )
             return None
 
@@ -40,5 +41,5 @@ class MySQLBillerCompanyRepository:
                 results = cursor.fetchall()
                 return [{"biller": row[0], "company": row[1]} for row in results]
         except Exception as excep:
-            self.logger.error(f"Error retrieving all billers: {excep}", exc_info=True)
+            self.logger.error(f"Error retrieving all billers: {excep}", exc_info=True, user_msg="No se pudo obtener las vinculaciones.")
             return None

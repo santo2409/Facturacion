@@ -113,7 +113,7 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
                     self.biller_company_repo.link_or_update(company[0], biller[0])
                 elif not biller:
                     self.logger.error(
-                        f"Biller not found: '{gestor}' -> '{biller_name}'"
+                        f"Biller not found: '{gestor}' -> '{biller_name}'", user_msg=f"No se encontró el facturador '{gestor}'. Verifique los datos del archivo."
                     )
 
                 self.progress.advance()

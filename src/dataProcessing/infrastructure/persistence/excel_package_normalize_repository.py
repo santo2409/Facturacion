@@ -28,7 +28,11 @@ class NormalizePackage:
                 return self._perform_normalization(data)
 
         except Exception as identifier:
-            self.logger.error(f"Error normalizing package: {identifier}", exc_info=True)
+            self.logger.error(
+                f"Error normalizing package: {identifier}",
+                exc_info=True,
+                user_msg="Error al procesar el paquete. Verifique el formato del archivo.",
+            )
 
     def _perform_normalization(self, data):
         # Paso 1: Normalizar CONTRATO
@@ -102,13 +106,19 @@ class NormalizePackage:
                 else:
                     price = int(s.replace(".", ""))
             except ValueError:
-                self.logger.error(f"Valor de precio inválido: '{s}'")
+                self.logger.error(
+                    f"Valor de precio inválido: '{s}'",
+                    user_msg=f"El valor '{s}' no es un precio válido.",
+                )
                 return None
 
             try:
                 return int(float(s))
             except ValueError:
-                self.logger.error(f"Valor de precio inválido: '{s}'")
+                self.logger.error(
+                    f"Valor de precio inválido: '{s}'",
+                    user_msg=f"El valor '{s}' no es un precio válido.",
+                )
                 return None
 
         if not self.cup_repository:
@@ -131,7 +141,8 @@ class NormalizePackage:
         swap_rows = df_result.filter(swap_condition)
         for row in swap_rows.select(["CUP", "VALOR", "CONTRATO"]).iter_rows():
             self.logger.error(
-                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'"
+                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'",
+                user_msg=f"Se detectó un cruce de datos en el contrato '{row[2]}'. Se corrigió automáticamente. '{row[0]}' <-> '{row[1]}'",
             )
 
         # Aplicar intercambios
@@ -151,7 +162,8 @@ class NormalizePackage:
         invalid_rows = df_result.filter(~pl.col("cup_valid") & ~pl.col("valor_valid"))
         for row in invalid_rows.select(["CUP", "CONTRATO"]).iter_rows():
             self.logger.error(
-                f"CUP no existe en base de datos: '{row[0]}' para el contrato '{row[1]}'"
+                f"CUP no existe en base de datos: '{row[0]}' para el contrato '{row[1]}'",
+                user_msg=f"El código CUP '{row[0]}' no existe en el sistema. '{row[1]}'",
             )
 
         df_result = df_result.with_columns(

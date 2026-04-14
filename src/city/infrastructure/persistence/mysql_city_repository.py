@@ -14,7 +14,11 @@ class MySQLCityRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding city by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding city by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar la ciudad. {name}",
+            )
             return None
 
     def save(self, city: City):
@@ -40,7 +44,11 @@ class MySQLCityRepository:
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving city: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving city: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar la ciudad. {city.name}",
+            )
             return None
 
     def all(self):
@@ -50,5 +58,9 @@ class MySQLCityRepository:
                 results = cursor.fetchall()
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
-            self.logger.error(f"Error retrieving all cities: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error retrieving all cities: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de ciudades.",
+            )
             return None

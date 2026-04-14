@@ -95,19 +95,21 @@ class ImportRatesFromExcel:
             for provider in providers:
                 provider_upper = provider.upper()
                 existing = self.provider_repo.find_by_name(provider_upper)
-                
+
                 if not existing and len(provider_all) > 0:
                     fuzzy_match = self.fuzz.fuzz_property(provider_upper, provider_all)
                     if fuzzy_match:
                         existing_record = self.provider_repo.find_by_name(fuzzy_match)
                         if existing_record:
-                            provider_entity = Provider(name=provider_upper, id=existing_record[0])
+                            provider_entity = Provider(
+                                name=provider_upper, id=existing_record[0]
+                            )
                             self.provider_repo.update(provider_entity)
                     else:
                         self.provider_repo.save(Provider(provider_upper))
                 elif not existing:
                     self.provider_repo.save(Provider(provider_upper))
-                    
+
                 self.progress.advance()
 
         self.__relationships_rates(df, self.provider_repo.all(), Provider.__name__)
@@ -121,19 +123,21 @@ class ImportRatesFromExcel:
             for special in specials:
                 special_upper = special.upper()
                 existing = self.special_repo.find_by_name(special_upper)
-                
+
                 if not existing and len(special_all) > 0:
                     fuzzy_match = self.fuzz.fuzz_property(special_upper, special_all)
                     if fuzzy_match:
                         existing_record = self.special_repo.find_by_name(fuzzy_match)
                         if existing_record:
-                            special_entity = Special(name=special_upper, id=existing_record[0])
+                            special_entity = Special(
+                                name=special_upper, id=existing_record[0]
+                            )
                             self.special_repo.update(special_entity)
                     else:
                         self.special_repo.save(Special(special_upper))
                 elif not existing:
                     self.special_repo.save(Special(special_upper))
-                    
+
                 self.progress.advance()
 
         self.__relationships_rates(df, self.special_repo.all(), Special.__name__)
@@ -197,4 +201,8 @@ class ImportRatesFromExcel:
                     self.rates_repo.save_batch(rates_batch)
 
         except Exception as error:
-            self.logger.error(f"Error saving rates: {error}", exc_info=True)
+            self.logger.error(
+                f"Error saving rates: {error}",
+                exc_info=True,
+                user_msg="No se pudieron guardar las tarifas.",
+            )

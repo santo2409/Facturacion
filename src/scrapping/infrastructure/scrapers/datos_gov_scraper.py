@@ -56,7 +56,8 @@ class DatosGovScraper(NitScraperRepository):
 
             except requests.exceptions.RequestException as e:
                 self.logger.error(
-                    f"Error fetching data for NIT {nit_int}: {e}", exc_info=True
+                    f"Error fetching data for NIT {nit_int}: {e}", exc_info=True,
+                    user_msg=f"No se pudo obtener información del NIT {nit_int}."
                 )
                 list_nits.append(NitResult(nit=nit_int, is_company=False, name=None))
 

@@ -58,7 +58,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
                     try:
                         nit_int = int(str(nit[0]).strip())
                     except (ValueError, TypeError):
-                        self.logger.error(f"NIT inválido: {nit[0]}")
+                        self.logger.error(f"NIT inválido: {nit[0]}", user_msg=f"El NIT {nit[0]} no es válido. Verifique el dato ingresado.")
                         continue
 
                     my_nit = str(nit_int)[:9]
@@ -106,7 +106,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
                         list_nits.append(NitResult(nit=nit_int, is_company=False))
 
             except Exception as e:
-                self.logger.error(f"Error durante el scraping: {e}", exc_info=True)
+                self.logger.error(f"Error durante el scraping: {e}", exc_info=True, user_msg="Ocurrió un error durante la consulta web. Intente nuevamente.")
             finally:
                 await browser.close()
 
