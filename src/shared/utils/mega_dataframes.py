@@ -58,29 +58,7 @@ class MegaDataFrames:
             return pl.concat(frames_to_concat) if frames_to_concat else pl.DataFrame()
 
         elif callback == "Proveedores":
-            df_providers = df_providers.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
-
-            df_packages = df_packages.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
-
-            df_specials = df_specials.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
+            frames_to_concat = []
 
             df_packages = df_packages.filter(
                 pl.col("CONTRATO").str.contains("PROVEEDOR")
