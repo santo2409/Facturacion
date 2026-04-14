@@ -1,5 +1,3 @@
-import os
-
 from dotenv import load_dotenv
 from rich import box
 from rich.console import Console
@@ -17,9 +15,11 @@ from src.dataProcessing.infrastructure.console.import_information_controller imp
 from src.rates.infrastructure.console.import_rates_controller import import_rates
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
 from src.shared.logging.config.logging_config import setup_logging
+from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
 console = Console()
-logger = setup_logging()
+user_logger = setup_logging()
+tech_logger = LoggerAdapter("tech_logger")
 
 load_dotenv(override=True)
 
@@ -27,8 +27,6 @@ load_dotenv(override=True)
 def console_app():
     console.clear()
     console.rule("[bold blue]Facturación SOANDES")
-
-    destiny = os.getenv("BOOK_DESTINY", "")
 
     while True:
         console.print("\n[bold cyan]Menú Principal[/bold cyan]")
@@ -53,19 +51,19 @@ def console_app():
             execute_web_scrapping()
         elif option == "2":
             console.print("[green]Cargando Facturadores...[/green]")
-            import_billers(logger)
+            import_billers(tech_logger)
         elif option == "3":
             console.print("[green]Validando y Organizando información...[/green]")
-            import_information(logger)
+            import_information(tech_logger)
         elif option == "4":
             console.print("[green]Cargando Tarifas...[/green]")
-            import_rates(logger)
+            import_rates(tech_logger)
         elif option == "5":
             console.print("[green]Registrando Empresas...[/green]")
-            import_companies(logger)
+            import_companies(tech_logger)
         elif option == "6":
             console.print("[green]Asignando Tarifas...[/green]")
-            assign_rates(logger)
+            assign_rates(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
