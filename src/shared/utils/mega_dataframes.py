@@ -94,9 +94,12 @@ class MegaDataFrames:
                 )
                 frames_to_concat.append(df_specials)
 
-            return df_providers
+            return pl.concat(frames_to_concat) if frames_to_concat else pl.DataFrame()
 
         elif callback == "TarifasEspeciales":
+            if df_specials.is_empty():
+                return pl.DataFrame()
+
             df_specials = df_specials.with_columns(
                 pl.col("CONTRATO")
                 .str.replace_all("TARIFAS", "TARIFA")
