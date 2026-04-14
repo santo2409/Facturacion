@@ -129,9 +129,9 @@ class NormalizePackage:
 
         # Registrar errores en log
         swap_rows = df_result.filter(swap_condition)
-        for row in swap_rows.select(["CUP", "VALOR"]).iter_rows():
+        for row in swap_rows.select(["CUP", "VALOR", "CONTRATO"]).iter_rows():
             self.logger.error(
-                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}'"
+                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'"
             )
 
         # Aplicar intercambios
