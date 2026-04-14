@@ -372,6 +372,7 @@ class AssignRatesFromExcel:
                     nit = row["NIT"]
                     city = row["Ciudad"]
                     activity = row["TIPO DE ACTIVIDAD"]
+                    pkg = row["PAQUETE"]
 
                     for header in headers:
                         if row.get(str(header)) == 1.0:
