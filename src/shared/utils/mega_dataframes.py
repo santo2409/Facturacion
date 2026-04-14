@@ -117,5 +117,11 @@ class MegaDataFrames:
             return df_specials
 
         else:
-            df_cities = pl.concat([df_specials, df_providers, df_packages])
-            return df_cities
+            frames_to_concat = []
+            if not df_specials.is_empty():
+                frames_to_concat.append(df_specials)
+            if not df_providers.is_empty():
+                frames_to_concat.append(df_providers)
+            if not df_packages.is_empty():
+                frames_to_concat.append(df_packages)
+            return pl.concat(frames_to_concat) if frames_to_concat else pl.DataFrame()
