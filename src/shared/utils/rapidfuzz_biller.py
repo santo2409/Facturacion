@@ -32,4 +32,4 @@ class RapidFuzzBiller:
             return None
 
         except Exception as excep:
-            self.logger.error(f"Error in fuzz_property: {excep}", exc_info=True)
+            self.logger.error(f"Error in fuzz_property: {excep}", exc_info=True, user_msg="Error al buscar coincidencias. El proceso continuará sin esta validación.")

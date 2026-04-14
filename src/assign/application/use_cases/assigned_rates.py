@@ -1,3 +1,6 @@
+import json
+import os
+
 import polars as pl
 
 from src.package.domain.entities.package import Package
@@ -59,19 +62,22 @@ class AssignRatesFromExcel:
             result = self.fuzz.fuzz_property(str(x).upper(), cities_all)
             return result if result is not None else str(x)
 
-        def __match_company(nit, empresa, companies_all):
-            company = next((c for c in companies_all if c["nit"] == nit), None)
-            if company:
-                return company["nit"], company["name"]
-
-            matched_name = self.fuzz.fuzz_property(empresa, companies_all)
-            if matched_name:
-                company = next(
-                    (c for c in companies_all if c["name"] == matched_name), None
-                )
+        def __match_company(nit, empresa, base, companies_all, scraped_nits):
+            if nit:
+                company = next((c for c in companies_all if c["nit"] == nit), None)
                 if company:
                     return company["nit"], company["name"]
 
+                scraped = next(
+                    (s for s in scraped_nits if str(s.get("nit")) == nit), None
+                )
+                if scraped:
+                    return nit, scraped.get("name") or empresa
+
+            self.logger.warning(
+                f"NIT {nit} - {empresa} no encontrado, registrado por {base}",
+                user_msg=f"El NIT {nit} no fue encontrado en el sistema. Empresa registrada como {empresa} por {base}.",
+            )
             return nit, empresa
 
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
@@ -129,17 +135,16 @@ class AssignRatesFromExcel:
             nit,
             city,
             activity,
-            cup,
             header,
             cities_catalog,
             companies_catalog,
             companies_rates_catalog,
             activities_catalog,
             cup_catalog,
+            pkg,
             packages,
-            providers,
-            specials,
         ):
+
             pkg_id = None
             company_id = next(
                 (c["id"] for c in companies_catalog if c["nit"] == nit), None
@@ -152,6 +157,12 @@ class AssignRatesFromExcel:
                 ),
                 (None, None),
             )
+
+            if package_id is None:
+                package_id, model = next(
+                    ((c["id"], Package.__name__) for c in packages if c["name"] == pkg),
+                    (None, None),
+                )
 
             city_id = next((c["id"] for c in cities_catalog if c["name"] == city), None)
 
@@ -197,6 +208,12 @@ class AssignRatesFromExcel:
                 providers = providers_all
                 specials = special_all
 
+                scraped_nits = []
+                json_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+                if os.path.exists(json_path):
+                    with open(json_path, encoding="utf-8") as f:
+                        scraped_nits = json.load(f)
+
                 df = df.with_columns(
                     pl.col("Ciudad")
                     .map_elements(
@@ -219,7 +236,11 @@ class AssignRatesFromExcel:
                 matched_data = []
                 for row in df.iter_rows(named=True):
                     nit, empresa = __match_company(
-                        row["NIT"], row["Empresa"], companies_catalog
+                        row["NIT"],
+                        row["Empresa"],
+                        row["Base"],
+                        companies_catalog,
+                        scraped_nits,
                     )
                     matched_data.append({"NIT": nit, "Empresa": empresa})
 
@@ -352,6 +373,7 @@ class AssignRatesFromExcel:
                     nit = row["NIT"]
                     city = row["Ciudad"]
                     activity = row["TIPO DE ACTIVIDAD"]
+                    pkg = row["PAQUETE"]
 
                     for header in headers:
                         if row.get(str(header)) == 1.0:
@@ -359,16 +381,14 @@ class AssignRatesFromExcel:
                                 nit,
                                 city,
                                 activity,
-                                1,
                                 header,
                                 cities_catalog,
                                 companies_catalog,
                                 companies_rates_catalog,
                                 activities_catalog,
                                 cup_catalog,
+                                pkg,
                                 packages,
-                                providers,
-                                specials,
                             )
                             df[idx, str(header)] = int(price)
 
@@ -381,4 +401,8 @@ class AssignRatesFromExcel:
                 )
 
         except Exception as error:
-            self.logger.error(f"Error saving rates: {error}", exc_info=True)
+            self.logger.error(
+                f"Error saving rates: {error}",
+                exc_info=True,
+                user_msg="Ocurrió un error al generar el consolidado.",
+            )
