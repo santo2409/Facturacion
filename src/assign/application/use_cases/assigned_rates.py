@@ -235,7 +235,11 @@ class AssignRatesFromExcel:
                 matched_data = []
                 for row in df.iter_rows(named=True):
                     nit, empresa = __match_company(
-                        row["NIT"], row["Empresa"], companies_catalog
+                        row["NIT"],
+                        row["Empresa"],
+                        row["Base"],
+                        companies_catalog,
+                        scraped_nits,
                     )
                     matched_data.append({"NIT": nit, "Empresa": empresa})
 
