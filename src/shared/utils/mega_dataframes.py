@@ -10,9 +10,7 @@ class MegaDataFrames:
     def total_dataframe(
         self, loader: ExcelLoader, excel, callback: str
     ) -> pl.DataFrame:
-        df_packages = loader.load_sheet(excel, "Paquetes")
-        df_providers = loader.load_sheet(excel, "Proveedores")
-        df_specials = loader.load_sheet(excel, "TarifasEspeciales")
+        sheets = excel.sheet_names
 
         if callback == "Paquetes":
             df_packages = df_packages.with_columns(
