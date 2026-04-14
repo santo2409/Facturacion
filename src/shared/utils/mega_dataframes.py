@@ -16,35 +16,46 @@ class MegaDataFrames:
         df_providers = loader.load_sheet(excel, "Proveedores") if "Proveedores" in sheets else pl.DataFrame()
         df_specials = loader.load_sheet(excel, "TarifasEspeciales") if "TarifasEspeciales" in sheets else pl.DataFrame()
 
-            df_providers = df_providers.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
+        if callback == "Paquetes":
+            frames_to_concat = []
 
-            df_specials = df_specials.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
+            if not df_packages.is_empty():
+                df_packages = df_packages.with_columns(
+                    pl.col("CONTRATO")
+                    .str.replace_all("TARIFAS", "TARIFA")
+                    .str.replace_all("PAQUETES", "PAQUETE")
+                    .str.strip_chars()
+                    .str.to_uppercase()
+                )
+                frames_to_concat.append(df_packages)
 
-            df_providers = df_providers.filter(
-                pl.col("CONTRATO").str.starts_with("TARIFA")
-                | pl.col("CONTRATO").str.starts_with("PAQUETE")
-            )
+            if not df_providers.is_empty():
+                df_providers = df_providers.with_columns(
+                    pl.col("CONTRATO")
+                    .str.replace_all("TARIFAS", "TARIFA")
+                    .str.replace_all("PAQUETES", "PAQUETE")
+                    .str.strip_chars()
+                    .str.to_uppercase()
+                ).filter(
+                    pl.col("CONTRATO").str.starts_with("TARIFA")
+                    | pl.col("CONTRATO").str.starts_with("PAQUETE")
+                )
+                frames_to_concat.append(df_providers)
 
-            df_specials = df_specials.filter(
-                pl.col("CONTRATO").str.starts_with("TARIFA")
-                | pl.col("CONTRATO").str.starts_with("PAQUETE")
-            )
+            if not df_specials.is_empty():
+                df_specials = df_specials.with_columns(
+                    pl.col("CONTRATO")
+                    .str.replace_all("TARIFAS", "TARIFA")
+                    .str.replace_all("PAQUETES", "PAQUETE")
+                    .str.strip_chars()
+                    .str.to_uppercase()
+                ).filter(
+                    pl.col("CONTRATO").str.starts_with("TARIFA")
+                    | pl.col("CONTRATO").str.starts_with("PAQUETE")
+                )
+                frames_to_concat.append(df_specials)
 
-            df_packages = pl.concat([df_packages, df_providers, df_specials])
-
-            return df_packages
+            return pl.concat(frames_to_concat) if frames_to_concat else pl.DataFrame()
 
         elif callback == "Proveedores":
             df_providers = df_providers.with_columns(
