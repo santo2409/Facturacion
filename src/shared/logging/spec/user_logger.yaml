@@ -1,0 +1,39 @@
+version: "1.0.0"
+kind: LoggerContract
+metadata:
+  owner: infrastructure
+  audience: end_user
+  immutable_at_runtime: true
+  scope: presentation_layer_only
+config:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    user_console:
+      format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    user_file:
+      format: "%(asctime)s | %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      formatter: user_console
+      stream: ext://sys.stdout
+    file:
+      class: logging.handlers.RotatingFileHandler
+      level: INFO
+      formatter: user_file
+      filename: "./logs/user_audit.log"
+      maxBytes: 10485760
+      backupCount: 3
+      encoding: utf-8
+  loggers:
+    user_logger:
+      level: INFO
+      handlers: [file]
+      propagate: false
+validation:
+  allowed_levels: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+  max_log_size_mb: 10
+  required_handlers: [console]
+  forbid_root_mutation: true

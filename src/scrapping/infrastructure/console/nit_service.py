@@ -19,7 +19,7 @@ class RUESNitService:
 
             return data
         except Exception as excep:
-            self.logger.error(f"Error searching NIT {nits}: {excep}", exc_info=True)
+            self.logger.error(f"Error searching NIT {nits}: {excep}", exc_info=True, user_msg="No se pudo consultar el NIT. Verifique su conexión e intente nuevamente.")
             return None
 
     def writer(self, data, file_path):
@@ -29,4 +29,4 @@ class RUESNitService:
                     [d.__dict__ for d in data], file, ensure_ascii=False, indent=2
                 )
         except Exception as excep:
-            self.logger.error(f"Error writing to file: {excep}", exc_info=True)
+            self.logger.error(f"Error writing to file: {excep}", exc_info=True, user_msg="No se pudo guardar el archivo de resultados.")

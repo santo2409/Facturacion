@@ -14,7 +14,11 @@ class MySQLBillerRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding biller by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding biller by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar el facturador. {name}",
+            )
             return None
 
     def save(self, biller: Biller):
@@ -42,7 +46,11 @@ class MySQLBillerRepository:
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving biller: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving biller: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar el facturador. {biller.name}",
+            )
             return None
 
     def all(self):
@@ -52,5 +60,9 @@ class MySQLBillerRepository:
                 results = cursor.fetchall()
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
-            self.logger.error(f"Error retrieving all billers: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error retrieving all billers: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de facturadores.",
+            )
             return None

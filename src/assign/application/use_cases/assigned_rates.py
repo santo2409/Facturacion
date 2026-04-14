@@ -75,7 +75,8 @@ class AssignRatesFromExcel:
                     return nit, scraped.get("name") or empresa
 
             self.logger.warning(
-                f"NIT {nit} - {empresa} no encontrado, registrado por {base}"
+                f"NIT {nit} - {empresa} no encontrado, registrado por {base}",
+                user_msg=f"El NIT {nit} no fue encontrado en el sistema. Empresa registrada como {empresa} por {base}.",
             )
             return nit, empresa
 
@@ -400,4 +401,8 @@ class AssignRatesFromExcel:
                 )
 
         except Exception as error:
-            self.logger.error(f"Error saving rates: {error}", exc_info=True)
+            self.logger.error(
+                f"Error saving rates: {error}",
+                exc_info=True,
+                user_msg="Ocurrió un error al generar el consolidado.",
+            )

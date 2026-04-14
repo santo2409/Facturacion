@@ -13,5 +13,5 @@ class UpdatePackageUseCase:
             package = Package(name=name, id=package_id)
             return self.package_repository.update(package)
         except Exception as excep:
-            self.logger.error(f"Error in update package use case: {excep}", exc_info=True)
+            self.logger.error(f"Error in update package use case: {excep}", exc_info=True, user_msg="No se pudo actualizar el paquete.")
             return False

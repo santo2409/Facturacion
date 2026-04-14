@@ -17,7 +17,11 @@ class MySQLProviderRepository(ProviderRepository):
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding provider by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding provider by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar el proveedor. {name}",
+            )
             return None
 
     def save(self, provider):
@@ -47,15 +51,22 @@ class MySQLProviderRepository(ProviderRepository):
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving provider: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving provider: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar el proveedor. {provider.name}",
+            )
             return None
 
     def update(self, provider: Provider) -> bool:
         try:
             if not provider.id:
-                self.logger.error("Provider ID is required for update")
+                self.logger.error(
+                    "Provider ID is required for update",
+                    user_msg="No se puede actualizar sin identificador.",
+                )
                 return False
-                
+
             with self.conn.cursor(buffered=True) as cursor:
                 cursor.execute(
                     "UPDATE providers SET name = %s WHERE id = %s",
@@ -64,7 +75,11 @@ class MySQLProviderRepository(ProviderRepository):
                 self.conn.commit()
                 return cursor.rowcount > 0
         except Exception as excep:
-            self.logger.error(f"Error updating provider: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error updating provider: {excep}",
+                exc_info=True,
+                user_msg="No se pudo actualizar el proveedor.",
+            )
             return False
 
     def all(self):
@@ -75,6 +90,8 @@ class MySQLProviderRepository(ProviderRepository):
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
             self.logger.error(
-                f"Error retrieving all rates providers: {excep}", exc_info=True
+                f"Error retrieving all rates providers: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de proveedores.",
             )
             return None

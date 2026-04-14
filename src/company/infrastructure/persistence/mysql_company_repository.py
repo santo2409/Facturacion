@@ -16,7 +16,9 @@ class MySQLCompanyRepository:
                 return registered
         except Exception as excep:
             self.logger.error(
-                f"Error retrieving company by nit: {excep}", exc_info=True
+                f"Error retrieving company by nit: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar la empresa. NIT {nit}",
             )
             return None
 
@@ -51,7 +53,11 @@ class MySQLCompanyRepository:
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving company: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving company: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar la empresa. {company.name}",
+            )
             return None
 
     def all(self):
@@ -64,7 +70,11 @@ class MySQLCompanyRepository:
                     for row in results
                 ]
         except Exception as excep:
-            self.logger.error(f"Error retrieving all companies: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error retrieving all companies: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de empresas.",
+            )
             return None
 
     def find_by_id(self, id):
@@ -77,7 +87,11 @@ class MySQLCompanyRepository:
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error retrieving company by id: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error retrieving company by id: {excep}",
+                exc_info=True,
+                user_msg="No se pudo consultar la empresa.",
+            )
             return None
 
     def companies_packages(self, relations):
@@ -95,7 +109,9 @@ class MySQLCompanyRepository:
 
         except Exception as excep:
             self.logger.error(
-                f"Error saving companies_packages: {excep}", exc_info=True
+                f"Error saving companies_packages: {excep}",
+                exc_info=True,
+                user_msg="No se pudo vincular la empresa con el paquete.",
             )
             return None
 
@@ -112,6 +128,8 @@ class MySQLCompanyRepository:
                 ]
         except Exception as excep:
             self.logger.error(
-                f"Error searching companies_packages: {excep}", exc_info=True
+                f"Error searching companies_packages: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener las vinculaciones de empresas.",
             )
             return None

@@ -15,7 +15,11 @@ class MySQLPackageRepository(PackageRepository):
                 registered = cursor.fetchone()
                 return registered
         except Exception as excep:
-            self.logger.error(f"Error finding package by name: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error finding package by name: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo consultar el paquete. {name}",
+            )
             return None
 
     def save(self, package: Package):
@@ -45,15 +49,22 @@ class MySQLPackageRepository(PackageRepository):
 
                 return cursor.fetchone()
         except Exception as excep:
-            self.logger.error(f"Error saving package: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error saving package: {excep}",
+                exc_info=True,
+                user_msg=f"No se pudo guardar el paquete.{package.name}",
+            )
             return None
 
     def update(self, package: Package) -> bool:
         try:
             if not package.id:
-                self.logger.error("Package ID is required for update")
+                self.logger.error(
+                    "Package ID is required for update",
+                    user_msg="No se puede actualizar sin identificador.",
+                )
                 return False
-                
+
             with self.conn.cursor(buffered=True) as cursor:
                 cursor.execute(
                     "UPDATE packages SET name = %s WHERE id = %s",
@@ -62,7 +73,11 @@ class MySQLPackageRepository(PackageRepository):
                 self.conn.commit()
                 return cursor.rowcount > 0
         except Exception as excep:
-            self.logger.error(f"Error updating package: {excep}", exc_info=True)
+            self.logger.error(
+                f"Error updating package: {excep}",
+                exc_info=True,
+                user_msg="No se pudo actualizar el paquete.",
+            )
             return False
 
     def all(self):
@@ -73,6 +88,8 @@ class MySQLPackageRepository(PackageRepository):
                 return [{"id": row[0], "name": row[1]} for row in results]
         except Exception as excep:
             self.logger.error(
-                f"Error retrieving all rates packages: {excep}", exc_info=True
+                f"Error retrieving all rates packages: {excep}",
+                exc_info=True,
+                user_msg="No se pudo obtener el listado de paquetes.",
             )
             return None

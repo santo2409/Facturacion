@@ -33,7 +33,9 @@ class NormalizeProvider:
 
         except Exception as identifier:
             self.logger.error(
-                f"Error normalizing provider: {identifier}", exc_info=True
+                f"Error normalizing provider: {identifier}",
+                exc_info=True,
+                user_msg="Error al procesar el proveedor. Verifique el formato del archivo.",
             )
 
     def _perform_normalization(self, data):
@@ -150,7 +152,8 @@ class NormalizeProvider:
         swap_rows = df_result.filter(swap_condition)
         for row in swap_rows.select(["CUP", "VALOR", "CONTRATO"]).iter_rows():
             self.logger.error(
-                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'"
+                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'",
+                user_msg=f"Se detectó un cruce de datos en el contrato '{row[2]}'. Se corrigió automáticamente. '{row[0]}' <-> '{row[1]}'",
             )
 
         # Aplicar intercambios
@@ -170,7 +173,8 @@ class NormalizeProvider:
         invalid_rows = df_result.filter(~pl.col("cup_valid") & ~pl.col("valor_valid"))
         for row in invalid_rows.select(["CUP", "CONTRATO"]).iter_rows():
             self.logger.error(
-                f"CUP no existe en base de datos: '{row[0]}' del contrato '{row[1]}'"
+                f"CUP no existe en base de datos: '{row[0]}' del contrato '{row[1]}'",
+                user_msg=f"El código CUP '{row[0]}' no existe en el sistema. '{row[1]}'",
             )
 
         df_result = df_result.with_columns(
