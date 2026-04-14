@@ -168,8 +168,10 @@ class NormalizeProvider:
         )
 
         invalid_rows = df_result.filter(~pl.col("cup_valid") & ~pl.col("valor_valid"))
-        for row in invalid_rows.select(["CUP"]).iter_rows():
-            self.logger.error(f"CUP no existe en base de datos: '{row[0]}'")
+        for row in invalid_rows.select(["CUP", "CONTRATO"]).iter_rows():
+            self.logger.error(
+                f"CUP no existe en base de datos: '{row[0]}' del contrato '{row[1]}'"
+            )
 
         df_result = df_result.with_columns(
             pl.col("VALOR")
