@@ -12,14 +12,9 @@ class MegaDataFrames:
     ) -> pl.DataFrame:
         sheets = excel.sheet_names
 
-        if callback == "Paquetes":
-            df_packages = df_packages.with_columns(
-                pl.col("CONTRATO")
-                .str.replace_all("TARIFAS", "TARIFA")
-                .str.replace_all("PAQUETES", "PAQUETE")
-                .str.strip_chars()
-                .str.to_uppercase()
-            )
+        df_packages = loader.load_sheet(excel, "Paquetes") if "Paquetes" in sheets else pl.DataFrame()
+        df_providers = loader.load_sheet(excel, "Proveedores") if "Proveedores" in sheets else pl.DataFrame()
+        df_specials = loader.load_sheet(excel, "TarifasEspeciales") if "TarifasEspeciales" in sheets else pl.DataFrame()
 
             df_providers = df_providers.with_columns(
                 pl.col("CONTRATO")
