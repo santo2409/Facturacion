@@ -62,19 +62,21 @@ class AssignRatesFromExcel:
             result = self.fuzz.fuzz_property(str(x).upper(), cities_all)
             return result if result is not None else str(x)
 
-        def __match_company(nit, empresa, companies_all):
-            company = next((c for c in companies_all if c["nit"] == nit), None)
-            if company:
-                return company["nit"], company["name"]
-
-            matched_name = self.fuzz.fuzz_property(empresa, companies_all)
-            if matched_name:
-                company = next(
-                    (c for c in companies_all if c["name"] == matched_name), None
-                )
+        def __match_company(nit, empresa, base, companies_all, scraped_nits):
+            if nit:
+                company = next((c for c in companies_all if c["nit"] == nit), None)
                 if company:
                     return company["nit"], company["name"]
 
+                scraped = next(
+                    (s for s in scraped_nits if str(s.get("nit")) == nit), None
+                )
+                if scraped:
+                    return nit, scraped.get("name") or empresa
+
+            self.logger.warning(
+                f"NIT {nit} - {empresa} no encontrado, registrado por {base}"
+            )
             return nit, empresa
 
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
