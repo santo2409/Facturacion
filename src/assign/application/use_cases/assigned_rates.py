@@ -134,17 +134,16 @@ class AssignRatesFromExcel:
             nit,
             city,
             activity,
-            cup,
             header,
             cities_catalog,
             companies_catalog,
             companies_rates_catalog,
             activities_catalog,
             cup_catalog,
+            pkg,
             packages,
-            providers,
-            specials,
         ):
+
             pkg_id = None
             company_id = next(
                 (c["id"] for c in companies_catalog if c["nit"] == nit), None
@@ -157,6 +156,12 @@ class AssignRatesFromExcel:
                 ),
                 (None, None),
             )
+
+            if package_id is None:
+                package_id, model = next(
+                    ((c["id"], Package.__name__) for c in packages if c["name"] == pkg),
+                    (None, None),
+                )
 
             city_id = next((c["id"] for c in cities_catalog if c["name"] == city), None)
 
@@ -370,16 +375,14 @@ class AssignRatesFromExcel:
                                 nit,
                                 city,
                                 activity,
-                                1,
                                 header,
                                 cities_catalog,
                                 companies_catalog,
                                 companies_rates_catalog,
                                 activities_catalog,
                                 cup_catalog,
+                                pkg,
                                 packages,
-                                providers,
-                                specials,
                             )
                             df[idx, str(header)] = int(price)
 
