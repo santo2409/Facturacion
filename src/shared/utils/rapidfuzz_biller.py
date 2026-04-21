@@ -5,8 +5,7 @@ from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapt
 
 
 class RapidFuzzBiller:
-    def __init__(self, conn, logger: LoggerAdapter = None):
-        self.conn = conn
+    def __init__(self, logger: LoggerAdapter = None):
         self.logger = logger or LoggerAdapter(__name__)
 
     def fuzz_property(self, property_name: str, catalog: list[dict]) -> str | None:
