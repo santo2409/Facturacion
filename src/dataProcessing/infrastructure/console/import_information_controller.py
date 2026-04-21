@@ -1,4 +1,4 @@
-from src.cup.infrastructure.persistence.mysql_cup_repository import MySQLCupRepository
+from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.dataProcessing.application.use_cases.normalize_information_from_excel import (
     NormalizeInformationFromExcel,
 )
@@ -25,9 +25,9 @@ def import_information(logger):
     excel = loader.load(path)
 
     use_case = NormalizeInformationFromExcel(
-        package=NormalizePackage(logger, RichProgress(), MySQLCupRepository()),
-        provider=NormalizeProvider(logger, RichProgress(), MySQLCupRepository()),
-        special=NormalizeSpecial(logger, RichProgress(), MySQLCupRepository()),
+        package=NormalizePackage(logger, RichProgress(), SaCupRepository()),
+        provider=NormalizeProvider(logger, RichProgress(), SaCupRepository()),
+        special=NormalizeSpecial(logger, RichProgress(), SaCupRepository()),
         export=ExcelExporter(RichProgress()),
     )
 
