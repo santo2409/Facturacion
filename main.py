@@ -4,13 +4,15 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
-from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
 from src.billers.infrastructure.console.import_billers_controller import import_billers
 from src.company.infrastructure.console.import_companies_rates_controller import (
     import_companies,
 )
 from src.dataProcessing.infrastructure.console.import_information_controller import (
     import_information,
+)
+from src.preInvoice.infrastructure.console.pre_invoice_controller import (
+    generate_pre_invoices,
 )
 from src.rates.infrastructure.console.import_rates_controller import import_rates
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
@@ -63,7 +65,7 @@ def console_app():
             import_companies(tech_logger)
         elif option == "6":
             console.print("[green]Asignando Tarifas...[/green]")
-            assign_rates(tech_logger)
+            generate_pre_invoices(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
