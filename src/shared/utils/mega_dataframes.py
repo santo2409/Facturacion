@@ -4,9 +4,6 @@ from src.shared.excel.excel_loader import ExcelLoader
 
 
 class MegaDataFrames:
-    def __init__(self, conn):
-        self.conn = conn
-
     def total_dataframe(
         self, loader: ExcelLoader, excel, callback: str
     ) -> pl.DataFrame:

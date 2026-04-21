@@ -1,38 +1,38 @@
-from src.activity.infrastructure.mysql_activity_type_repository import (
-    MySQLActivityRepository,
+from src.activity.infrastructure.sa_activity_type_repository import (
+    SaActivityRepository,
 )
 from src.assign.application.use_cases.assigned_rates import AssignRatesFromExcel
-from src.billers.infrastructure.persistence.mysql_biller_company_repository import (
-    MySQLBillerCompanyRepository,
+from src.billers.infrastructure.persistence.sa_biller_company_repository import (
+    SaBillerCompanyRepository,
 )
-from src.billers.infrastructure.persistence.mysql_biller_repository import (
-    MySQLBillerRepository,
+from src.billers.infrastructure.persistence.sa_biller_repository import (
+    SaBillerRepository,
 )
-from src.city.infrastructure.persistence.mysql_city_repository import (
-    MySQLCityRepository,
+from src.city.infrastructure.persistence.sa_city_repository import (
+    SaCityRepository,
 )
-from src.company.infrastructure.persistence.mysql_company_repository import (
-    MySQLCompanyRepository,
+from src.company.infrastructure.persistence.sa_company_repository import (
+    SaCompanyRepository,
 )
-from src.cup.infrastructure.persistence.mysql_cup_repository import MySQLCupRepository
-from src.package.infrastructure.persistence.mysql_package_repository import (
-    MySQLPackageRepository,
+from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
+from src.package.infrastructure.persistence.sa_package_repository import (
+    SaPackageRepository,
 )
-from src.provider.infrastructure.persistence.mysql_provider_repository import (
-    MySQLProviderRepository,
+from src.provider.infrastructure.persistence.sa_provider_repository import (
+    SaProviderRepository,
 )
-from src.rates.infrastructure.persistence.mysql_rates_repository import (
-    MySQLRatesRepository,
+from src.rates.infrastructure.persistence.sa_rates_repository import (
+    SaRatesRepository,
 )
 from src.scrapping.infrastructure.console.nit_service import RUESNitService
 from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
-from src.shared.database.mysql_connection import get_connection
+from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
-from src.special.infrastructure.persistence.mysql_special_repository import (
-    MySQLSpecialRepository,
+from src.special.infrastructure.persistence.sa_special_repository import (
+    SaSpecialRepository,
 )
 
 
@@ -44,21 +44,21 @@ def assign_rates(logger):
     sheet = ask_sheet_name(excel.sheet_names)
     df = loader.load_sheet(excel, sheet)
 
-    conn = get_connection()
+    session = get_session()
 
     use_case = AssignRatesFromExcel(
-        biller_repo=MySQLBillerRepository(conn, logger),
-        company_repo=MySQLCompanyRepository(conn, logger),
-        biller_company_repo=MySQLBillerCompanyRepository(conn, logger),
-        package_repo=MySQLPackageRepository(conn, logger),
-        provider_repo=MySQLProviderRepository(conn, logger),
-        special_repo=MySQLSpecialRepository(conn, logger),
-        city_repo=MySQLCityRepository(conn, logger),
-        activities_repo=MySQLActivityRepository(conn, logger),
-        rates_repo=MySQLRatesRepository(conn, logger),
-        cup_repo=MySQLCupRepository(),
+        biller_repo=SaBillerRepository(session, logger),
+        company_repo=SaCompanyRepository(session, logger),
+        biller_company_repo=SaBillerCompanyRepository(session, logger),
+        package_repo=SaPackageRepository(session, logger),
+        provider_repo=SaProviderRepository(session, logger),
+        special_repo=SaSpecialRepository(session, logger),
+        city_repo=SaCityRepository(session, logger),
+        activities_repo=SaActivityRepository(session, logger),
+        rates_repo=SaRatesRepository(session, logger),
+        cup_repo=SaCupRepository(),
         nit_service=RUESNitService(logger),
-        fuzz=RapidFuzzBiller(conn, logger),
+        fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),
         logger=logger,
     )

@@ -1,6 +1,6 @@
 import polars as pl
 
-from src.cup.infrastructure.persistence.mysql_cup_repository import MySQLCupRepository
+from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
@@ -10,7 +10,7 @@ class NormalizePackage:
         self,
         logger: LoggerAdapter = None,
         progress: RichProgress = None,
-        cup_repository: MySQLCupRepository = None,
+        cup_repository: SaCupRepository = None,
     ):
         self.logger = logger or LoggerAdapter(__name__)
         self.progress = progress

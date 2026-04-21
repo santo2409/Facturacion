@@ -6,38 +6,31 @@ from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
-# this is the Alembic Config from .env, which provides
+from src.shared.database.database import Base
+from src.shared.database.models import *  # noqa: F401,F403 - register all models
+
 load_dotenv()
 
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD"))
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
 
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+def _build_url():
+    url = os.getenv("DATABASE_URL")
+    if url:
+        return url
+    user = os.getenv("SUPABASE_DB_USER")
+    password = quote_plus(os.getenv("SUPABASE_DB_PASSWORD", ""))
+    host = os.getenv("SUPABASE_DB_HOST")
+    port = os.getenv("SUPABASE_DB_PORT", "6543")
+    name = os.getenv("SUPABASE_DB_NAME", "postgres")
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{name}"
 
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", _build_url())
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
