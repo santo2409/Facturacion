@@ -8,9 +8,9 @@ Create Date: 2026-02-21 14:25:29.321976
 
 from typing import Sequence, Union
 
+import sqlalchemy as sa
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "bcd74cdfe32d"
 down_revision: Union[str, Sequence[str], None] = "6dfd72ff3fa3"
 branch_labels: Union[str, Sequence[str], None] = None
@@ -18,18 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("""
-                CREATE TABLE `companies_packages` (
-                    `company_id` int(11) NOT NULL,
-                    `package_id` int(11) NOT NULL,
-                    `model` varchar(60) NOT NULL,
-                    `created_at` timestamp NULL DEFAULT current_timestamp(),
-                    `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-                    PRIMARY KEY (`company_id`,`package_id`,`model`),
-                    UNIQUE KEY `company_id` (`company_id`),
-                    CONSTRAINT `companies_packages_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-                """)
+    op.create_table(
+        "companies_packages",
+        sa.Column("company_id", sa.Integer, sa.ForeignKey("companies.id"), nullable=False),
+        sa.Column("package_id", sa.Integer, nullable=False),
+        sa.Column("model", sa.String(60), nullable=False),
+        sa.Column("created_at", sa.TIMESTAMP, server_default=sa.func.now()),
+        sa.Column("updated_at", sa.TIMESTAMP, server_default=sa.func.now()),
+        sa.PrimaryKeyConstraint("company_id", "package_id", "model"),
+        sa.UniqueConstraint("company_id"),
+    )
 
 
 def downgrade() -> None:
