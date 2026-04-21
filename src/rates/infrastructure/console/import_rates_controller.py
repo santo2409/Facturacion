@@ -1,28 +1,28 @@
-from src.activity.infrastructure.mysql_activity_type_repository import (
-    MySQLActivityRepository,
+from src.activity.infrastructure.sa_activity_type_repository import (
+    SaActivityRepository,
 )
-from src.city.infrastructure.persistence.mysql_city_repository import (
-    MySQLCityRepository,
+from src.city.infrastructure.persistence.sa_city_repository import (
+    SaCityRepository,
 )
-from src.cup.infrastructure.persistence.mysql_cup_repository import MySQLCupRepository
-from src.package.infrastructure.persistence.mysql_package_repository import (
-    MySQLPackageRepository,
+from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
+from src.package.infrastructure.persistence.sa_package_repository import (
+    SaPackageRepository,
 )
-from src.provider.infrastructure.persistence.mysql_provider_repository import (
-    MySQLProviderRepository,
+from src.provider.infrastructure.persistence.sa_provider_repository import (
+    SaProviderRepository,
 )
 from src.rates.application.use_cases.import_rates_from_excel import ImportRatesFromExcel
-from src.rates.infrastructure.persistence.mysql_rates_repository import (
-    MySQLRatesRepository,
+from src.rates.infrastructure.persistence.sa_rates_repository import (
+    SaRatesRepository,
 )
 from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
-from src.shared.database.mysql_connection import get_connection
+from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.mega_dataframes import MegaDataFrames
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
-from src.special.infrastructure.persistence.mysql_special_repository import (
-    MySQLSpecialRepository,
+from src.special.infrastructure.persistence.sa_special_repository import (
+    SaSpecialRepository,
 )
 
 
@@ -30,20 +30,20 @@ def import_rates(logger):
     path = ask_excel_path()
     loader = ExcelLoader()
     excel = loader.load(path)
-    conn = get_connection()
+    session = get_session()
 
     use_case = ImportRatesFromExcel(
-        package_repo=MySQLPackageRepository(conn, logger),
-        provider_repo=MySQLProviderRepository(conn, logger),
-        special_repo=MySQLSpecialRepository(conn, logger),
-        city_repo=MySQLCityRepository(conn, logger),
-        activities_repo=MySQLActivityRepository(conn, logger),
-        cup_repo=MySQLCupRepository(),
-        fuzz=RapidFuzzBiller(conn, logger),
+        package_repo=SaPackageRepository(session, logger),
+        provider_repo=SaProviderRepository(session, logger),
+        special_repo=SaSpecialRepository(session, logger),
+        city_repo=SaCityRepository(session, logger),
+        activities_repo=SaActivityRepository(session, logger),
+        cup_repo=SaCupRepository(),
+        fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),
         loader=loader,
-        mega=MegaDataFrames(conn),
-        rates_repo=MySQLRatesRepository(conn, logger),
+        mega=MegaDataFrames(),
+        rates_repo=SaRatesRepository(session, logger),
         logger=logger,
     )
 
