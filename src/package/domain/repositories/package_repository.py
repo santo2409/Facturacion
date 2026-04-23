@@ -14,6 +14,10 @@ class PackageRepository(ABC):
         pass
 
     @abstractmethod
+    def save_batch(self, packages: list) -> list:
+        pass
+
+    @abstractmethod
     def update(self, package: Package) -> bool:
         pass
 

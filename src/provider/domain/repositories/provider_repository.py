@@ -13,6 +13,10 @@ class ProviderRepository(ABC):
         pass
 
     @abstractmethod
+    def save_batch(self, providers: list) -> list:
+        pass
+
+    @abstractmethod
     def update(self, provider: Provider) -> bool:
         pass
 
