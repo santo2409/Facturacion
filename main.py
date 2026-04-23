@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
+from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
 from src.billers.infrastructure.console.import_billers_controller import import_billers
 from src.company.infrastructure.console.import_companies_rates_controller import (
     import_companies,
