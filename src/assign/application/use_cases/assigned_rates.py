@@ -82,6 +82,10 @@ class AssignRatesFromExcel:
 
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
             company_id = next((c["id"] for c in companies_all if c["nit"] == nit), None)
+            if company_id is None:
+                self.logger.debug(f"NIT {nit}: empresa no encontrada → GENERAL")
+                return "GENERAL"
+
             biller_id = next(
                 (
                     bc["biller"]
