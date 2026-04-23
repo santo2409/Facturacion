@@ -1,3 +1,4 @@
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from src.shared.database.models import CompanyBillerModel
@@ -11,29 +12,32 @@ class SaBillerCompanyRepository:
 
     def link_or_update(self, company_id, biller_id):
         try:
-            row = self.session.query(CompanyBillerModel).filter_by(company_id=company_id).first()
-            if row:
-                row.biller_id = biller_id
-            else:
-                self.session.add(CompanyBillerModel(biller_id=biller_id, company_id=company_id))
+            stmt = insert(CompanyBillerModel).values(company_id=company_id, biller_id=biller_id)
+            stmt = stmt.on_conflict_do_update(index_elements=["company_id"], set_={"biller_id": stmt.excluded.biller_id})
+            self.session.execute(stmt)
             self.session.commit()
-        except Exception as excep:
+        except Exception as e:
             self.session.rollback()
-            self.logger.error(
-                f"Error linking or updating biller-company relationship: {excep}",
-                exc_info=True,
-                user_msg="No se pudo vincular el facturador con la empresa.",
-            )
+            self.logger.error(f"Error linking biller-company: {e}", exc_info=True, user_msg="No se pudo vincular el facturador con la empresa.")
             return None
+
+    def link_or_update_batch(self, pairs):
+        """pairs: list of (company_id, biller_id)"""
+        if not pairs:
+            return
+        try:
+            stmt = insert(CompanyBillerModel).values([{"company_id": p[0], "biller_id": p[1]} for p in pairs])
+            stmt = stmt.on_conflict_do_update(index_elements=["company_id"], set_={"biller_id": stmt.excluded.biller_id})
+            self.session.execute(stmt)
+            self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            self.logger.error(f"Error batch linking biller-company: {e}", exc_info=True, user_msg="No se pudieron vincular los facturadores.")
 
     def all(self):
         try:
             rows = self.session.query(CompanyBillerModel).all()
             return [{"biller": r.biller_id, "company": r.company_id} for r in rows]
-        except Exception as excep:
-            self.logger.error(
-                f"Error retrieving all billers: {excep}",
-                exc_info=True,
-                user_msg="No se pudo obtener las vinculaciones.",
-            )
+        except Exception as e:
+            self.logger.error(f"Error retrieving biller-company links: {e}", exc_info=True, user_msg="No se pudo obtener las vinculaciones.")
             return None
