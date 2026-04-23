@@ -173,7 +173,7 @@ class AssignRatesFromExcel:
             city_id = next((c["id"] for c in cities_catalog if c["name"] == city), None)
 
             cup_id = next(
-                (c["id"] for c in cup_catalog if c["code"] == str(header)), None
+                (c["id"] for c in cup_catalog if c["code"].strip() == str(header).strip()), None
             )
 
             activity_id = next(
