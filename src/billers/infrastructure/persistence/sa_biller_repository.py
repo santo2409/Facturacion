@@ -1,3 +1,4 @@
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from src.billers.domain.entities.biller import Biller
@@ -14,44 +15,42 @@ class SaBillerRepository:
         try:
             row = self.session.query(BillerModel).filter_by(name=name).first()
             return (row.id, row.name) if row else None
-        except Exception as excep:
-            self.logger.error(
-                f"Error finding biller by name: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo consultar el facturador. {name}",
-            )
+        except Exception as e:
+            self.logger.error(f"Error finding biller: {e}", exc_info=True, user_msg=f"No se pudo consultar el facturador. {name}")
             return None
 
     def save(self, biller: Biller):
         try:
-            exists = self.find_by_name(biller.name)
-            if exists:
-                obj = self.session.query(BillerModel).get(exists[0])
-                obj.name = biller.name
-                self.session.commit()
-                return Biller(id=obj.id, name=obj.name)
-
-            obj = BillerModel(name=biller.name)
-            self.session.add(obj)
+            stmt = insert(BillerModel).values(name=biller.name)
+            stmt = stmt.on_conflict_do_update(index_elements=["name"], set_={"name": stmt.excluded.name})
+            stmt = stmt.returning(BillerModel.id, BillerModel.name)
+            row = self.session.execute(stmt).fetchone()
             self.session.commit()
-            return (obj.id, obj.name)
-        except Exception as excep:
+            return row
+        except Exception as e:
             self.session.rollback()
-            self.logger.error(
-                f"Error saving biller: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo guardar el facturador. {biller.name}",
-            )
+            self.logger.error(f"Error saving biller: {e}", exc_info=True, user_msg=f"No se pudo guardar el facturador. {biller.name}")
             return None
+
+    def save_batch(self, billers: list[Biller]):
+        if not billers:
+            return []
+        try:
+            stmt = insert(BillerModel).values([{"name": b.name} for b in billers])
+            stmt = stmt.on_conflict_do_update(index_elements=["name"], set_={"name": stmt.excluded.name})
+            stmt = stmt.returning(BillerModel.id, BillerModel.name)
+            rows = self.session.execute(stmt).fetchall()
+            self.session.commit()
+            return rows
+        except Exception as e:
+            self.session.rollback()
+            self.logger.error(f"Error saving batch billers: {e}", exc_info=True, user_msg="No se pudieron guardar los facturadores.")
+            return []
 
     def all(self):
         try:
             rows = self.session.query(BillerModel).all()
             return [{"id": r.id, "name": r.name} for r in rows]
-        except Exception as excep:
-            self.logger.error(
-                f"Error retrieving all billers: {excep}",
-                exc_info=True,
-                user_msg="No se pudo obtener el listado de facturadores.",
-            )
+        except Exception as e:
+            self.logger.error(f"Error retrieving billers: {e}", exc_info=True, user_msg="No se pudo obtener el listado de facturadores.")
             return None
