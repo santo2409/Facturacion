@@ -1,5 +1,13 @@
+from psycopg2.extras import execute_values
+
 from src.billers.domain.entities.biller import Biller
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+
+_UPSERT_SQL = (
+    "INSERT INTO billers (name) VALUES %s "
+    "ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name "
+    "RETURNING id, name"
+)
 
 
 class PgBillerRepository:
@@ -9,60 +17,42 @@ class PgBillerRepository:
 
     def find_by_name(self, name):
         try:
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM billers WHERE name = %s", (name,))
-                return cursor.fetchone()
-        except Exception as excep:
-            self.logger.error(
-                f"Error finding biller by name: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo consultar el facturador. {name}",
-            )
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM billers WHERE name = %s", (name,))
+                return cur.fetchone()
+        except Exception as e:
+            self.logger.error(f"Error finding biller: {e}", exc_info=True, user_msg=f"No se pudo consultar el facturador. {name}")
             return None
 
     def save(self, biller: Biller):
         try:
-            with self.conn.cursor() as cursor:
-                exists = self.find_by_name(biller.name)
-
-                if exists:
-                    biller_id = exists[0]
-                    cursor.execute(
-                        "UPDATE billers SET name = %s WHERE id = %s",
-                        (biller.name, biller_id),
-                    )
-                    self.conn.commit()
-                    return Biller(id=biller_id, name=biller.name)
-
-                cursor.execute(
-                    "INSERT INTO billers (name) VALUES (%s) RETURNING id",
-                    (biller.name,),
-                )
-                biller_id = cursor.fetchone()[0]
+            with self.conn.cursor() as cur:
+                rows = execute_values(cur, _UPSERT_SQL, [(biller.name,)], fetch=True)
                 self.conn.commit()
-
-                cursor.execute(
-                    "SELECT id, name FROM billers WHERE id = %s", (biller_id,)
-                )
-                return cursor.fetchone()
-        except Exception as excep:
-            self.logger.error(
-                f"Error saving biller: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo guardar el facturador. {biller.name}",
-            )
+                return rows[0] if rows else None
+        except Exception as e:
+            self.conn.rollback()
+            self.logger.error(f"Error saving biller: {e}", exc_info=True, user_msg=f"No se pudo guardar el facturador. {biller.name}")
             return None
+
+    def save_batch(self, billers: list[Biller]):
+        if not billers:
+            return []
+        try:
+            with self.conn.cursor() as cur:
+                rows = execute_values(cur, _UPSERT_SQL, [(b.name,) for b in billers], fetch=True)
+                self.conn.commit()
+                return rows
+        except Exception as e:
+            self.conn.rollback()
+            self.logger.error(f"Error saving batch billers: {e}", exc_info=True, user_msg="No se pudieron guardar los facturadores.")
+            return []
 
     def all(self):
         try:
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM billers")
-                results = cursor.fetchall()
-                return [{"id": row[0], "name": row[1]} for row in results]
-        except Exception as excep:
-            self.logger.error(
-                f"Error retrieving all billers: {excep}",
-                exc_info=True,
-                user_msg="No se pudo obtener el listado de facturadores.",
-            )
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM billers")
+                return [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+        except Exception as e:
+            self.logger.error(f"Error retrieving billers: {e}", exc_info=True, user_msg="No se pudo obtener el listado de facturadores.")
             return None

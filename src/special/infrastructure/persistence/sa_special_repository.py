@@ -1,3 +1,4 @@
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from src.shared.database.models import SpecialModel
@@ -14,40 +15,41 @@ class SaSpecialRepository:
         try:
             row = self.session.query(SpecialModel).filter_by(name=name).first()
             return (row.id, row.name) if row else None
-        except Exception as excep:
-            self.logger.error(
-                f"Error finding special by name: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo consultar el contrato especial. {name}",
-            )
+        except Exception as e:
+            self.logger.error(f"Error finding special: {e}", exc_info=True, user_msg=f"No se pudo consultar el contrato especial. {name}")
             return None
 
-    def save(self, special):
+    def save(self, special: Special):
         try:
-            exists = self.find_by_name(special.name)
-            if exists:
-                obj = self.session.query(SpecialModel).get(exists[0])
-                obj.name = special.name
-                self.session.commit()
-                return Special(id=obj.id, name=obj.name)
-
-            obj = SpecialModel(name=special.name)
-            self.session.add(obj)
+            stmt = insert(SpecialModel).values(name=special.name)
+            stmt = stmt.on_conflict_do_update(index_elements=["name"], set_={"name": stmt.excluded.name})
+            stmt = stmt.returning(SpecialModel.id, SpecialModel.name)
+            row = self.session.execute(stmt).fetchone()
             self.session.commit()
-            return (obj.id, obj.name)
-        except Exception as excep:
+            return row
+        except Exception as e:
             self.session.rollback()
-            self.logger.error(
-                f"Error saving special: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo guardar el contrato especial. {special.name}",
-            )
+            self.logger.error(f"Error saving special: {e}", exc_info=True, user_msg=f"No se pudo guardar el contrato especial. {special.name}")
             return None
+
+    def save_batch(self, specials: list[Special]):
+        if not specials:
+            return []
+        try:
+            stmt = insert(SpecialModel).values([{"name": s.name} for s in specials])
+            stmt = stmt.on_conflict_do_update(index_elements=["name"], set_={"name": stmt.excluded.name})
+            stmt = stmt.returning(SpecialModel.id, SpecialModel.name)
+            rows = self.session.execute(stmt).fetchall()
+            self.session.commit()
+            return rows
+        except Exception as e:
+            self.session.rollback()
+            self.logger.error(f"Error saving batch specials: {e}", exc_info=True, user_msg="No se pudieron guardar los contratos especiales.")
+            return []
 
     def update(self, special: Special) -> bool:
         try:
             if not special.id:
-                self.logger.error("Special ID is required for update", user_msg="No se puede actualizar sin identificador.")
                 return False
             obj = self.session.query(SpecialModel).get(special.id)
             if not obj:
@@ -55,23 +57,15 @@ class SaSpecialRepository:
             obj.name = special.name
             self.session.commit()
             return True
-        except Exception as excep:
+        except Exception as e:
             self.session.rollback()
-            self.logger.error(
-                f"Error updating special: {excep}",
-                exc_info=True,
-                user_msg="No se pudo actualizar el contrato especial.",
-            )
+            self.logger.error(f"Error updating special: {e}", exc_info=True, user_msg="No se pudo actualizar el contrato especial.")
             return False
 
     def all(self):
         try:
             rows = self.session.query(SpecialModel).all()
             return [{"id": r.id, "name": r.name} for r in rows]
-        except Exception as excep:
-            self.logger.error(
-                f"Error retrieving all rates specials: {excep}",
-                exc_info=True,
-                user_msg="No se pudo obtener el listado de contratos especiales.",
-            )
+        except Exception as e:
+            self.logger.error(f"Error retrieving specials: {e}", exc_info=True, user_msg="No se pudo obtener el listado de contratos especiales.")
             return None

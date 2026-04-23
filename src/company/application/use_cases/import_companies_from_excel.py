@@ -73,15 +73,16 @@ class ImportCompaniesFromExcel:
             .drop("EMPRESA_NUEVA")
         )
 
-        with self.progress("Importando empresas", total=df_updated.height):
-            for row in df_updated.iter_rows(named=True):
-                nit = str(row["NIT"]).strip()[:9]
-                empresa = row["RAZON SOCIAL"].strip().upper()
+        # Batch: collect unique companies by NIT, then upsert
+        companies_map = {}
+        for row in df_updated.iter_rows(named=True):
+            nit = str(row["NIT"]).strip()[:9]
+            empresa = row["RAZON SOCIAL"].strip().upper()
+            companies_map[nit] = Company(nit, empresa)
 
-                company = self.company_repo.find_by_nit(nit)
-                if not company:
-                    company = self.company_repo.save(Company(nit, empresa))
-                self.progress.advance()
+        with self.progress("Importando empresas", total=1):
+            self.company_repo.save_batch(list(companies_map.values()))
+            self.progress.advance()
 
     def _progress_companies_to_packages(self, df: pl.DataFrame):
         pkg = pl.DataFrame(self.package_repo.all())
@@ -110,9 +111,16 @@ class ImportCompaniesFromExcel:
             .alias("PAQUETE")
         )
 
+        # Build company map for ID lookup
+        all_companies = {c["nit"]: c["id"] for c in self.company_repo.all()}
+
         with self.progress("Vinculando empresas a paquetes", total=df.height):
             for row in df.iter_rows(named=True):
-                company_id = self.company_repo.find_by_nit(row["NIT"][:9].strip())[0]
+                nit = row["NIT"][:9].strip()
+                company_id = all_companies.get(nit)
+                if not company_id:
+                    self.progress.advance()
+                    continue
 
                 package = todo.filter(pl.col("name") == row["PAQUETE"])
 

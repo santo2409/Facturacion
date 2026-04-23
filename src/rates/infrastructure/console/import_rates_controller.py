@@ -38,7 +38,7 @@ def import_rates(logger):
         special_repo=SaSpecialRepository(session, logger),
         city_repo=SaCityRepository(session, logger),
         activities_repo=SaActivityRepository(session, logger),
-        cup_repo=SaCupRepository(),
+        cup_repo=SaCupRepository(session),
         fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),
         loader=loader,

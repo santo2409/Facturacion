@@ -39,20 +39,19 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         gestores = df["GESTOR"].drop_nulls().unique()
         catalog = self.biller_repo.all()
 
-        with self.progress("Cargando facturadores", total=len(gestores)):
-            for gestor in gestores:
-                name = gestor.strip().upper()
-                if name in ("NAN", "NONE"):
-                    continue
+        names_to_save = set()
+        for gestor in gestores:
+            name = gestor.strip().upper()
+            if name in ("NAN", "NONE"):
+                continue
+            slug = self.fuzz.fuzz_property(name, catalog) if catalog else name
+            if not slug:
+                slug = name
+            names_to_save.add(slug)
 
-                if catalog:
-                    slug = self.fuzz.fuzz_property(name, catalog)
-                else:
-                    slug = name
-
-                if not self.biller_repo.find_by_name(slug):
-                    self.biller_repo.save(Biller(name))
-                self.progress.advance()
+        with self.progress("Cargando facturadores", total=1):
+            self.biller_repo.save_batch([Biller(n) for n in names_to_save])
+            self.progress.advance()
 
     def _process_companies(self, df):
         file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
@@ -94,26 +93,41 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
 
         biller_catalog = self.biller_repo.all()
 
-        with self.progress("Vinculando compañías", total=len(df_updated)):
-            for row in df_updated.iter_rows(named=True):
-                nit = row["NIT"][:9]
-                gestor = row["GESTOR"].strip().upper()
-                empresa = row["EMPRESA"].upper()
+        # Batch: collect companies and links, then upsert
+        companies_to_save = {}  # nit -> Company
+        links = []  # (nit, biller_name) to resolve after company save
 
-                company = self.company_repo.find_by_nit(nit)
-                if not company:
-                    company = self.company_repo.save(Company(nit, empresa))
+        for row in df_updated.iter_rows(named=True):
+            nit = row["NIT"][:9]
+            gestor = row["GESTOR"].strip().upper()
+            empresa = row["EMPRESA"].upper()
+            companies_to_save[nit] = Company(nit, empresa)
+            biller_name = self.fuzz.fuzz_property(gestor, biller_catalog) or gestor
+            links.append((nit, biller_name))
 
-                biller_name = self.fuzz.fuzz_property(gestor, biller_catalog)
-                if not biller_name:
-                    biller_name = gestor
+        # Batch upsert companies
+        with self.progress("Guardando compañías", total=1):
+            self.company_repo.save_batch(list(companies_to_save.values()))
+            self.progress.advance()
 
-                biller = self.biller_repo.find_by_name(biller_name)
-                if biller and company:
-                    self.biller_company_repo.link_or_update(company[0], biller[0])
-                elif not biller:
+        # Build maps for linking
+        all_companies = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        all_billers = {b["name"]: b["id"] for b in self.biller_repo.all()}
+
+        # Batch link
+        link_pairs = []
+        with self.progress("Vinculando compañías", total=len(links)):
+            for nit, biller_name in links:
+                company_id = all_companies.get(nit)
+                biller_id = all_billers.get(biller_name)
+                if company_id and biller_id:
+                    link_pairs.append((company_id, biller_id))
+                elif not biller_id:
                     self.logger.error(
-                        f"Biller not found: '{gestor}' -> '{biller_name}'", user_msg=f"No se encontró el facturador '{gestor}'. Verifique los datos del archivo."
+                        f"Biller not found: '{biller_name}'",
+                        user_msg=f"No se encontró el facturador '{biller_name}'.",
                     )
-
                 self.progress.advance()
+
+        if link_pairs:
+            self.biller_company_repo.link_or_update_batch(link_pairs)

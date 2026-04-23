@@ -1,5 +1,13 @@
-from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from psycopg2.extras import execute_values
+
 from src.special.domain.entities.special import Special
+from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+
+_UPSERT_SQL = (
+    "INSERT INTO specials (name) VALUES %s "
+    "ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name "
+    "RETURNING id, name"
+)
 
 
 class PgSpecialRepository:
@@ -9,84 +17,55 @@ class PgSpecialRepository:
 
     def find_by_name(self, name):
         try:
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM specials WHERE name = %s", (name,))
-                return cursor.fetchone()
-        except Exception as excep:
-            self.logger.error(
-                f"Error finding special by name: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo consultar el contrato especial. {name}",
-            )
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM specials WHERE name = %s", (name,))
+                return cur.fetchone()
+        except Exception as e:
+            self.logger.error(f"Error finding special: {e}", exc_info=True, user_msg=f"No se pudo consultar el contrato especial. {name}")
             return None
 
-    def save(self, special):
+    def save(self, special: Special):
         try:
-            with self.conn.cursor() as cursor:
-                exists = self.find_by_name(special.name)
-
-                if exists:
-                    special_id = exists[0]
-                    cursor.execute(
-                        "UPDATE specials SET name = %s WHERE id = %s",
-                        (special.name, special_id),
-                    )
-                    self.conn.commit()
-                    return Special(id=special_id, name=special.name)
-
-                cursor.execute(
-                    "INSERT INTO specials (name) VALUES (%s) RETURNING id",
-                    (special.name,),
-                )
-                special_id = cursor.fetchone()[0]
+            with self.conn.cursor() as cur:
+                rows = execute_values(cur, _UPSERT_SQL, [(special.name,)], fetch=True)
                 self.conn.commit()
-
-                cursor.execute(
-                    "SELECT id, name FROM specials WHERE id = %s", (special_id,)
-                )
-                return cursor.fetchone()
-        except Exception as excep:
-            self.logger.error(
-                f"Error saving special: {excep}",
-                exc_info=True,
-                user_msg=f"No se pudo guardar el contrato especial. {special.name}",
-            )
+                return rows[0] if rows else None
+        except Exception as e:
+            self.conn.rollback()
+            self.logger.error(f"Error saving special: {e}", exc_info=True, user_msg=f"No se pudo guardar el contrato especial. {special.name}")
             return None
+
+    def save_batch(self, specials: list[Special]):
+        if not specials:
+            return []
+        try:
+            with self.conn.cursor() as cur:
+                rows = execute_values(cur, _UPSERT_SQL, [(s.name,) for s in specials], fetch=True)
+                self.conn.commit()
+                return rows
+        except Exception as e:
+            self.conn.rollback()
+            self.logger.error(f"Error saving batch specials: {e}", exc_info=True, user_msg="No se pudieron guardar los contratos especiales.")
+            return []
 
     def update(self, special: Special) -> bool:
         try:
             if not special.id:
-                self.logger.error(
-                    "Special ID is required for update",
-                    user_msg="No se puede actualizar sin identificador.",
-                )
                 return False
-
-            with self.conn.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE specials SET name = %s WHERE id = %s",
-                    (special.name, special.id),
-                )
+            with self.conn.cursor() as cur:
+                cur.execute("UPDATE specials SET name = %s WHERE id = %s", (special.name, special.id))
                 self.conn.commit()
-                return cursor.rowcount > 0
-        except Exception as excep:
-            self.logger.error(
-                f"Error updating special: {excep}",
-                exc_info=True,
-                user_msg="No se pudo actualizar el contrato especial.",
-            )
+                return cur.rowcount > 0
+        except Exception as e:
+            self.conn.rollback()
+            self.logger.error(f"Error updating special: {e}", exc_info=True, user_msg="No se pudo actualizar el contrato especial.")
             return False
 
     def all(self):
         try:
-            with self.conn.cursor() as cursor:
-                cursor.execute("SELECT id, name FROM specials")
-                results = cursor.fetchall()
-                return [{"id": row[0], "name": row[1]} for row in results]
-        except Exception as excep:
-            self.logger.error(
-                f"Error retrieving all rates specials: {excep}",
-                exc_info=True,
-                user_msg="No se pudo obtener el listado de contratos especiales.",
-            )
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM specials")
+                return [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+        except Exception as e:
+            self.logger.error(f"Error retrieving specials: {e}", exc_info=True, user_msg="No se pudo obtener el listado de contratos especiales.")
             return None

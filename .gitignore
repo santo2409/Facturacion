@@ -222,3 +222,4 @@ package*
 .agents/
 AGENTS.md
 skills-lock.json
+.kiro/
