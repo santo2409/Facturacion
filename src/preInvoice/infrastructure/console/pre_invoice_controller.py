@@ -7,16 +7,22 @@ OUTPUT_DIR = Path("pre-facturas")
 
 
 def generate_pre_invoices(logger):
-    assign_rates(logger)
 
     if not CONSOLIDADO_PATH.exists():
         logger.error(
             f"Archivo {CONSOLIDADO_PATH} no encontrado tras assign_rates.",
             user_msg="No se encontró el archivo CONSOLIDADO.xlsx. El proceso de asignación pudo haber fallado.",
         )
+        print(
+            f"[red]Archivo {CONSOLIDADO_PATH} no encontrado. No se pueden generar pre-facturas.[/red]"
+        )
         return
 
     try:
+        logger.info(
+            f"Iniciando separación por NIT desde {CONSOLIDADO_PATH}",
+            user_msg="Iniciando generación de archivos por NIT...",
+        )
         SplitByNit(logger).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
         logger.info(
             "Cadena completa ejecutada: assign_rates → split por NIT.",
