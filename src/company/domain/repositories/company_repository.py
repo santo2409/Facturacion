@@ -11,5 +11,9 @@ class CompanyRepository(ABC):
         pass
 
     @abstractmethod
+    def save_batch(self, companies: list):
+        pass
+
+    @abstractmethod
     def all(self):
         pass
