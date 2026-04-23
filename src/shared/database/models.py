@@ -129,6 +129,7 @@ class CompanyBillerModel(Base):
         Integer,
         ForeignKey("companies.id"),
         nullable=False,
+        primary_key=True,
         unique=True,
     )
     created_at = Column(TIMESTAMP, server_default=func.now())

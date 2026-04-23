@@ -56,7 +56,7 @@ def assign_rates(logger):
         city_repo=SaCityRepository(session, logger),
         activities_repo=SaActivityRepository(session, logger),
         rates_repo=SaRatesRepository(session, logger),
-        cup_repo=SaCupRepository(),
+        cup_repo=SaCupRepository(session),
         nit_service=RUESNitService(logger),
         fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),

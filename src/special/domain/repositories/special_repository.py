@@ -13,6 +13,10 @@ class SpecialRepository(ABC):
         pass
 
     @abstractmethod
+    def save_batch(self, specials: list) -> list:
+        pass
+
+    @abstractmethod
     def update(self, special: Special) -> bool:
         pass
 

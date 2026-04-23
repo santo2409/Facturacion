@@ -82,6 +82,10 @@ class AssignRatesFromExcel:
 
         def __biller_assign(nit, companies_all, biller_companies_all, billers_all):
             company_id = next((c["id"] for c in companies_all if c["nit"] == nit), None)
+            if company_id is None:
+                self.logger.debug(f"NIT {nit}: empresa no encontrada → GENERAL")
+                return "GENERAL"
+
             biller_id = next(
                 (
                     bc["biller"]
@@ -90,14 +94,16 @@ class AssignRatesFromExcel:
                 ),
                 None,
             )
-
             if biller_id is None:
+                self.logger.debug(f"NIT {nit}: company_id={company_id} sin facturador → GENERAL")
                 return "GENERAL"
-            else:
-                biller_name = next(
-                    (b["name"] for b in billers_all if b["id"] == biller_id), None
-                )
-                return biller_name
+
+            biller_name = next(
+                (b["name"] for b in billers_all if b["id"] == biller_id), None
+            )
+            result = biller_name or "GENERAL"
+            self.logger.debug(f"NIT {nit}: company_id={company_id}, biller_id={biller_id} → {result}")
+            return result
 
         def __package_assign(
             nit, companies_rates_all, companies_all, packages, providers, specials
@@ -167,7 +173,7 @@ class AssignRatesFromExcel:
             city_id = next((c["id"] for c in cities_catalog if c["name"] == city), None)
 
             cup_id = next(
-                (c["id"] for c in cup_catalog if c["code"] == str(header)), None
+                (c["id"] for c in cup_catalog if c["code"].strip() == str(header).strip()), None
             )
 
             activity_id = next(
@@ -393,6 +399,18 @@ class AssignRatesFromExcel:
                             df[idx, str(header)] = int(price)
 
                     self.progress.advance()
+
+                if headers:
+                    df = df.with_columns(
+                        pl.sum_horizontal([pl.col(str(h)) for h in headers]).alias("Total")
+                    )
+                else:
+                    df = df.with_columns(pl.lit(0).alias("Total"))
+
+                self.logger.info(
+                    f"Columna Total generada: {len(headers)} columnas CUP, {df.height} filas",
+                    user_msg=f"Columna Total calculada para {df.height} registros.",
+                )
 
                 df.write_excel(
                     "CONSOLIDADO.xlsx",
