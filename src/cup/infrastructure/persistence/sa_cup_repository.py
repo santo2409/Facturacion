@@ -1,27 +1,17 @@
 from src.cup.domain.repositories.cup_repository import CupRepository
-from src.shared.database.database import get_session
 from src.shared.database.models import CupModel
 
 
 class SaCupRepository(CupRepository):
+    def __init__(self, session):
+        self.session = session
+
     def exists(self, cup: str) -> bool:
-        session = get_session()
-        try:
-            return session.query(CupModel).filter_by(code=cup).first() is not None
-        finally:
-            session.close()
+        return self.session.query(CupModel).filter_by(code=cup).first() is not None
 
     def get_all_cups(self) -> list[str]:
-        session = get_session()
-        try:
-            return [r.code for r in session.query(CupModel.code).all()]
-        finally:
-            session.close()
+        return [r.code for r in self.session.query(CupModel.code).all()]
 
     def get_all(self):
-        session = get_session()
-        try:
-            rows = session.query(CupModel).all()
-            return [{"id": r.id, "code": r.code, "name": r.name} for r in rows]
-        finally:
-            session.close()
+        rows = self.session.query(CupModel).all()
+        return [{"id": r.id, "code": r.code, "name": r.name} for r in rows]
