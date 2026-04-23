@@ -94,14 +94,16 @@ class AssignRatesFromExcel:
                 ),
                 None,
             )
-
             if biller_id is None:
+                self.logger.debug(f"NIT {nit}: company_id={company_id} sin facturador → GENERAL")
                 return "GENERAL"
-            else:
-                biller_name = next(
-                    (b["name"] for b in billers_all if b["id"] == biller_id), None
-                )
-                return biller_name
+
+            biller_name = next(
+                (b["name"] for b in billers_all if b["id"] == biller_id), None
+            )
+            result = biller_name or "GENERAL"
+            self.logger.debug(f"NIT {nit}: company_id={company_id}, biller_id={biller_id} → {result}")
+            return result
 
         def __package_assign(
             nit, companies_rates_all, companies_all, packages, providers, specials
