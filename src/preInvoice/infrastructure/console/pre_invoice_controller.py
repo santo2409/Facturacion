@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
 from src.preInvoice.application.use_cases.split_by_nit import SplitByNit
 
 CONSOLIDADO_PATH = Path("CONSOLIDADO.xlsx")
