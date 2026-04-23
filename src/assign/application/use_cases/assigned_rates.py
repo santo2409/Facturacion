@@ -400,6 +400,18 @@ class AssignRatesFromExcel:
 
                     self.progress.advance()
 
+                if headers:
+                    df = df.with_columns(
+                        pl.sum_horizontal([pl.col(str(h)) for h in headers]).alias("Total")
+                    )
+                else:
+                    df = df.with_columns(pl.lit(0).alias("Total"))
+
+                self.logger.info(
+                    f"Columna Total generada: {len(headers)} columnas CUP, {df.height} filas",
+                    user_msg=f"Columna Total calculada para {df.height} registros.",
+                )
+
                 df.write_excel(
                     "CONSOLIDADO.xlsx",
                     worksheet="Consolidado",
