@@ -18,16 +18,21 @@ from src.shared.excel.excel_exporter import ExcelExporter
 from src.shared.excel.excel_loader import ExcelLoader
 
 
+from src.shared.database.database import get_session
+
+
 def import_information(logger):
     path = ask_excel_path()
     output = ask_directory_path()
     loader = ExcelLoader()
     excel = loader.load(path)
 
+    session = get_session()
+
     use_case = NormalizeInformationFromExcel(
-        package=NormalizePackage(logger, RichProgress(), SaCupRepository()),
-        provider=NormalizeProvider(logger, RichProgress(), SaCupRepository()),
-        special=NormalizeSpecial(logger, RichProgress(), SaCupRepository()),
+        package=NormalizePackage(logger, RichProgress(), SaCupRepository(session)),
+        provider=NormalizeProvider(logger, RichProgress(), SaCupRepository(session)),
+        special=NormalizeSpecial(logger, RichProgress(), SaCupRepository(session)),
         export=ExcelExporter(RichProgress()),
     )
 
