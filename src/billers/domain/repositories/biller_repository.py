@@ -11,5 +11,9 @@ class BillerRepository(ABC):
         pass
 
     @abstractmethod
+    def save_batch(self, billers: list):
+        pass
+
+    @abstractmethod
     def all(self):
         pass
