@@ -45,100 +45,69 @@ class ImportRatesFromExcel:
         self._progress_providers(excel)
         self._progress_specials(excel)
 
+    def _resolve_names(self, raw_names, catalog):
+        """Apply fuzzy matching and return deduplicated resolved names."""
+        resolved = set()
+        for name in raw_names:
+            upper = name.upper()
+            if catalog and upper not in [c["name"] for c in catalog]:
+                slug = self.fuzz.fuzz_property(upper, catalog)
+                resolved.add(slug if slug else upper)
+            else:
+                resolved.add(upper)
+        return list(resolved)
+
     def _progress_city(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Ciudades")
-        cities = df["CIUDAD"].unique()
+        cities = df["CIUDAD"].unique().to_list()
         city_all = self.city_repo.all()
 
-        with self.progress("Importando ciudades", total=len(cities)):
-            for city in cities:
-                city_upper = city.upper()
-                if city_upper not in city_all and len(city_all) > 0:
-                    slug = self.fuzz.fuzz_property(city_upper, city_all)
-                    if not slug:
-                        slug = city_upper
-                else:
-                    slug = city_upper
+        resolved = self._resolve_names(cities, city_all)
+        city_entities = [City(name) for name in resolved]
 
-                if not self.city_repo.find_by_name(slug):
-                    self.city_repo.save(City(slug))
-                self.progress.advance()
+        with self.progress("Importando ciudades", total=1):
+            self.city_repo.save_batch(city_entities)
+            self.progress.advance()
 
     def _progress_packages(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Paquetes")
-
-        packages = df["CONTRATO"].unique()
+        packages = df["CONTRATO"].unique().to_list()
         package_all = self.package_repo.all()
 
-        with self.progress("Importando paquetes", total=len(packages)):
-            for package in packages:
-                package_upper = package.upper()
-                if package_upper not in package_all and len(package_all) > 0:
-                    slug = self.fuzz.fuzz_property(package_upper, package_all)
-                    if not slug:
-                        slug = package_upper
-                else:
-                    slug = package_upper
+        resolved = self._resolve_names(packages, package_all)
+        pkg_entities = [Package(name) for name in resolved]
 
-                if not self.package_repo.find_by_name(slug):
-                    self.package_repo.save(Package(slug))
-                self.progress.advance()
+        with self.progress("Importando paquetes", total=1):
+            self.package_repo.save_batch(pkg_entities)
+            self.progress.advance()
 
         self.__relationships_rates(df, package_all, Package.__name__)
 
     def _progress_providers(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Proveedores")
-        providers = df["CONTRATO"].unique()
+        providers = df["CONTRATO"].unique().to_list()
         provider_all = self.provider_repo.all()
 
-        with self.progress("Importando proveedores", total=len(providers)):
-            for provider in providers:
-                provider_upper = provider.upper()
-                existing = self.provider_repo.find_by_name(provider_upper)
+        resolved = self._resolve_names(providers, provider_all)
+        prov_entities = [Provider(name) for name in resolved]
 
-                if not existing and len(provider_all) > 0:
-                    fuzzy_match = self.fuzz.fuzz_property(provider_upper, provider_all)
-                    if fuzzy_match:
-                        existing_record = self.provider_repo.find_by_name(fuzzy_match)
-                        if existing_record:
-                            provider_entity = Provider(
-                                name=provider_upper, id=existing_record[0]
-                            )
-                            self.provider_repo.update(provider_entity)
-                    else:
-                        self.provider_repo.save(Provider(provider_upper))
-                elif not existing:
-                    self.provider_repo.save(Provider(provider_upper))
-
-                self.progress.advance()
+        with self.progress("Importando proveedores", total=1):
+            self.provider_repo.save_batch(prov_entities)
+            self.progress.advance()
 
         self.__relationships_rates(df, self.provider_repo.all(), Provider.__name__)
 
     def _progress_specials(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "TarifasEspeciales")
-        specials = df["CONTRATO"].unique()
+        specials = df["CONTRATO"].unique().to_list()
         special_all = self.special_repo.all()
 
-        with self.progress("Importando tarifas especiales", total=len(specials)):
-            for special in specials:
-                special_upper = special.upper()
-                existing = self.special_repo.find_by_name(special_upper)
+        resolved = self._resolve_names(specials, special_all)
+        spec_entities = [Special(name) for name in resolved]
 
-                if not existing and len(special_all) > 0:
-                    fuzzy_match = self.fuzz.fuzz_property(special_upper, special_all)
-                    if fuzzy_match:
-                        existing_record = self.special_repo.find_by_name(fuzzy_match)
-                        if existing_record:
-                            special_entity = Special(
-                                name=special_upper, id=existing_record[0]
-                            )
-                            self.special_repo.update(special_entity)
-                    else:
-                        self.special_repo.save(Special(special_upper))
-                elif not existing:
-                    self.special_repo.save(Special(special_upper))
-
-                self.progress.advance()
+        with self.progress("Importando tarifas especiales", total=1):
+            self.special_repo.save_batch(spec_entities)
+            self.progress.advance()
 
         self.__relationships_rates(df, self.special_repo.all(), Special.__name__)
 
