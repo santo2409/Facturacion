@@ -53,70 +53,87 @@ class SplitByNit:
 
         header = all_rows[0]
         data_rows = all_rows[1:]
-
         unique_columns = self._make_unique_columns(header)
         num_cols = len(unique_columns)
 
+        # Clasificar índices: fijos (en orden de FIXED_COLUMNS) y CUPS (por regex)
+        fixed_indices = []
+        for fc in FIXED_COLUMNS:
+            idx = self._find_column_index(header, fc)
+            if idx is not None:
+                fixed_indices.append(idx)
+            else:
+                self.logger.warning(f"Columna fija '{fc}' no encontrada, se omite")
+
+        cups_indices = [
+            i
+            for i, col in enumerate(unique_columns)
+            if self._is_cups_column(col) and i not in fixed_indices
+        ]
+
         nit_idx = self._find_column_index(header, "NIT")
         empresa_idx = self._find_column_index(header, "Empresa")
-        total_idx = self._find_column_index(header, "Total")
 
         if nit_idx is None:
             raise ValueError(f"No se encontró 'NIT'. Columnas: {header}")
         if empresa_idx is None:
             raise ValueError("No se encontró 'Empresa'.")
-        if total_idx is None:
-            raise ValueError("No se encontró 'Total'.")
 
-        fixed_indices = list(range(total_idx + 1))
-        optional_indices = list(range(total_idx + 1, num_cols))
-
+        # Agrupar por NIT
         groups = defaultdict(list)
         for row in data_rows:
             row = list(row) + [None] * (num_cols - len(row))
             nit_val = row[nit_idx]
             if nit_val is not None:
                 groups[nit_val].append(row)
+            else:
+                self.logger.warning("Fila sin NIT omitida")
 
         self.logger.info(
             f"NITs encontrados: {len(groups)}",
             user_msg=f"Se encontraron {len(groups)} NITs en el consolidado.",
         )
 
+        # Cargar mapa de nombres CUPS una sola vez
+        all_cups_codes = [str(header[i]) for i in cups_indices]
+        cups_name_map = self._build_cups_name_map(all_cups_codes)
+
         nits_dir = output_dir / "NITs"
         os.makedirs(nits_dir, exist_ok=True)
 
         # Proceso 1: Un archivo por NIT
         for nit, rows in groups.items():
-            active_optional = [
-                idx for idx in optional_indices
-                if any(
-                    r[idx] is not None
-                    and str(r[idx]).strip() not in ("", "None", "null")
-                    for r in rows
+            try:
+                active_cups = self._get_active_cups_indices(rows, cups_indices)
+                final_indices = fixed_indices + active_cups
+                cups_positions = set(range(len(fixed_indices), len(final_indices)))
+
+                header_out = [
+                    header[i] if i < len(header) else None for i in final_indices
+                ]
+                names_row = self._build_names_row(
+                    header_out, cups_positions, cups_name_map
                 )
-            ]
-            final_indices = fixed_indices + active_optional
 
-            empresa_nombre = f"NIT_{nit}"
-            for row in rows:
-                val = row[empresa_idx]
-                if val is not None and str(val).strip():
-                    empresa_nombre = self._sanitize_filename(str(val).strip())
-                    break
+                empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                filename = self._sanitize_filename(
+                    f"pre_factura_{nit}_{empresa_nombre}"
+                )
 
-            header_out = [header[i] if i < len(header) else None for i in final_indices]
+                wb = openpyxl.Workbook()
+                ws = wb.active
+                ws.title = "BASE GENERAL"
+                self._write_sheet(
+                    ws, names_row, header_out, rows, final_indices, cups_positions
+                )
 
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = "BASE GENERAL"
-            self._write_sheet(ws, header_out, rows, final_indices)
-
-            file_path = nits_dir / f"{empresa_nombre}.xlsx"
-            wb.save(file_path)
-            self.logger.info(
-                f"Generado: {empresa_nombre}.xlsx ({len(rows)} filas, {len(final_indices)} cols)",
-            )
+                file_path = nits_dir / f"{filename}.xlsx"
+                wb.save(file_path)
+                self.logger.info(
+                    f"Generado: {filename}.xlsx ({len(rows)} filas, {len(final_indices)} cols)",
+                )
+            except Exception as e:
+                self.logger.error(f"Error procesando NIT {nit}: {e}", exc_info=True)
 
         self.logger.info(
             f"Proceso 1 completado: archivos individuales en {nits_dir}",
