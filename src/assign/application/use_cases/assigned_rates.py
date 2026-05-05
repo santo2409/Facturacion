@@ -460,6 +460,10 @@ class AssignRatesFromExcel:
                     user_msg=f"Columna Total calculada para {df.height} registros.",
                 )
 
+                # ── Enriquecimiento con facturas ──────────────────────────
+                df = _enrich_with_invoices(df, df_facture, self.logger)
+                # ─────────────────────────────────────────────────────────
+
                 df.write_excel(
                     "CONSOLIDADO.xlsx",
                     worksheet="Consolidado",
