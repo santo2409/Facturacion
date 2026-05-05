@@ -7,10 +7,43 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from src.cup.domain.repositories.cup_repository import CupRepository
+
+_CUPS_RE = re.compile(r"^\d+(-\d+)?$")
+
+FIXED_COLUMNS = [
+    "Base",
+    "Ingreso N°",
+    "Sede",
+    "Ciudad",
+    "FACTURADOR",
+    "Especial / General",
+    "PAQUETE",
+    "NIT",
+    "Empresa",
+    "Empresa Misión",
+    "Medio de Pago",
+    "Fecha Ingreso",
+    "Tipo Examen",
+    "Cargo",
+    "Paciente",
+    "N° Identificación",
+    "Número de Póliza",
+    "FACTURAS",
+    "ORDEN, CENTRO DE COSTO, CECO, PET",
+    "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+    "TIPO DE ACTIVIDAD",
+    "Observaciones Ingreso",
+    "Total",
+]
+
+_FIXED_UPPER = {c.strip().upper() for c in FIXED_COLUMNS}
+
 
 class SplitByNit:
-    def __init__(self, logger):
+    def __init__(self, logger, cup_repo: CupRepository | None = None):
         self.logger = logger
+        self.cup_repo = cup_repo
 
     def execute(self, source_path: Path, output_dir: Path):
         wb_src = openpyxl.load_workbook(source_path, read_only=True, data_only=True)
