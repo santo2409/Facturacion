@@ -75,4 +75,4 @@ def assign_rates(logger):
         logger=logger,
     )
 
-    use_case.execute(df)
+    use_case.execute(df, df_facture)
