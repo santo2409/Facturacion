@@ -215,27 +215,61 @@ class SplitByNit:
     def _sanitize_sheetname(name):
         return re.sub(r"[\\/*?:\[\]]", "_", str(name).strip())[:31]
 
-    def _write_sheet(self, ws, header_out, rows, final_indices):
+    @staticmethod
+    def _extract_empresa(rows, empresa_idx):
+        for row in rows:
+            val = row[empresa_idx]
+            if val is not None and str(val).strip():
+                return str(val).strip()
+        return "SIN_EMPRESA"
+
+    @staticmethod
+    def _build_names_row(header_out, cups_positions, cups_name_map):
+        names = []
+        for i, col in enumerate(header_out):
+            if i in cups_positions:
+                names.append(cups_name_map.get(str(col), ""))
+            else:
+                names.append(None)
+        return names
+
+    def _write_sheet(
+        self, ws, names_row, header_out, rows, final_indices, cups_positions
+    ):
         thin = Side(style="thin", color="A6A6A6")
         border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        n_font = Font(name="Arial", bold=True, italic=True, size=9, color="1F4E79")
+        n_fill = PatternFill("solid", fgColor="D6E4F0")
+        n_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
         h_font = Font(name="Arial", bold=True, size=9, color="FFFFFF")
         h_fill = PatternFill("solid", fgColor="808080")
         h_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
         d_font = Font(name="Arial", size=9, color="1F1F1F")
         d_align = Alignment(horizontal="left", vertical="center")
 
-        ws.append(header_out)
+        # Fila 1: nombres descriptivos CUPS
+        ws.append(names_row)
         ws.row_dimensions[1].height = 28
         for cell in ws[1]:
+            cell.font = n_font
+            cell.fill = n_fill
+            cell.alignment = n_align
+            cell.border = border
+
+        # Fila 2: headers originales
+        ws.append(header_out)
+        ws.row_dimensions[2].height = 28
+        for cell in ws[2]:
             cell.font = h_font
             cell.fill = h_fill
             cell.alignment = h_align
             cell.border = border
 
+        # Fila 3+: datos
         for r_idx, row in enumerate(rows):
             ws.append([row[i] for i in final_indices])
-            ws.row_dimensions[r_idx + 2].height = 16
-            for cell in ws[r_idx + 2]:
+            ws.row_dimensions[r_idx + 3].height = 16
+            for cell in ws[r_idx + 3]:
                 cell.font = d_font
                 cell.alignment = d_align
                 cell.border = border
