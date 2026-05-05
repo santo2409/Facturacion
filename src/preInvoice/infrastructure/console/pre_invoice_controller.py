@@ -1,6 +1,8 @@
 from pathlib import Path
 
+from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.preInvoice.application.use_cases.split_by_nit import SplitByNit
+from src.shared.database.database import get_session
 
 CONSOLIDADO_PATH = Path("CONSOLIDADO.xlsx")
 OUTPUT_DIR = Path("pre-facturas")

@@ -282,4 +282,38 @@ class SplitByNit:
             )
             ws.column_dimensions[letter].width = min(max(max_len + 2, 8), 40)
 
-        ws.freeze_panes = "A2"
+        ws.freeze_panes = "A3"
+
+    @staticmethod
+    def _is_cups_column(col_name: str) -> bool:
+        if col_name is None:
+            return False
+        return _CUPS_RE.match(str(col_name).strip()) is not None
+
+    def _build_cups_name_map(self, cups_codes: list[str]) -> dict[str, str]:
+        if not self.cup_repo:
+            return {}
+        try:
+            all_cups = self.cup_repo.get_all()
+        except Exception as e:
+            self.logger.warning(f"Error consultando catálogo CUPS: {e}")
+            return {}
+        catalog = {str(c["code"]).strip(): c["name"] for c in all_cups}
+        result = {}
+        for code in cups_codes:
+            name = catalog.get(str(code), "")
+            if not name:
+                self.logger.warning(f"CUPS '{code}' no encontrado en catálogo")
+            result[str(code)] = name
+        return result
+
+    @staticmethod
+    def _get_active_cups_indices(rows: list, cups_indices: list[int]) -> list[int]:
+        active = []
+        for idx in cups_indices:
+            for row in rows:
+                val = row[idx] if idx < len(row) else None
+                if val is not None and str(val).strip() not in ("", "None", "null"):
+                    active.append(idx)
+                    break
+        return active
