@@ -3,6 +3,53 @@ import os
 
 import polars as pl
 
+
+def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) -> pl.DataFrame:
+    """Añade columna FACTURAS a df cruzando por N° Identificación.
+
+    Solo incluye facturas cuyo valor en '# FACTURA' empiece con 'SET'.
+    Múltiples facturas por identificación se concatenan con ', '.
+    """
+    id_col = "N° Identificación"
+    fac_col = "# FACTURA"
+
+    # Normalizar clave en df
+    df = df.with_columns(
+        pl.col(id_col).cast(pl.Utf8).str.strip_chars().str.to_uppercase().alias(id_col)
+    )
+
+    # Normalizar, filtrar SET, deduplicar y agrupar en df_facture
+    df_facture = (
+        df_facture
+        .with_columns(
+            pl.col(id_col).cast(pl.Utf8).str.strip_chars().str.to_uppercase().alias(id_col)
+        )
+        .filter(pl.col(fac_col).cast(pl.Utf8).str.starts_with("SET"))
+        .unique(subset=[id_col, fac_col])
+    )
+
+    duplicados = (
+        df_facture.group_by(id_col).len()
+        .filter(pl.col("len") > 1).height
+    )
+    if duplicados:
+        logger.warning(f"{duplicados} identificaciones con más de una factura SET. Se concatenarán.")
+
+    df_grp = df_facture.group_by(id_col).agg(
+        pl.col(fac_col).str.join(", ").alias("FACTURAS")
+    )
+
+    df = df.join(df_grp, on=id_col, how="left").with_columns(
+        pl.col("FACTURAS").fill_null("")
+    )
+
+    sin_factura = df.filter(pl.col("FACTURAS") == "").height
+    logger.info(
+        f"Enriquecimiento facturas: {df.height - sin_factura} con match, {sin_factura} sin factura.",
+        user_msg=f"{df.height - sin_factura} registros con factura asignada.",
+    )
+    return df
+
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.rates.domain.entities.rate import Rate
