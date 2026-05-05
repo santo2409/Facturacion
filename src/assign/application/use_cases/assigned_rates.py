@@ -90,7 +90,8 @@ class AssignRatesFromExcel:
         self.progress = progress
         self.logger = logger or LoggerAdapter(__name__)
 
-    def execute(self, excel: pl.DataFrame):
+    def execute(self, excel: pl.DataFrame, df_facture: pl.DataFrame):
+        
         cities_all = self.city_repo.all()
         companies_all = self.company_repo.all()
         biller_companies_all = self.biller_company_repo.all()
