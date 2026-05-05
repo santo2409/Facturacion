@@ -38,3 +38,5 @@ def generate_pre_invoices(logger):
             exc_info=True,
             user_msg="Ocurrió un error al generar las pre-facturas.",
         )
+    finally:
+        session.close()
