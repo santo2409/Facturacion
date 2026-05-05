@@ -147,37 +147,37 @@ class SplitByNit:
         sheet_names_used = {}
 
         for nit, rows in groups.items():
-            active_optional = [
-                idx for idx in optional_indices
-                if any(
-                    r[idx] is not None
-                    and str(r[idx]).strip() not in ("", "None", "null")
-                    for r in rows
+            try:
+                active_cups = self._get_active_cups_indices(rows, cups_indices)
+                final_indices = fixed_indices + active_cups
+                cups_positions = set(range(len(fixed_indices), len(final_indices)))
+
+                header_out = [
+                    header[i] if i < len(header) else None for i in final_indices
+                ]
+                names_row = self._build_names_row(
+                    header_out, cups_positions, cups_name_map
                 )
-            ]
-            final_indices = fixed_indices + active_optional
 
-            empresa_nombre = f"NIT_{nit}"
-            for row in rows:
-                val = row[empresa_idx]
-                if val is not None and str(val).strip():
-                    empresa_nombre = self._sanitize_sheetname(str(val).strip())
-                    break
-            else:
-                empresa_nombre = self._sanitize_sheetname(empresa_nombre)
+                empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                sheet_name = self._sanitize_sheetname(empresa_nombre)
 
-            base_name = empresa_nombre
-            if base_name in sheet_names_used:
-                sheet_names_used[base_name] += 1
-                suffix = f"_{sheet_names_used[base_name]}"
-                empresa_nombre = base_name[: 31 - len(suffix)] + suffix
-            else:
-                sheet_names_used[base_name] = 0
+                base_name = sheet_name
+                if base_name in sheet_names_used:
+                    sheet_names_used[base_name] += 1
+                    suffix = f"_{sheet_names_used[base_name]}"
+                    sheet_name = base_name[: 31 - len(suffix)] + suffix
+                else:
+                    sheet_names_used[base_name] = 0
 
-            header_out = [header[i] if i < len(header) else None for i in final_indices]
-
-            ws = wb.create_sheet(title=empresa_nombre)
-            self._write_sheet(ws, header_out, rows, final_indices)
+                ws = wb.create_sheet(title=sheet_name)
+                self._write_sheet(
+                    ws, names_row, header_out, rows, final_indices, cups_positions
+                )
+            except Exception as e:
+                self.logger.error(
+                    f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
+                )
 
         wb.save(consolidado_path)
         self.logger.info(
