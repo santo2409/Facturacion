@@ -20,12 +20,14 @@ def generate_pre_invoices(logger):
         )
         return
 
+    session = get_session()
     try:
+        cup_repo = SaCupRepository(session)
         logger.info(
             f"Iniciando separación por NIT desde {CONSOLIDADO_PATH}",
             user_msg="Iniciando generación de archivos por NIT...",
         )
-        SplitByNit(logger).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
+        SplitByNit(logger, cup_repo).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
         logger.info(
             "Cadena completa ejecutada: assign_rates → split por NIT.",
             user_msg="Pre-facturas generadas exitosamente.",
