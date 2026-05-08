@@ -73,111 +73,140 @@ class SplitByNit:
 
         nit_idx = self._find_column_index(header, "NIT")
         empresa_idx = self._find_column_index(header, "Empresa")
+        facturador_idx = self._find_column_index(header, "FACTURADOR")
+        facturas_idx = self._find_column_index(header, "FACTURAS")
 
         if nit_idx is None:
             raise ValueError(f"No se encontró 'NIT'. Columnas: {header}")
         if empresa_idx is None:
             raise ValueError("No se encontró 'Empresa'.")
 
-        # Agrupar por NIT
-        groups = defaultdict(list)
+        # Agrupar por carpeta destino → NIT
+        # GENERAL + FACTURAS no vacía  → "GENERAL"
+        # GENERAL + FACTURAS vacía     → "General sin factura"
+        # Otros                        → nombre del facturador
+        groups: dict[str, dict] = defaultdict(lambda: defaultdict(list))
         for row in data_rows:
             row = list(row) + [None] * (num_cols - len(row))
             nit_val = row[nit_idx]
-            if nit_val is not None:
-                groups[nit_val].append(row)
-            else:
+            if nit_val is None:
                 self.logger.warning("Fila sin NIT omitida")
+                continue
+            fact_val = (
+                str(row[facturador_idx]).strip()
+                if facturador_idx is not None and row[facturador_idx] is not None
+                else "SIN_FACTURADOR"
+            )
+            if fact_val.upper() == "GENERAL":
+                facturas_val = (
+                    row[facturas_idx]
+                    if facturas_idx is not None and facturas_idx < len(row)
+                    else None
+                )
+                dest = (
+                    "GENERAL"
+                    if facturas_val is not None and str(facturas_val).strip()
+                    else "General sin factura"
+                )
+            else:
+                dest = fact_val
+            groups[dest][nit_val].append(row)
 
+        total_nits = sum(len(nits) for nits in groups.values())
         self.logger.info(
-            f"NITs encontrados: {len(groups)}",
-            user_msg=f"Se encontraron {len(groups)} NITs en el consolidado.",
+            f"Carpetas destino: {len(groups)}, NITs: {total_nits}",
+            user_msg=f"Se encontraron {len(groups)} carpetas destino y {total_nits} NITs.",
         )
 
         # Cargar mapa de nombres CUPS una sola vez
         all_cups_codes = [str(header[i]) for i in cups_indices]
         cups_name_map = self._build_cups_name_map(all_cups_codes)
 
-        nits_dir = output_dir / "NITs"
-        os.makedirs(nits_dir, exist_ok=True)
+        # Proceso 1: subcarpeta por facturador, un archivo por NIT dentro
+        for facturador, nit_groups in groups.items():
+            fact_dir = output_dir / self._sanitize_filename(facturador)
+            os.makedirs(fact_dir, exist_ok=True)
 
-        # Proceso 1: Un archivo por NIT
-        for nit, rows in groups.items():
-            try:
-                active_cups = self._get_active_cups_indices(rows, cups_indices)
-                final_indices = fixed_indices + active_cups
-                cups_positions = set(range(len(fixed_indices), len(final_indices)))
+            for nit, rows in nit_groups.items():
+                try:
+                    active_cups = self._get_active_cups_indices(rows, cups_indices)
+                    final_indices = fixed_indices + active_cups
+                    cups_positions = set(range(len(fixed_indices), len(final_indices)))
 
-                header_out = [
-                    header[i] if i < len(header) else None for i in final_indices
-                ]
-                names_row = self._build_names_row(
-                    header_out, cups_positions, cups_name_map
-                )
+                    header_out = [
+                        header[i] if i < len(header) else None for i in final_indices
+                    ]
+                    names_row = self._build_names_row(
+                        header_out, cups_positions, cups_name_map
+                    )
 
-                empresa_nombre = self._extract_empresa(rows, empresa_idx)
-                filename = self._sanitize_filename(
-                    f"pre_factura_{nit}_{empresa_nombre}"
-                )
+                    empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                    filename = self._sanitize_filename(
+                        f"pre_factura_{nit}_{empresa_nombre}"
+                    )
 
-                wb = openpyxl.Workbook()
-                ws = wb.active
-                ws.title = "BASE GENERAL"
-                self._write_sheet(
-                    ws, names_row, header_out, rows, final_indices, cups_positions
-                )
+                    wb = openpyxl.Workbook()
+                    ws = wb.active
+                    ws.title = "BASE GENERAL"
+                    self._write_sheet(
+                        ws, names_row, header_out, rows, final_indices, cups_positions
+                    )
 
-                file_path = nits_dir / f"{filename}.xlsx"
-                wb.save(file_path)
-                self.logger.info(
-                    f"Generado: {filename}.xlsx ({len(rows)} filas, {len(final_indices)} cols)",
-                )
-            except Exception as e:
-                self.logger.error(f"Error procesando NIT {nit}: {e}", exc_info=True)
+                    wb.save(fact_dir / f"{filename}.xlsx")
+                    self.logger.info(
+                        f"[{facturador}] Generado: {filename}.xlsx ({len(rows)} filas)",
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"Error procesando NIT {nit} (facturador {facturador}): {e}",
+                        exc_info=True,
+                    )
 
         self.logger.info(
-            f"Proceso 1 completado: archivos individuales en {nits_dir}",
-            user_msg=f"Archivos individuales generados en {nits_dir}",
+            f"Proceso 1 completado: archivos por facturador en {output_dir}",
+            user_msg=f"Archivos individuales generados en subcarpetas por facturador.",
         )
 
-        # Proceso 2: Un libro con una hoja por NIT
+        # Proceso 2: libro consolidado en pre-facturas/NITs_consolidado.xlsx
         consolidado_path = output_dir / "NITs_consolidado.xlsx"
+
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         sheet_names_used = {}
 
-        for nit, rows in groups.items():
-            try:
-                active_cups = self._get_active_cups_indices(rows, cups_indices)
-                final_indices = fixed_indices + active_cups
-                cups_positions = set(range(len(fixed_indices), len(final_indices)))
+        for facturador, nit_groups in groups.items():
+            for nit, rows in nit_groups.items():
+                try:
+                    active_cups = self._get_active_cups_indices(rows, cups_indices)
+                    final_indices = fixed_indices + active_cups
+                    cups_positions = set(range(len(fixed_indices), len(final_indices)))
 
-                header_out = [
-                    header[i] if i < len(header) else None for i in final_indices
-                ]
-                names_row = self._build_names_row(
-                    header_out, cups_positions, cups_name_map
-                )
+                    header_out = [
+                        header[i] if i < len(header) else None for i in final_indices
+                    ]
+                    names_row = self._build_names_row(
+                        header_out, cups_positions, cups_name_map
+                    )
 
-                empresa_nombre = self._extract_empresa(rows, empresa_idx)
-                sheet_name = self._sanitize_sheetname(empresa_nombre)
+                    empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                    sheet_name = self._sanitize_sheetname(empresa_nombre)
 
-                base_name = sheet_name
-                if base_name in sheet_names_used:
-                    sheet_names_used[base_name] += 1
-                    suffix = f"_{sheet_names_used[base_name]}"
-                    sheet_name = base_name[: 31 - len(suffix)] + suffix
-                else:
-                    sheet_names_used[base_name] = 0
+                    base_name = sheet_name
+                    if base_name in sheet_names_used:
+                        sheet_names_used[base_name] += 1
+                        suffix = f"_{sheet_names_used[base_name]}"
+                        sheet_name = base_name[: 31 - len(suffix)] + suffix
+                    else:
+                        sheet_names_used[base_name] = 0
 
-                ws = wb.create_sheet(title=sheet_name)
-                self._write_sheet(
-                    ws, names_row, header_out, rows, final_indices, cups_positions
-                )
-            except Exception as e:
-                self.logger.error(
-                    f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
-                )
+                    ws = wb.create_sheet(title=sheet_name)
+                    self._write_sheet(
+                        ws, names_row, header_out, rows, final_indices, cups_positions
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
+                    )
 
         wb.save(consolidado_path)
         self.logger.info(
