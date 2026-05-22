@@ -107,13 +107,18 @@ class ImportCompaniesFromExcel:
 
         df = df.with_columns(
             pl.col("PAQUETE")
-            .map_elements(lambda x, c=catalog_local: self.fuzz.fuzz_property(x, c) or x)
+            .map_elements(
+                lambda x, c=catalog_local: self.fuzz.fuzz_property(x, c, 95) or x
+            )
             .alias("PAQUETE")
         )
 
-        # Build company map for ID lookup
+        # Build lookup maps
         all_companies = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        pkg_name_map = {row["name"]: (row["id"], row["model"]) for row in todo.to_dicts()}
 
+        # Collect batch
+        batch = []
         with self.progress("Vinculando empresas a paquetes", total=df.height):
             for row in df.iter_rows(named=True):
                 nit = row["NIT"][:9].strip()
@@ -122,14 +127,16 @@ class ImportCompaniesFromExcel:
                     self.progress.advance()
                     continue
 
-                package = todo.filter(pl.col("name") == row["PAQUETE"])
-
-                if not package.is_empty():
-                    package = package.select("id", "model").to_dicts()[0]
-                    package_id, model = package["id"], package["model"]
-                    self.company_repo.companies_packages(
-                        CompanyPackage(company_id, package_id, model)
-                    )
+                pkg_info = pkg_name_map.get(row["PAQUETE"])
+                if pkg_info:
+                    package_id, model = pkg_info
+                    batch.append(CompanyPackage(company_id, package_id, model))
                 else:
-                    self.logger.warning(f"Package not found: {row['PAQUETE']}", user_msg=f"No se encontró el paquete '{row['PAQUETE']}'. Verifique los datos.")
+                    self.logger.warning(
+                        f"Package not found: {row['PAQUETE']}",
+                        user_msg=f"No se encontró el paquete '{row['PAQUETE']}'.",
+                    )
                 self.progress.advance()
+
+        if batch:
+            self.company_repo.companies_packages_batch(batch)
