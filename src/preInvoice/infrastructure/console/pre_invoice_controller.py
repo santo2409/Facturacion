@@ -2,6 +2,7 @@ from pathlib import Path
 
 from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.preInvoice.application.use_cases.split_by_nit import SplitByNit
+from src.shared.console.progress import RichProgress
 from src.shared.database.database import get_session
 
 CONSOLIDADO_PATH = Path("CONSOLIDADO.xlsx")
@@ -27,7 +28,7 @@ def generate_pre_invoices(logger):
             f"Iniciando separación por NIT desde {CONSOLIDADO_PATH}",
             user_msg="Iniciando generación de archivos por NIT...",
         )
-        SplitByNit(logger, cup_repo).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
+        SplitByNit(logger, cup_repo, RichProgress()).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
         logger.info(
             "Cadena completa ejecutada: assign_rates → split por NIT.",
             user_msg="Pre-facturas generadas exitosamente.",

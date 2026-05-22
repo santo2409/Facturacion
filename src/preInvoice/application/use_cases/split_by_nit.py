@@ -41,9 +41,10 @@ _FIXED_UPPER = {c.strip().upper() for c in FIXED_COLUMNS}
 
 
 class SplitByNit:
-    def __init__(self, logger, cup_repo: CupRepository | None = None):
+    def __init__(self, logger, cup_repo: CupRepository | None = None, progress=None):
         self.logger = logger
         self.cup_repo = cup_repo
+        self.progress = progress
 
     def execute(self, source_path: Path, output_dir: Path):
         wb_src = openpyxl.load_workbook(source_path, read_only=True, data_only=True)
@@ -127,6 +128,10 @@ class SplitByNit:
             fact_dir = output_dir / self._sanitize_filename(facturador)
             os.makedirs(fact_dir, exist_ok=True)
 
+            if self.progress:
+                ctx = self.progress(f"Generando pre-facturas: {facturador}", total=len(nit_groups))
+                ctx.__enter__()
+
             for nit, rows in nit_groups.items():
                 try:
                     active_cups = self._get_active_cups_indices(rows, cups_indices)
@@ -161,6 +166,11 @@ class SplitByNit:
                         f"Error procesando NIT {nit} (facturador {facturador}): {e}",
                         exc_info=True,
                     )
+                if self.progress:
+                    self.progress.advance()
+
+            if self.progress:
+                ctx.__exit__(None, None, None)
 
         self.logger.info(
             f"Proceso 1 completado: archivos por facturador en {output_dir}",
@@ -173,6 +183,10 @@ class SplitByNit:
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         sheet_names_used = {}
+
+        if self.progress:
+            ctx2 = self.progress("Generando consolidado por NIT", total=total_nits)
+            ctx2.__enter__()
 
         for facturador, nit_groups in groups.items():
             for nit, rows in nit_groups.items():
@@ -207,6 +221,11 @@ class SplitByNit:
                     self.logger.error(
                         f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
                     )
+                if self.progress:
+                    self.progress.advance()
+
+        if self.progress:
+            ctx2.__exit__(None, None, None)
 
         wb.save(consolidado_path)
         self.logger.info(
