@@ -1,3 +1,5 @@
+import polars as pl
+
 from src.activity.infrastructure.sa_activity_type_repository import (
     SaActivityRepository,
 )
@@ -36,13 +38,28 @@ from src.special.infrastructure.persistence.sa_special_repository import (
 )
 
 
-def assign_rates(logger):
-    path = ask_excel_path()
+def assign_rates(logger, with_invoices=False):
     loader = ExcelLoader()
-    excel = loader.load(path)
 
+    # Libro consolidado (tarifas)
+    path = ask_excel_path()
+    excel = loader.load(path)
     sheet = ask_sheet_name(excel.sheet_names)
     df = loader.load_sheet(excel, sheet)
+
+    # Libro de facturas (solo si se generarán pre-facturas)
+    if with_invoices:
+        facture_path = ask_excel_path()
+        facture_excel = loader.load(facture_path)
+        facture_sheet = ask_sheet_name(facture_excel.sheet_names)
+        df_facture = loader.load_sheet(facture_excel, facture_sheet)
+
+        missing = [c for c in ("N° Identificación", "# FACTURA") if c not in df_facture.columns]
+        if missing:
+            logger.error(f"Columnas faltantes en libro de facturas: {missing}")
+            raise ValueError(f"Columnas faltantes en libro de facturas: {missing}")
+    else:
+        df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
 
     session = get_session()
 
@@ -63,4 +80,4 @@ def assign_rates(logger):
         logger=logger,
     )
 
-    use_case.execute(df)
+    use_case.execute(df, df_facture)

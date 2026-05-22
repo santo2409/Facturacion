@@ -8,7 +8,7 @@ class RapidFuzzBiller:
     def __init__(self, logger: LoggerAdapter = None):
         self.logger = logger or LoggerAdapter(__name__)
 
-    def fuzz_property(self, property_name: str, catalog: list[dict]) -> str | None:
+    def fuzz_property(self, property_name: str, catalog: list[dict], threshold: int = 90) -> str | None:
         try:
             property_norm = unidecode(property_name.strip().upper())
 
@@ -25,7 +25,7 @@ class RapidFuzzBiller:
                     property_norm, names, scorer=scorer
                 )
 
-                if score >= 90:
+                if score >= threshold:
                     return catalog[idx]["name"]
 
             return None

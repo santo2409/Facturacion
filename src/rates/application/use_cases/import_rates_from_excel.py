@@ -51,7 +51,7 @@ class ImportRatesFromExcel:
         for name in raw_names:
             upper = name.upper()
             if catalog and upper not in [c["name"] for c in catalog]:
-                slug = self.fuzz.fuzz_property(upper, catalog)
+                slug = self.fuzz.fuzz_property(upper, catalog, threshold=95)
                 resolved.add(slug if slug else upper)
             else:
                 resolved.add(upper)
@@ -140,25 +140,56 @@ class ImportRatesFromExcel:
                     activity_id = activity_map.get(row["INTRA O EXTRA"].upper())
                     rate_value = row["VALOR"]
 
-                    if all(
-                        [
-                            contract_id,
-                            city_id,
-                            cup_id,
-                            activity_id,
-                            rate_value is not None,
-                        ]
-                    ):
-                        rates_batch.append(
-                            Rate(
-                                rateable_id=contract_id,
-                                city_id=city_id,
-                                cup_id=cup_id,
-                                rate=rate_value,
-                                activity_id=activity_id,
-                                rateable_type=model,
-                            )
+                    if not contract_id:
+                        self.logger.error(
+                            f"Contrato no encontrado: '{row['CONTRATO']}'",
+                            user_msg=f"El contrato '{row['CONTRATO']}' no existe en el sistema.",
                         )
+                        self.progress.advance()
+                        continue
+
+                    if not city_id:
+                        self.logger.error(
+                            f"Ciudad no encontrada: '{row['CIUDAD']}' en contrato '{row['CONTRATO']}'",
+                            user_msg=f"La ciudad '{row['CIUDAD']}' no existe. Contrato: '{row['CONTRATO']}'",
+                        )
+                        self.progress.advance()
+                        continue
+
+                    if not cup_id:
+                        self.logger.error(
+                            f"CUP no encontrado: '{row['CUP']}' en contrato '{row['CONTRATO']}'",
+                            user_msg=f"El CUP '{row['CUP']}' no existe. Contrato: '{row['CONTRATO']}'",
+                        )
+                        self.progress.advance()
+                        continue
+
+                    if not activity_id:
+                        self.logger.error(
+                            f"Actividad no encontrada: '{row['INTRA O EXTRA']}' en contrato '{row['CONTRATO']}'",
+                            user_msg=f"La actividad '{row['INTRA O EXTRA']}' no es válida. Contrato: '{row['CONTRATO']}'",
+                        )
+                        self.progress.advance()
+                        continue
+
+                    if not rate_value:
+                        self.logger.error(
+                            f"Valor vacío para CUP '{row['CUP']}' en contrato '{row['CONTRATO']}'",
+                            user_msg=f"El valor de la tarifa está vacío. CUP: '{row['CUP']}', Contrato: '{row['CONTRATO']}'",
+                        )
+                        self.progress.advance()
+                        continue
+
+                    rates_batch.append(
+                        Rate(
+                            rateable_id=contract_id,
+                            city_id=city_id,
+                            cup_id=cup_id,
+                            rate=int(rate_value),
+                            activity_id=activity_id,
+                            rateable_type=model,
+                        )
+                    )
 
                     if len(rates_batch) >= batch_size:
                         self.rates_repo.save_batch(rates_batch)

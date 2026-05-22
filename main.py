@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from dotenv import load_dotenv
 from rich import box
 from rich.console import Console
@@ -66,8 +68,11 @@ def console_app():
             import_companies(tech_logger)
         elif option == "6":
             console.print("[green]Asignando Tarifas...[/green]")
-            assign_rates(tech_logger)
-            generate_pre_invoices(tech_logger)
+            day = datetime.now().day
+            should_generate = day < 5 or day > 29
+            assign_rates(tech_logger, with_invoices=should_generate)
+            if should_generate:
+                generate_pre_invoices(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break

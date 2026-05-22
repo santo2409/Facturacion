@@ -15,5 +15,9 @@ class CompanyRepository(ABC):
         pass
 
     @abstractmethod
+    def find_by_name(self, name: str):
+        pass
+
+    @abstractmethod
     def all(self):
         pass

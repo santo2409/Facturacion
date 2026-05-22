@@ -9,3 +9,7 @@ class CupRepository(ABC):
     @abstractmethod
     def get_all_cups(self) -> list[str]:
         pass
+
+    @abstractmethod
+    def get_all(self) -> list[dict]:
+        pass

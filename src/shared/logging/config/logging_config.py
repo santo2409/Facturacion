@@ -28,7 +28,7 @@ def setup_logging() -> LoggerAdapter:
 
     # Inject tech_logger
     logs_dir = os.getenv("DIRECTORY", ".")
-    logs_path = str(Path(logs_dir) / "logs.txt")
+    logs_path = str(Path(logs_dir) / "logs.log")
     Path(logs_dir).mkdir(parents=True, exist_ok=True)
 
     config["formatters"]["tech_file"] = {
