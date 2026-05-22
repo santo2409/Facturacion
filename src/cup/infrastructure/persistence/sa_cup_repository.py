@@ -10,8 +10,8 @@ class SaCupRepository(CupRepository):
         return self.session.query(CupModel).filter_by(code=cup).first() is not None
 
     def get_all_cups(self) -> list[str]:
-        return [r.code for r in self.session.query(CupModel.code).all()]
+        return [r.code.strip() for r in self.session.query(CupModel.code).all()]
 
     def get_all(self):
         rows = self.session.query(CupModel).all()
-        return [{"id": r.id, "code": r.code, "name": r.name} for r in rows]
+        return [{"id": r.id, "code": r.code.strip(), "name": r.name} for r in rows]

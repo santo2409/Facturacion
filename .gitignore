@@ -218,7 +218,6 @@ __marimo__/
 cspell.json
 node_modules/
 .cspell/
-package*
 .agents/
 AGENTS.md
 skills-lock.json

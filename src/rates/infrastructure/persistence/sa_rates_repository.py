@@ -1,9 +1,12 @@
+from sqlalchemy import tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from src.rates.domain.entities.rate import Rate
 from src.shared.database.models import RateModel
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+
+_BATCH_CHUNK = 500
 
 
 class SaRatesRepository:
@@ -24,6 +27,40 @@ class SaRatesRepository:
         except Exception as excep:
             self.logger.error(f"Error finding rate: {excep}", exc_info=True, user_msg="No se pudo consultar la tarifa.")
             return None
+
+    def find_batch(self, keys: list[tuple]) -> dict[tuple, int]:
+        """Fetch rates for multiple composite keys in chunked queries.
+
+        keys: list of (rateable_id, city_id, cup_id, activity_id, rateable_type)
+        Returns: dict mapping key tuple → rate value
+        """
+        if not keys:
+            return {}
+        result = {}
+        try:
+            for i in range(0, len(keys), _BATCH_CHUNK):
+                chunk = keys[i:i + _BATCH_CHUNK]
+                rows = (
+                    self.session.query(
+                        RateModel.rateable_id, RateModel.city_id,
+                        RateModel.cup_id, RateModel.rate,
+                        RateModel.activity_id, RateModel.rateable_type,
+                    )
+                    .filter(
+                        tuple_(
+                            RateModel.rateable_id, RateModel.city_id,
+                            RateModel.cup_id, RateModel.activity_id,
+                            RateModel.rateable_type,
+                        ).in_(chunk)
+                    )
+                    .all()
+                )
+                for r in rows:
+                    key = (r[0], r[1], r[2], r[4], r[5])
+                    result[key] = r[3]
+        except Exception as excep:
+            self.logger.error(f"Error in find_batch: {excep}", exc_info=True, user_msg="No se pudieron consultar las tarifas en lote.")
+        return result
 
     def save_batch(self, rates: list[Rate]):
         if not rates:
