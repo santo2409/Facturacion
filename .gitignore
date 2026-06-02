@@ -218,7 +218,8 @@ __marimo__/
 cspell.json
 node_modules/
 .cspell/
-.agents/
-AGENTS.md
 skills-lock.json
 .kiro/
+pre-facturas/
+odoo-output/
+*.xlsx
