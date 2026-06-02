@@ -5,20 +5,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
 
-from tests.fakes.fake_biller_repo import FakeBillerRepo
-from tests.fakes.fake_company_repo import FakeCompanyRepo
-from tests.fakes.fake_biller_company_repo import FakeBillerCompanyRepo
-from tests.fakes.fake_cup_repo import FakeCupRepo
-from tests.fakes.fake_rates_repo import FakeRatesRepo
-from tests.fakes.fake_package_repo import FakePackageRepo
-from tests.fakes.fake_provider_repo import FakeProviderRepo
-from tests.fakes.fake_special_repo import FakeSpecialRepo
-from tests.fakes.fake_city_repo import FakeCityRepo
 from tests.fakes.fake_activity_repo import FakeActivityRepo
-from tests.fakes.fake_nit_service import FakeNitService
-from tests.fakes.fake_progress import FakeProgress
+from tests.fakes.fake_biller_company_repo import FakeBillerCompanyRepo
+from tests.fakes.fake_biller_repo import FakeBillerRepo
+from tests.fakes.fake_city_repo import FakeCityRepo
+from tests.fakes.fake_company_repo import FakeCompanyRepo
+from tests.fakes.fake_cup_repo import FakeCupRepo
 from tests.fakes.fake_fuzz import FakeFuzz
 from tests.fakes.fake_logger import FakeLogger
+from tests.fakes.fake_nit_service import FakeNitService
+from tests.fakes.fake_package_repo import FakePackageRepo
+from tests.fakes.fake_progress import FakeProgress
+from tests.fakes.fake_provider_repo import FakeProviderRepo
+from tests.fakes.fake_rates_repo import FakeRatesRepo
+from tests.fakes.fake_special_repo import FakeSpecialRepo
 
 
 @pytest.fixture
