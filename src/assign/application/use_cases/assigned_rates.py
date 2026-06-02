@@ -29,13 +29,12 @@ def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) ->
         .with_columns(
             pl.col(id_col).cast(pl.Utf8).str.strip_chars().str.to_uppercase().alias(id_col)
         )
-        .filter(pl.col(fac_col).cast(pl.Utf8).str.starts_with("SET"))
         .unique(subset=[id_col, fac_col])
     )
 
     duplicados = df_facture.group_by(id_col).len().filter(pl.col("len") > 1).height
     if duplicados:
-        logger.warning(f"{duplicados} identificaciones con más de una factura SET. Se concatenarán.")
+        logger.warning(f"{duplicados} identificaciones con más de una factura. Se concatenarán.")
 
     df_grp = df_facture.group_by(id_col).agg(
         pl.col(fac_col).str.join(", ").alias("FACTURAS")
