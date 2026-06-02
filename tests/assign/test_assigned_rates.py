@@ -74,11 +74,12 @@ def test_enrich_no_match():
     assert result["FACTURAS"][0] == ""
 
 
-def test_enrich_filters_non_set():
+def test_enrich_includes_non_set():
     df = pl.DataFrame({"N° Identificación": ["123"], "Nombre": ["A"]})
     df_f = pl.DataFrame({"N° Identificación": ["123", "123"], "# FACTURA": ["SET001", "FAC999"]})
     result = _enrich_with_invoices(df, df_f, FakeLogger())
-    assert result["FACTURAS"][0] == "SET001"
+    facturas = set(result["FACTURAS"][0].split(", "))
+    assert facturas == {"SET001", "FAC999"}
 
 
 def test_enrich_multiple_facturas():
