@@ -14,6 +14,9 @@ from src.company.infrastructure.console.import_companies_rates_controller import
 from src.dataProcessing.infrastructure.console.import_information_controller import (
     import_information,
 )
+from src.odooInjection.infrastructure.console.inject_invoices_controller import (
+    inject_invoices,
+)
 from src.preInvoice.infrastructure.console.pre_invoice_controller import (
     generate_pre_invoices,
 )
@@ -73,6 +76,7 @@ def console_app():
             assign_rates(tech_logger, with_invoices=should_generate)
             if should_generate:
                 generate_pre_invoices(tech_logger)
+                inject_invoices(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break

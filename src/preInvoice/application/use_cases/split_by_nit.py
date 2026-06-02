@@ -104,11 +104,13 @@ class SplitByNit:
                     if facturas_idx is not None and facturas_idx < len(row)
                     else None
                 )
-                dest = (
-                    "GENERAL"
-                    if facturas_val is not None and str(facturas_val).strip()
-                    else "General sin factura"
+                facturas_str = str(facturas_val).strip() if facturas_val is not None else ""
+                has_set = any(
+                    f.strip().upper().startswith("SET")
+                    for f in facturas_str.split(",")
+                    if f.strip()
                 )
+                dest = "GENERAL" if has_set else "General sin factura"
             else:
                 dest = fact_val
             groups[dest][nit_val].append(row)
