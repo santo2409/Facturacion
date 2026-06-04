@@ -47,6 +47,23 @@ class InjectInvoicesToOdoo:
         self.logger.info(f"Total pacientes: {len(filas)} | Exámenes: {len(cols_examenes)}")
 
         empresas = self._agrupar_por_empresa(filas, cols_examenes)
+
+        # Anti-duplicados: excluir NITs ya exitosos en log previo
+        log_path = output_dir / "log_inyeccion.xlsx"
+        nits_ok = self.log_generator.read_successful_nits(log_path)
+        if nits_ok:
+            antes = len(empresas)
+            empresas = {k: v for k, v in empresas.items() if k not in nits_ok}
+            omitidos = antes - len(empresas)
+            if omitidos:
+                self.logger.info(
+                    f"{omitidos} empresa(s) omitida(s) por ya estar en log con estado OK",
+                    user_msg=f"{omitidos} empresa(s) ya procesada(s) anteriormente, se omiten.",
+                )
+        if not empresas:
+            self.logger.info("Todas las empresas ya fueron procesadas.", user_msg="No hay empresas nuevas por inyectar.")
+            return []
+
         self.logger.info(
             f"Empresas únicas: {len(empresas)}",
             user_msg=f"{len(empresas)} empresas a procesar.",
@@ -114,11 +131,10 @@ class InjectInvoicesToOdoo:
             cliente_id, cliente_nombre, metodo = self.odoo_repo.find_client(nit, nombre)
 
             if not cliente_id:
-                if self._nit_valido(nit):
-                    cliente_id = self.odoo_repo.create_client(nit, nombre)
-                    self.logger.info(f"  Cliente creado: {nombre} (ID {cliente_id})")
-                else:
-                    return InvoiceResult(nit, nombre, "VERIFICAR", f"NIT inválido: {nit}")
+                cliente_id, cliente_nombre, metodo = self.odoo_repo.find_client_by_name(nombre)
+
+            if not cliente_id:
+                return InvoiceResult(nit, nombre, "VERIFICAR", f"Empresa no encontrada en Avancys con NIT: {nit}")
 
             # Construir líneas agrupadas por (producto, cuenta_analitica)
             conteo = defaultdict(int)
@@ -202,8 +218,3 @@ class InjectInvoicesToOdoo:
         except Exception as e:
             self.logger.error(f"Error procesando {nombre}: {e}", exc_info=True)
             return InvoiceResult(nit, nombre, "ERROR", str(e)[:150])
-
-    @staticmethod
-    def _nit_valido(nit: str) -> bool:
-        nit_limpio = nit.replace("-", "").replace(".", "").strip()
-        return nit_limpio.isdigit() and 6 <= len(nit_limpio) <= 12

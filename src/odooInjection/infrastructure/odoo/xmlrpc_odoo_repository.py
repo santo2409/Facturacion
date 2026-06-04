@@ -1,6 +1,5 @@
 import time
 import xmlrpc.client
-from difflib import SequenceMatcher
 
 from src.odooInjection.domain.repositories.odoo_connection_repository import (
     OdooConnectionRepository,
@@ -57,39 +56,50 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         return self._cache_products[code]
 
     def find_client(self, nit: str, name: str) -> tuple[int | None, str | None, str | None]:
-        for fmt in [nit, f"{nit}-5", f"{nit}-1", f"{nit}-9", f"{nit}-0"]:
-            r = self._execute(
-                "res.partner", "search_read",
-                [[["vat", "=", fmt]]],
-                {"fields": ["id", "name"], "limit": 1},
-            )
-            if r:
-                return r[0]["id"], r[0]["name"], "NIT"
-
-        nombre_buscar = name[:30].strip()
+        # Búsqueda exacta
         r = self._execute(
             "res.partner", "search_read",
-            [[["name", "ilike", nombre_buscar]]],
-            {"fields": ["id", "name"], "limit": 10},
+            [[["vat", "=", nit]]],
+            {"fields": ["id", "name"], "limit": 1},
         )
         if r:
-            nombre_upper = name.upper().strip()
-            mejor_score = 0
-            mejor_cand = None
-            for candidato in r:
-                score = SequenceMatcher(
-                    None, nombre_upper, candidato["name"].upper().strip()
-                ).ratio()
-                if score > mejor_score:
-                    mejor_score = score
-                    mejor_cand = candidato
-            if mejor_score >= 0.90:
-                return (
-                    mejor_cand["id"],
-                    f"{mejor_cand['name']} ({round(mejor_score * 100)}%)",
-                    "Nombre",
-                )
+            return r[0]["id"], r[0]["name"], "NIT"
+        # Búsqueda con patrón (cubre cualquier dígito de verificación)
+        r = self._execute(
+            "res.partner", "search_read",
+            [[["vat", "=like", f"{nit}%"]]],
+            {"fields": ["id", "name"], "limit": 1},
+        )
+        if r:
+            return r[0]["id"], r[0]["name"], "NIT"
         return None, None, None
+
+    def find_client_by_name(self, name: str) -> tuple[int | None, str | None, str | None]:
+        import re
+        # Quitar sufijo societario para búsqueda flexible
+        base_name = re.sub(
+            r"\s*(SAS|S\s*A\s*S|SA|S\s*A|LTDA|L\s*T\s*D\s*A|EU|ESP|BIC)\s*$",
+            "", name.strip(), flags=re.IGNORECASE
+        ).strip()
+        search_term = base_name if base_name else name
+        r = self._execute(
+            "res.partner", "search_read",
+            [[["name", "ilike", search_term]]],
+            {"fields": ["id", "name"], "limit": 1},
+        )
+        if r:
+            return r[0]["id"], r[0]["name"], "nombre"
+        return None, None, None
+
+    def get_nit(self, client_id: int) -> str | None:
+        r = self._execute(
+            "res.partner", "read",
+            [[client_id]],
+            {"fields": ["vat"]},
+        )
+        if r and r[0].get("vat"):
+            return str(r[0]["vat"]).split("-")[0].strip()
+        return None
 
     def create_client(self, nit: str, name: str) -> int:
         return self._execute(
