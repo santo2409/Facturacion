@@ -20,6 +20,10 @@ from tests.fakes.fake_nit_service import FakeNitService
 from tests.fakes.fake_progress import FakeProgress
 from tests.fakes.fake_fuzz import FakeFuzz
 from tests.fakes.fake_logger import FakeLogger
+from tests.fakes.fake_odoo_repo import FakeOdooRepo
+from src.scrapping.domain.entities.nit_result import NitResult
+from tests.fakes.fake_odoo_repo import FakeOdooRepo
+from src.scrapping.domain.entities.nit_result import NitResult
 
 
 @pytest.fixture
@@ -183,3 +187,150 @@ def test_order_columns_fixed_first_then_cups_sorted(deps):
     # CUP columns sorted numerically
     cup_cols = cols[4:]
     assert cup_cols == ["100001", "890207", "890262-01"]
+
+
+# ── Tests para _match_companies cascada ───────────────────────────────
+
+def _base_df(nit, empresa):
+    return pl.DataFrame({"NIT": [nit], "Empresa": [empresa], "Base": ["X"]})
+
+
+def test_match_companies_found_in_db(deps):
+    """Paso 0: NIT en BD local → actualiza nombre."""
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("900111111", "NOMBRE VIEJO")
+    result = uc._match_companies(df, lookups)
+    assert result["Empresa"][0] == "EMPRESA A"
+    assert result["NIT"][0] == "900111111"
+
+
+def test_match_companies_rues_by_nit(deps):
+    """Paso 1: NIT no en BD, encontrado en RUES por NIT → actualiza nombre."""
+    deps["nit_service"] = FakeNitService(
+        results=[NitResult(nit=800999999, is_company=True, name="EMPRESA RUES")]
+    )
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("800999999", "NOMBRE ORIGINAL")
+    result = uc._match_companies(df, lookups)
+    assert result["Empresa"][0] == "EMPRESA RUES"
+    assert result["NIT"][0] == "800999999"
+
+
+def test_match_companies_rues_by_name(deps):
+    """Paso 2: NIT no encontrado en RUES, encontrado por nombre → actualiza NIT."""
+    deps["nit_service"] = FakeNitService(
+        results=[NitResult(nit=800999999, is_company=False)],
+        by_name_result=NitResult(nit=700111222, is_company=True, name="EMPRESA X"),
+    )
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("800999999", "EMPRESA X")
+    result = uc._match_companies(df, lookups)
+    assert result["NIT"][0] == "700111222"
+
+
+def test_match_companies_odoo_by_nit(deps):
+    """Paso 3: No en RUES, encontrado en Odoo por NIT → actualiza nombre."""
+    deps["nit_service"] = FakeNitService(results=[])
+    deps["odoo_repo"] = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "EMPRESA ODOO"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("800999999", "NOMBRE VIEJO")
+    result = uc._match_companies(df, lookups)
+    assert result["Empresa"][0] == "EMPRESA ODOO"
+
+
+def test_match_companies_odoo_by_name(deps):
+    """Paso 4: No en RUES ni Odoo/NIT, encontrado en Odoo por nombre → actualiza NIT."""
+    deps["nit_service"] = FakeNitService(results=[])
+    deps["odoo_repo"] = FakeOdooRepo(clients={"900777777": {"id": 9, "name": "EMPRESA ODOO NAME"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("000000000", "EMPRESA ODOO NAME")
+    result = uc._match_companies(df, lookups)
+    assert result["NIT"][0] == "900777777"
+
+
+def test_match_companies_not_found_keeps_defaults(deps):
+    """Paso 5: No encontrado en ningún lado → datos originales + novedad en log."""
+    deps["nit_service"] = FakeNitService(results=[])
+    deps["odoo_repo"] = FakeOdooRepo(clients={})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("111111111", "EMPRESA DESCONOCIDA")
+    result = uc._match_companies(df, lookups)
+    assert result["NIT"][0] == "111111111"
+    assert result["Empresa"][0] == "EMPRESA DESCONOCIDA"
+    assert any("NOVEDAD" in m for m in deps["logger"].warnings)
+
+
+# ── Tests _match_companies cascada ────────────────────────────────────
+
+def _row(nit, empresa):
+    return pl.DataFrame({"NIT": [nit], "Empresa": [empresa], "Base": ["X"]})
+
+
+def test_match_db_local_updates_nombre(deps):
+    """Paso 0: NIT en BD local → actualiza nombre."""
+    uc = AssignRatesFromExcel(**deps)
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("900111111", "NOMBRE VIEJO"), lookups)
+    assert result["Empresa"][0] == "EMPRESA A"
+
+
+def test_match_rues_by_nit_updates_nombre(deps):
+    """Paso 1: RUES por NIT → actualiza nombre."""
+    deps["nit_service"] = FakeNitService(
+        results=[NitResult(nit=800999999, is_company=True, name="EMPRESA RUES")]
+    )
+    uc = AssignRatesFromExcel(**deps)
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("800999999", "NOMBRE ORIGINAL"), lookups)
+    assert result["Empresa"][0] == "EMPRESA RUES"
+
+
+def test_match_rues_by_name_updates_nit(deps):
+    """Paso 2: RUES por nombre → actualiza NIT."""
+    deps["nit_service"] = FakeNitService(
+        results=[NitResult(nit=800999999, is_company=False)],
+        by_name_result=NitResult(nit=700111222, is_company=True, name="EMPRESA X"),
+    )
+    uc = AssignRatesFromExcel(**deps)
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("800999999", "EMPRESA X"), lookups)
+    assert result["NIT"][0] == "700111222"
+
+
+def test_match_odoo_by_nit_updates_nombre(deps):
+    """Paso 3: Odoo por NIT → actualiza nombre."""
+    deps["nit_service"] = FakeNitService(results=[])
+    odoo = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "EMPRESA ODOO"}})
+    uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo})
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("800999999", "NOMBRE VIEJO"), lookups)
+    assert result["Empresa"][0] == "EMPRESA ODOO"
+
+
+def test_match_odoo_by_name_updates_nit(deps):
+    """Paso 4: Odoo por nombre → actualiza NIT."""
+    deps["nit_service"] = FakeNitService(results=[])
+    odoo = FakeOdooRepo(clients={"900777777": {"id": 9, "name": "EMPRESA ODOO NAME"}})
+    uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo})
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("000000000", "EMPRESA ODOO NAME"), lookups)
+    assert result["NIT"][0] == "900777777"
+
+
+def test_match_not_found_keeps_defaults_and_logs_novedad(deps):
+    """Paso 5: No encontrado → datos originales + novedad en log."""
+    deps["nit_service"] = FakeNitService(results=[])
+    odoo = FakeOdooRepo(clients={})
+    logger = FakeLogger()
+    uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo, "logger": logger})
+    lookups = uc._build_lookups()
+    result = uc._match_companies(_row("111111111", "EMPRESA DESCONOCIDA"), lookups)
+    assert result["NIT"][0] == "111111111"
+    assert result["Empresa"][0] == "EMPRESA DESCONOCIDA"
+    assert any("NOVEDAD" in w for w in logger.warnings)
