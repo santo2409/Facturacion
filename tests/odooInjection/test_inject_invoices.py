@@ -91,7 +91,7 @@ def test_inject_creates_invoice(config, sample_filas, products, tmp_path):
     assert len(invoice["invoice_line_ids"]) > 0
 
 
-def test_inject_creates_client_when_not_found(config, sample_filas, products, tmp_path):
+def test_inject_returns_verificar_when_client_not_found(config, sample_filas, products, tmp_path):
     odoo_repo = FakeOdooRepo(products=products, clients={})
     reader = FakePreInvoiceReader(filas=sample_filas, cols_examenes=["890201", "890301"])
 
@@ -107,8 +107,8 @@ def test_inject_creates_client_when_not_found(config, sample_filas, products, tm
 
     resultados = use_case.execute(Path("input"), tmp_path)
 
-    assert resultados[0].estado == "OK"
-    assert "900111111" in odoo_repo._clients
+    assert resultados[0].estado == "VERIFICAR"
+    assert "no encontrada" in resultados[0].detalle
 
 
 def test_inject_returns_error_when_no_products(config, tmp_path):
@@ -151,7 +151,7 @@ def test_inject_returns_verificar_for_invalid_nit(config, tmp_path):
     resultados = use_case.execute(Path("input"), tmp_path)
 
     assert resultados[0].estado == "VERIFICAR"
-    assert "NIT inválido" in resultados[0].detalle
+    assert "no encontrada" in resultados[0].detalle
 
 
 def test_inject_empty_input(config, tmp_path):
@@ -198,3 +198,28 @@ def test_inject_groups_by_city_and_product(config, products, tmp_path):
     invoice = odoo_repo._created_invoices[0]
     # 2 líneas: (890201, BOGOTA) x2 y (890201, MEDELLIN) x1
     assert len(invoice["invoice_line_ids"]) == 2
+
+
+def test_inject_skips_nits_already_ok_in_log(config, sample_filas, products, tmp_path):
+    """NITs con estado OK en log previo son omitidos."""
+    odoo_repo = FakeOdooRepo(
+        products=products,
+        clients={"900111111": {"id": 1, "name": "EMPRESA A"}},
+    )
+    reader = FakePreInvoiceReader(filas=sample_filas, cols_examenes=["890201", "890301"])
+    log_gen = FakeLogGenerator(successful_nits={"900111111"})
+
+    use_case = InjectInvoicesToOdoo(
+        odoo_repo=odoo_repo,
+        reader_repo=reader,
+        city_resolver=CityAccountResolver(),
+        log_generator=log_gen,
+        progress=FakeProgress(),
+        logger=FakeLogger(),
+        config=config,
+    )
+
+    resultados = use_case.execute(Path("input"), tmp_path)
+
+    assert resultados == []
+    assert len(odoo_repo._created_invoices) == 0
