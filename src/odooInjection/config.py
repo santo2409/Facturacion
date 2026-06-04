@@ -1,8 +1,13 @@
 import os
+from datetime import date, timedelta
 
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+
+def _fecha_servicio() -> str:
+    return (date.today().replace(day=1) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def get_odoo_config() -> dict:
@@ -31,6 +36,6 @@ def get_odoo_config() -> dict:
             ),
         ],
         "nombre_uom": os.getenv("ODOO_UOM", "Unidades"),
-        "fecha_servicio": os.getenv("ODOO_FECHA_SERVICIO", ""),
+        "fecha_servicio": _fecha_servicio(),
         "fecha_vencimiento_dias": int(os.getenv("ODOO_FECHA_VENCIMIENTO_DIAS", "30")),
     }

@@ -19,6 +19,18 @@ class FakeOdooRepo:
             return c["id"], c["name"], "NIT"
         return None, None, None
 
+    def find_client_by_name(self, name):
+        for nit, c in self._clients.items():
+            if c["name"] == name:
+                return c["id"], c["name"], "nombre"
+        return None, None, None
+
+    def get_nit(self, client_id):
+        for nit, c in self._clients.items():
+            if c["id"] == client_id:
+                return nit
+        return None
+
     def create_client(self, nit, name):
         cid = self._next_client_id
         self._next_client_id += 1

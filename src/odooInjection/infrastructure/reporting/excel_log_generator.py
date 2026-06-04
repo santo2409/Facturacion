@@ -17,6 +17,25 @@ class ExcelLogGenerator:
     def __init__(self, logger):
         self._logger = logger
 
+    @staticmethod
+    def read_successful_nits(log_path: Path) -> set[str]:
+        """Lee log_inyeccion.xlsx previo y retorna NITs con estado OK."""
+        if not log_path.exists():
+            return set()
+        try:
+            wb = openpyxl.load_workbook(log_path, read_only=True, data_only=True)
+            ws = wb.active
+            nits = set()
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if row and len(row) >= 4 and str(row[3]).strip().upper() == "OK":
+                    nit = str(row[1]).strip()
+                    if nit and nit != "None":
+                        nits.add(nit)
+            wb.close()
+            return nits
+        except Exception:
+            return set()
+
     def generate(self, resultados: list[InvoiceResult], output_dir: Path):
         output_dir.mkdir(parents=True, exist_ok=True)
         log_path = output_dir / "log_inyeccion.xlsx"

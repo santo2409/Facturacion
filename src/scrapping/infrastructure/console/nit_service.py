@@ -1,4 +1,5 @@
 import json
+import time
 
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
 from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
@@ -6,21 +7,37 @@ from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
 )
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
+_RETRY_DELAY = 5
+_MAX_RETRIES = 2
+
 
 class RUESNitService:
     def __init__(self, logger: LoggerAdapter = None):
         self.logger = logger or LoggerAdapter(__name__)
+        self._scraper = RuesPlaywrightScraper(logger=self.logger)
 
     def search(self, nits):
-        try:
-            scraper = RuesPlaywrightScraper()
-            use_case = SearchNitsUseCase(scraper)
-            data = use_case.execute(nits, show_progress=True)
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                use_case = SearchNitsUseCase(self._scraper)
+                return use_case.execute(nits, show_progress=False)
+            except Exception as excep:
+                if attempt < _MAX_RETRIES:
+                    time.sleep(_RETRY_DELAY)
+                else:
+                    self.logger.error(f"Error searching NIT {nits}: {excep}", exc_info=True)
+                    return None
 
-            return data
-        except Exception as excep:
-            self.logger.error(f"Error searching NIT {nits}: {excep}", exc_info=True, user_msg="No se pudo consultar el NIT. Verifique su conexión e intente nuevamente.")
-            return None
+    def search_by_name(self, name: str):
+        for attempt in range(_MAX_RETRIES + 1):
+            try:
+                return self._scraper.search_by_name(name)
+            except Exception as excep:
+                if attempt < _MAX_RETRIES:
+                    time.sleep(_RETRY_DELAY)
+                else:
+                    self.logger.error(f"Error buscando por nombre '{name}': {excep}", exc_info=True)
+                    return None
 
     def writer(self, data, file_path):
         try:
@@ -29,4 +46,4 @@ class RUESNitService:
                     [d.__dict__ for d in data], file, ensure_ascii=False, indent=2
                 )
         except Exception as excep:
-            self.logger.error(f"Error writing to file: {excep}", exc_info=True, user_msg="No se pudo guardar el archivo de resultados.")
+            self.logger.error(f"Error writing to file: {excep}", exc_info=True)
