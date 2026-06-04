@@ -15,6 +15,14 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_client_by_name(self, name: str) -> tuple[int | None, str | None, str | None]:
+        pass
+
+    @abstractmethod
+    def get_nit(self, client_id: int) -> str | None:
+        pass
+
+    @abstractmethod
     def create_client(self, nit: str, name: str) -> int:
         pass
 
