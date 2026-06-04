@@ -15,6 +15,17 @@ from src.shared.utils.text_normalizer import (
 from src.special.domain.entities.special import Special
 
 
+def _fecha_warning(fecha, fecha_limite) -> str:
+    """Retorna advertencia si la fecha es > 3 meses antes del límite."""
+    from datetime import timedelta
+    tres_meses_antes = fecha_limite - timedelta(days=90)
+    if fecha < tres_meses_antes:
+        return f"fuera del periodo habitual (> 3 meses: {fecha})"
+    if fecha > fecha_limite:
+        return f"fecha futura respecto al periodo ({fecha} > {fecha_limite})"
+    return ""
+
+
 def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) -> pl.DataFrame:
     """Añade columna FACTURAS a df cruzando por N° Identificación."""
     id_col = "N° Identificación"
@@ -69,6 +80,7 @@ class AssignRatesFromExcel:
         fuzz,
         progress,
         logger,
+        odoo_repo=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
@@ -84,6 +96,7 @@ class AssignRatesFromExcel:
         self.fuzz = fuzz
         self.progress = progress
         self.logger = logger or LoggerAdapter(__name__)
+        self.odoo_repo = odoo_repo
 
     def execute(self, excel: pl.DataFrame, df_facture: pl.DataFrame):
         lookups = self._build_lookups()
@@ -158,6 +171,8 @@ class AssignRatesFromExcel:
 
         # NIT → company dict
         nit_to_company = {c["nit"]: c for c in companies_all}
+        # name (normalized) → company dict
+        name_to_company = {normalize_name(c["name"]): c for c in companies_all}
         # company_id → (package_id, model)
         company_to_package = {c["company"]: (c["package"], c["model"]) for c in companies_rates_all}
         # company_id → biller_id
@@ -185,6 +200,7 @@ class AssignRatesFromExcel:
 
         return {
             "nit_to_company": nit_to_company,
+            "name_to_company": name_to_company,
             "company_to_package": company_to_package,
             "company_to_biller": company_to_biller,
             "biller_id_to_name": biller_id_to_name,
@@ -204,8 +220,7 @@ class AssignRatesFromExcel:
             pl.col("NIT")
             .cast(pl.Utf8)
             .str.strip_chars()
-            .str.extract_all(r"\d+")
-            .list.first()
+            .str.replace_all(r"[^\d]", "")
             .str.slice(0, 9)
             .alias("NIT")
         )
@@ -214,29 +229,121 @@ class AssignRatesFromExcel:
 
     def _match_companies(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
-        scraped_nits = lookups["scraped_nits"]
+        name_to_company = lookups["name_to_company"]
+        # Cache de búsquedas RUES/Odoo para no repetir por NIT único
+        _rues_nit_cache: dict = {}
+        _rues_name_cache: dict = {}
+        _odoo_nit_cache: dict = {}
 
         matched_nits = []
         matched_empresas = []
-        for row in df.iter_rows(named=True):
-            nit = row["NIT"]
-            empresa = row["Empresa"]
-            base = row["Base"]
+        cambios = []
 
-            if nit and nit in nit_to_company:
-                matched_nits.append(nit)
-                matched_empresas.append(nit_to_company[nit]["name"])
-            elif nit and nit in scraped_nits and scraped_nits[nit]:
-                matched_nits.append(nit)
-                matched_empresas.append(scraped_nits[nit])
-            else:
-                if nit:
-                    self.logger.warning(
-                        f"NIT {nit} - {empresa} no encontrado, registrado por {base}",
-                        user_msg=f"El NIT {nit} no fue encontrado en el sistema.",
-                    )
+        with self.progress("Validando empresas", total=df.height):
+            for row in df.iter_rows(named=True):
+                nit = row["NIT"]
+                empresa = row["Empresa"]
+
+                # ── 0. Empresa ya en BD local ─────────────────────────────────
+                if nit and nit in nit_to_company:
+                    nuevo_nombre = nit_to_company[nit]["name"]
+                    if nuevo_nombre != empresa:
+                        cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [BD local]")
+                    matched_nits.append(nit)
+                    matched_empresas.append(nuevo_nombre)
+                    self.progress.advance()
+                    continue
+
+                # ── 0.5. Nombre en BD local (NIT erróneo en Excel) ────────────
+                empresa_norm = normalize_name(empresa) if empresa else ""
+                if empresa_norm and empresa_norm in name_to_company:
+                    comp = name_to_company[empresa_norm]
+                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{comp['nit']}' [BD local/nombre]")
+                    matched_nits.append(comp["nit"])
+                    matched_empresas.append(comp["name"])
+                    self.progress.advance()
+                    continue
+
+                # ── 1. RUES por NIT ───────────────────────────────────────────
+                if nit and nit not in _rues_nit_cache:
+                    try:
+                        results = self.nit_service.search([[nit]]) or []
+                        _rues_nit_cache[nit] = results[0] if results else None
+                    except Exception:
+                        _rues_nit_cache[nit] = None
+
+                rues_by_nit = _rues_nit_cache.get(nit)
+                if rues_by_nit and rues_by_nit.is_company and rues_by_nit.name:
+                    nuevo_nombre = rues_by_nit.name
+                    cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [RUES/NIT]")
+                    matched_nits.append(nit)
+                    matched_empresas.append(nuevo_nombre)
+                    self.progress.advance()
+                    continue
+
+                # ── 2. RUES por nombre ────────────────────────────────────────
+                if empresa and empresa not in _rues_name_cache:
+                    try:
+                        _rues_name_cache[empresa] = self.nit_service.search_by_name(empresa)
+                    except Exception:
+                        _rues_name_cache[empresa] = None
+
+                rues_by_name = _rues_name_cache.get(empresa)
+                if rues_by_name and rues_by_name.is_company and rues_by_name.nit:
+                    nuevo_nit = str(rues_by_name.nit)
+                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
+                    matched_nits.append(nuevo_nit)
+                    matched_empresas.append(empresa)
+                    self.progress.advance()
+                    continue
+
+                # ── 3. Odoo por NIT ───────────────────────────────────────────
+                if nit and self.odoo_repo:
+                    if nit not in _odoo_nit_cache:
+                        try:
+                            cid, cname, _ = self.odoo_repo.find_client(nit, empresa)
+                            _odoo_nit_cache[nit] = (cid, cname)
+                        except Exception:
+                            _odoo_nit_cache[nit] = (None, None)
+
+                    odoo_id, odoo_name = _odoo_nit_cache.get(nit, (None, None))
+                    if odoo_id and odoo_name:
+                        if odoo_name != empresa:
+                            cambios.append(f"NIT {nit}: nombre '{empresa}' → '{odoo_name}' [Odoo/NIT]")
+                        matched_nits.append(nit)
+                        matched_empresas.append(odoo_name)
+                        self.progress.advance()
+                        continue
+
+                    # ── 4. Odoo por nombre ────────────────────────────────────
+                    if empresa:
+                        try:
+                            cid, cname, _ = self.odoo_repo.find_client_by_name(empresa)
+                        except Exception:
+                            cid, cname = None, None
+                        if cid:
+                            nuevo_nit = self.odoo_repo.get_nit(cid) or nit
+                            if nuevo_nit != nit:
+                                cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [Odoo/nombre]")
+                            matched_nits.append(nuevo_nit)
+                            matched_empresas.append(empresa)
+                            self.progress.advance()
+                            continue
+
+                # ── 5. Sin resultado ──────────────────────────────────────────
+                novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en RUES ni Odoo"
+                cambios.append(novedad)
+                self.logger.warning(novedad, user_msg=f"No se encontró registro para NIT {nit} ({empresa}).")
                 matched_nits.append(nit)
                 matched_empresas.append(empresa)
+                self.progress.advance()
+
+        # Registrar todos los cambios/novedades
+        if cambios:
+            self.logger.info(
+                f"_match_companies: {len(cambios)} cambios/novedades:\n" + "\n".join(f"  {c}" for c in cambios),
+                user_msg=f"{len(cambios)} actualizaciones/novedades registradas en empresas.",
+            )
 
         return df.with_columns([
             pl.Series("NIT", matched_nits),
@@ -246,8 +353,17 @@ class AssignRatesFromExcel:
     # ── Column normalization ──────────────────────────────────────────────
 
     def _normalize_columns(self, df: pl.DataFrame) -> pl.DataFrame:
+        # Normalizar Fecha Ingreso
+        df = self._normalize_fecha(df)
+
         return df.with_columns([
-            pl_normalize_name("Empresa").alias("Empresa"),
+            pl_normalize_name("Empresa")
+            .str.replace_all(r"\bS\s+A\s+S\b", "SAS")
+            .str.replace_all(r"\bS\s+A\b", "SA")
+            .str.replace_all(r"\bL\s+T\s+D\s+A\b", "LTDA")
+            .str.replace_all(r"\bE\s+U\b", "EU")
+            .str.replace_all(r"\bE\s+S\s+P\b", "ESP")
+            .alias("Empresa"),
             pl_normalize_name("Empresa Misión").alias("Empresa Misión"),
             pl_normalize_name("Sede").alias("Sede"),
             pl_normalize_upper("Medio de Pago").cast(pl.Utf8).alias("Medio de Pago"),
@@ -274,6 +390,87 @@ class AssignRatesFromExcel:
                 .alias("TIPO DE ACTIVIDAD")
             ),
         ])
+
+    # ── Date normalization ────────────────────────────────────────────────
+
+    def _normalize_fecha(self, df: pl.DataFrame) -> pl.DataFrame:
+        from datetime import date, timedelta
+
+        fecha_limite = date.today().replace(day=1) - timedelta(days=1)
+        col = "Fecha Ingreso"
+
+        if df[col].dtype != pl.Utf8:
+            df = df.with_columns(pl.col(col).cast(pl.Utf8).alias(col))
+
+        unique_vals = df[col].unique().to_list()
+        fecha_map = {}
+        advertencias = []
+        for val in unique_vals:
+            formatted, warn = self._parse_fecha(val, fecha_limite)
+            fecha_map[val] = formatted
+            if warn:
+                advertencias.append(f"Fecha '{val}' → {formatted}: {warn}")
+
+        if advertencias:
+            self.logger.warning(
+                f"{len(advertencias)} fecha(s) fuera del periodo de 3 meses:\n" + "\n".join(f"  {a}" for a in advertencias),
+                user_msg=f"{len(advertencias)} fecha(s) con antigüedad mayor a 3 meses.",
+            )
+
+        return df.with_columns(
+            pl.col(col).replace(fecha_map).alias(col)
+        )
+
+    @staticmethod
+    def _parse_fecha(val, fecha_limite) -> tuple[str, str]:
+        """Retorna (fecha_formateada, advertencia o '')."""
+        from datetime import date as dt_date
+        if val is None or str(val).strip() in ("", "None", "null", "nan", "NaN"):
+            return "", ""
+        s = str(val).strip().split(" ")[0]  # quitar hora
+
+        # Si ya es dd/mm/yyyy
+        if "/" in s:
+            parts = s.split("/")
+            if len(parts) == 3 and len(parts[2]) == 4:
+                try:
+                    fecha = dt_date(int(parts[2]), int(parts[1]), int(parts[0]))
+                    warn = _fecha_warning(fecha, fecha_limite)
+                    return s, warn
+                except ValueError:
+                    return "", ""
+
+        # Formato yyyy-mm-dd
+        if "-" in s:
+            parts = s.split("-")
+            if len(parts) == 3 and len(parts[0]) == 4:
+                try:
+                    y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                    fecha = dt_date(y, m, d)
+                    if fecha <= fecha_limite:
+                        warn = _fecha_warning(fecha, fecha_limite)
+                        return fecha.strftime("%d/%m/%Y"), warn
+                    # Fecha > limite: swap día/mes solo si resultado cae en mes de trabajo
+                    if d <= 12:
+                        try:
+                            fecha_swap = dt_date(y, d, m)
+                            if fecha_swap <= fecha_limite and fecha_swap.month == fecha_limite.month:
+                                warn = _fecha_warning(fecha_swap, fecha_limite)
+                                return fecha_swap.strftime("%d/%m/%Y"), warn
+                        except ValueError:
+                            pass
+                    # Swap no aplica: devolver fecha original con advertencia
+                    warn = _fecha_warning(fecha, fecha_limite)
+                    return fecha.strftime("%d/%m/%Y"), warn
+                except ValueError:
+                    try:
+                        y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                        fecha_swap = dt_date(y, d, m)
+                        warn = _fecha_warning(fecha_swap, fecha_limite)
+                        return fecha_swap.strftime("%d/%m/%Y"), warn
+                    except ValueError:
+                        return "", ""
+        return "", ""
 
     # ── City normalization with pre-computed fuzzy ─────────────────────────
 
