@@ -7,3 +7,7 @@ class NitScraperRepository(ABC):
     @abstractmethod
     def search_nits(self, nits: list, show_progress: bool = False) -> list[NitResult]:
         pass
+
+    @abstractmethod
+    def search_by_name(self, name: str) -> NitResult | None:
+        pass
