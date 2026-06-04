@@ -17,6 +17,10 @@ from src.company.infrastructure.persistence.sa_company_repository import (
     SaCompanyRepository,
 )
 from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
+from src.odooInjection.config import get_odoo_config
+from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
+    XmlRpcOdooRepository,
+)
 from src.package.infrastructure.persistence.sa_package_repository import (
     SaPackageRepository,
 )
@@ -62,6 +66,15 @@ def assign_rates(logger, with_invoices=False):
         df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
 
     session = get_session()
+    config = get_odoo_config()
+    odoo_repo = XmlRpcOdooRepository(
+        url=config["url"],
+        db=config["db"],
+        username=config["username"],
+        api_key=config["api_key"],
+        logger=logger,
+        config=config,
+    )
 
     use_case = AssignRatesFromExcel(
         biller_repo=SaBillerRepository(session, logger),
@@ -78,6 +91,7 @@ def assign_rates(logger, with_invoices=False):
         fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),
         logger=logger,
+        odoo_repo=odoo_repo,
     )
 
     use_case.execute(df, df_facture)
