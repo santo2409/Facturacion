@@ -115,3 +115,62 @@ class RuesPlaywrightScraper(NitScraperRepository):
     def search_nits(self, nits: list, show_progress: bool = False) -> list[NitResult]:
         """Método síncrono que envuelve la lógica asíncrona"""
         return asyncio.run(self._search_nits_async(nits, show_progress))
+
+    def search_by_name(self, name: str) -> NitResult | None:
+        """Busca una empresa por nombre en el RUES. Retorna el primer resultado o None."""
+        return asyncio.run(self._search_by_name_async(name))
+
+    async def _search_by_name_async(self, name: str) -> NitResult | None:
+        async with async_playwright() as p:
+            browser = await p.firefox.launch(headless=True)
+            page = await browser.new_page()
+            try:
+                await page.goto("https://www.rues.org.co/", wait_until="networkidle")
+                try:
+                    close_button = page.locator("button.swal2-close")
+                    await close_button.wait_for(timeout=10000)
+                    await close_button.click()
+                except PlaywrightTimeoutError:
+                    pass
+
+                input_box = page.locator("input[type='search'], input#search")
+                await input_box.wait_for(timeout=5000)
+                await input_box.clear()
+                await input_box.fill(name)
+
+                submit_button = page.locator(
+                    "xpath=/html/body/div[1]/div[2]/div/div/div/div[2]/form/button[2]"
+                )
+                await submit_button.wait_for(timeout=5000)
+                await submit_button.click()
+
+                try:
+                    card_result = page.locator(".card-result").first
+                    await card_result.wait_for(timeout=10000)
+
+                    container_html = await page.locator(
+                        "xpath=/html/body/div[1]/main/div/div/div/div"
+                    ).inner_html()
+
+                    soup = BeautifulSoup(container_html, "html.parser")
+                    result = soup.find("div", class_="card-result")
+
+                    for item in result:
+                        content = item.contents
+                        name_company = content[0].text
+                        # Extraer NIT del resultado
+                        nit_text = ""
+                        for c in content:
+                            text = getattr(c, "text", str(c)).strip()
+                            if text.isdigit() and 6 <= len(text) <= 12:
+                                nit_text = text
+                                break
+                        if nit_text:
+                            return NitResult(nit=int(nit_text), is_company=True, name=name_company)
+                except PlaywrightTimeoutError:
+                    pass
+            except Exception as e:
+                self.logger.error(f"Error buscando por nombre '{name}': {e}", exc_info=True)
+            finally:
+                await browser.close()
+        return None
