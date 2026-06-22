@@ -24,6 +24,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(10), nullable=False, server_default="INTRA"),
         sa.Column("created_at", sa.TIMESTAMP, server_default=sa.func.now()),
         sa.Column("updated_at", sa.TIMESTAMP, server_default=sa.func.now()),
+        sa.Column("deleted_at", sa.TIMESTAMP, nullable=True),
         sa.UniqueConstraint("name"),
         sa.CheckConstraint("name IN ('INTRA', 'EXTRA')"),
     )
