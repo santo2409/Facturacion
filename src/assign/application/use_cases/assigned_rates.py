@@ -230,10 +230,10 @@ class AssignRatesFromExcel:
     def _match_companies(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
         name_to_company = lookups["name_to_company"]
-        # Cache de búsquedas RUES/Odoo para no repetir por NIT único
         _rues_nit_cache: dict = {}
         _rues_name_cache: dict = {}
         _odoo_nit_cache: dict = {}
+        _odoo_name_cache: dict = {}
 
         matched_nits = []
         matched_empresas = []
@@ -244,60 +244,7 @@ class AssignRatesFromExcel:
                 nit = row["NIT"]
                 empresa = row["Empresa"]
 
-                # ── 0. Empresa ya en BD local ─────────────────────────────────
-                if nit and nit in nit_to_company:
-                    nuevo_nombre = nit_to_company[nit]["name"]
-                    if nuevo_nombre != empresa:
-                        cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [BD local]")
-                    matched_nits.append(nit)
-                    matched_empresas.append(nuevo_nombre)
-                    self.progress.advance()
-                    continue
-
-                # ── 0.5. Nombre en BD local (NIT erróneo en Excel) ────────────
-                empresa_norm = normalize_name(empresa) if empresa else ""
-                if empresa_norm and empresa_norm in name_to_company:
-                    comp = name_to_company[empresa_norm]
-                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{comp['nit']}' [BD local/nombre]")
-                    matched_nits.append(comp["nit"])
-                    matched_empresas.append(comp["name"])
-                    self.progress.advance()
-                    continue
-
-                # ── 1. RUES por NIT ───────────────────────────────────────────
-                if nit and nit not in _rues_nit_cache:
-                    try:
-                        results = self.nit_service.search([[nit]]) or []
-                        _rues_nit_cache[nit] = results[0] if results else None
-                    except Exception:
-                        _rues_nit_cache[nit] = None
-
-                rues_by_nit = _rues_nit_cache.get(nit)
-                if rues_by_nit and rues_by_nit.is_company and rues_by_nit.name:
-                    nuevo_nombre = rues_by_nit.name
-                    cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [RUES/NIT]")
-                    matched_nits.append(nit)
-                    matched_empresas.append(nuevo_nombre)
-                    self.progress.advance()
-                    continue
-
-                # ── 2. RUES por nombre ────────────────────────────────────────
-                if empresa and empresa not in _rues_name_cache:
-                    try:
-                        _rues_name_cache[empresa] = self.nit_service.search_by_name(empresa)
-                    except Exception:
-                        _rues_name_cache[empresa] = None
-
-                rues_by_name = _rues_name_cache.get(empresa)
-                if rues_by_name and rues_by_name.is_company and rues_by_name.nit:
-                    nuevo_nit = str(rues_by_name.nit)
-                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
-                    matched_nits.append(nuevo_nit)
-                    matched_empresas.append(empresa)
-                    self.progress.advance()
-                    continue
-
-                # ── 3. Odoo por NIT ───────────────────────────────────────────
+                # ── 1. Odoo por NIT ───────────────────────────────────────────
                 if nit and self.odoo_repo:
                     if nit not in _odoo_nit_cache:
                         try:
@@ -315,23 +262,80 @@ class AssignRatesFromExcel:
                         self.progress.advance()
                         continue
 
-                    # ── 4. Odoo por nombre ────────────────────────────────────
-                    if empresa:
+                # ── 1.5. Odoo por nombre ──────────────────────────────────────
+                if empresa and self.odoo_repo:
+                    if empresa not in _odoo_name_cache:
                         try:
                             cid, cname, _ = self.odoo_repo.find_client_by_name(empresa)
+                            nuevo_nit = self.odoo_repo.get_nit(cid) if cid else None
+                            _odoo_name_cache[empresa] = (cid, nuevo_nit)
                         except Exception:
-                            cid, cname = None, None
-                        if cid:
-                            nuevo_nit = self.odoo_repo.get_nit(cid) or nit
-                            if nuevo_nit != nit:
-                                cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [Odoo/nombre]")
-                            matched_nits.append(nuevo_nit)
-                            matched_empresas.append(empresa)
-                            self.progress.advance()
-                            continue
+                            _odoo_name_cache[empresa] = (None, None)
 
-                # ── 5. Sin resultado ──────────────────────────────────────────
-                novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en RUES ni Odoo"
+                    odoo_id, odoo_nit = _odoo_name_cache.get(empresa, (None, None))
+                    if odoo_id and odoo_nit:
+                        if odoo_nit != nit:
+                            cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{odoo_nit}' [Odoo/nombre]")
+                        matched_nits.append(odoo_nit)
+                        matched_empresas.append(empresa)
+                        self.progress.advance()
+                        continue
+
+                # ── 2. BD local por NIT ───────────────────────────────────────
+                if nit and nit in nit_to_company:
+                    nuevo_nombre = nit_to_company[nit]["name"]
+                    if nuevo_nombre != empresa:
+                        cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [BD local]")
+                    matched_nits.append(nit)
+                    matched_empresas.append(nuevo_nombre)
+                    self.progress.advance()
+                    continue
+
+                # ── 2.5. BD local por nombre (NIT erróneo en Excel) ───────────
+                empresa_norm = normalize_name(empresa) if empresa else ""
+                if empresa_norm and empresa_norm in name_to_company:
+                    comp = name_to_company[empresa_norm]
+                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{comp['nit']}' [BD local/nombre]")
+                    matched_nits.append(comp["nit"])
+                    matched_empresas.append(comp["name"])
+                    self.progress.advance()
+                    continue
+
+                # ── 3. RUES por NIT ───────────────────────────────────────────
+                if nit and nit not in _rues_nit_cache:
+                    try:
+                        results = self.nit_service.search([[nit]]) or []
+                        _rues_nit_cache[nit] = results[0] if results else None
+                    except Exception:
+                        _rues_nit_cache[nit] = None
+
+                rues_by_nit = _rues_nit_cache.get(nit)
+                if rues_by_nit and rues_by_nit.is_company and rues_by_nit.name:
+                    nuevo_nombre = rues_by_nit.name
+                    cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [RUES/NIT]")
+                    matched_nits.append(nit)
+                    matched_empresas.append(nuevo_nombre)
+                    self.progress.advance()
+                    continue
+
+                # ── 3.5. RUES por nombre ──────────────────────────────────────
+                if empresa and empresa not in _rues_name_cache:
+                    try:
+                        _rues_name_cache[empresa] = self.nit_service.search_by_name(empresa)
+                    except Exception:
+                        _rues_name_cache[empresa] = None
+
+                rues_by_name = _rues_name_cache.get(empresa)
+                if rues_by_name and rues_by_name.is_company and rues_by_name.nit:
+                    nuevo_nit = str(rues_by_name.nit)
+                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
+                    matched_nits.append(nuevo_nit)
+                    matched_empresas.append(empresa)
+                    self.progress.advance()
+                    continue
+
+                # ── 4. Sin resultado — se deja el dato y se registra NOVEDAD ──
+                novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en Odoo, BD local ni RUES"
                 cambios.append(novedad)
                 self.logger.warning(novedad, user_msg=f"No se encontró registro para NIT {nit} ({empresa}).")
                 matched_nits.append(nit)
