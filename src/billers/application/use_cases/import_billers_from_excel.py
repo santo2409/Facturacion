@@ -57,18 +57,41 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
 
         rows = df.select(["NIT", "GESTOR", "EMPRESA"]).drop_nulls()
+        # Normalizar NIT: solo dígitos, max 9 chars
+        rows = rows.with_columns(
+            pl.col("NIT").str.replace_all(r"[^\d]", "").str.slice(0, 9).alias("NIT")
+        ).filter(pl.col("NIT") != "")
 
         df_companies = pl.DataFrame(self.company_repo.all())
         new_nits = rows
         if df_companies.height > 0:
             new_nits = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
 
-        result_scrapping = None
+        result_scrapping = []
 
-        if not Path(file_path).exists() and len(new_nits) > 0:
-            result_scrapping = self.nit_service.search(new_nits["NIT"].to_list())
-            self.nit_service.writer(result_scrapping, file_path)
-        else:
+        if len(new_nits) > 0:
+            if Path(file_path).exists():
+                with open(file_path, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    result_scrapping = [
+                        Company(d.get("nit"), d.get("name")) for d in data
+                    ]
+                # Buscar NITs que no estén en el archivo
+                existing_nits = {str(r.nit) for r in result_scrapping}
+                pending = [
+                    n for n in new_nits["NIT"].to_list() if n not in existing_nits
+                ]
+                if pending:
+                    new_results = self.nit_service.search(pending) or []
+                    result_scrapping.extend(
+                        Company(r.nit, r.name) for r in new_results if r.name
+                    )
+                    self.nit_service.writer(new_results, file_path)
+            else:
+                scraped = self.nit_service.search(new_nits["NIT"].to_list()) or []
+                self.nit_service.writer(scraped, file_path)
+                result_scrapping = [Company(r.nit, r.name) for r in scraped if r.name]
+        elif Path(file_path).exists():
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
                 result_scrapping = [Company(d.get("nit"), d.get("name")) for d in data]
@@ -98,7 +121,7 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         links = []  # (nit, biller_name) to resolve after company save
 
         for row in df_updated.iter_rows(named=True):
-            nit = row["NIT"][:9]
+            nit = row["NIT"]
             gestor = row["GESTOR"].strip().upper()
             empresa = row["EMPRESA"].upper()
             companies_to_save[nit] = Company(nit, empresa)
@@ -110,18 +133,33 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
             self.company_repo.save_batch(list(companies_to_save.values()))
             self.progress.advance()
 
-        # Build maps for linking
-        all_companies = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        # Build maps for linking (by NIT and by normalized name)
+        all_companies_by_nit = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        all_companies_by_name = {
+            c["name"].strip().upper(): c["id"] for c in self.company_repo.all()
+        }
         all_billers = {b["name"]: b["id"] for b in self.biller_repo.all()}
 
         # Batch link
         link_pairs = []
         with self.progress("Vinculando compañías", total=len(links)):
             for nit, biller_name in links:
-                company_id = all_companies.get(nit)
+                company_id = all_companies_by_nit.get(nit)
+                # Si no encuentra por NIT, buscar por nombre (caso duplicado)
+                if not company_id:
+                    empresa_name = companies_to_save.get(nit)
+                    if empresa_name:
+                        company_id = all_companies_by_name.get(
+                            empresa_name.name.strip().upper()
+                        )
                 biller_id = all_billers.get(biller_name)
                 if company_id and biller_id:
                     link_pairs.append((company_id, biller_id))
+                elif not company_id:
+                    self.logger.warning(
+                        f"Company not found for NIT '{nit}' - cannot link to biller '{biller_name}'",
+                        user_msg=f"Empresa NIT {nit} no encontrada para vincular con '{biller_name}'.",
+                    )
                 elif not biller_id:
                     self.logger.error(
                         f"Biller not found: '{biller_name}'",
@@ -130,4 +168,32 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
                 self.progress.advance()
 
         if link_pairs:
-            self.biller_company_repo.link_or_update_batch(link_pairs)
+            id_to_nit = {v: k for k, v in all_companies_by_nit.items()}
+            id_to_biller_name = {v: k for k, v in all_billers.items()}
+            unique_links = {}
+            duplicados_log = []
+            for company_id, biller_id in link_pairs:
+                if company_id in unique_links:
+                    nit = id_to_nit.get(company_id, "?")
+                    empresa = next(
+                        (
+                            c.name
+                            for c in companies_to_save.values()
+                            if all_companies_by_nit.get(c.nit) == company_id
+                        ),
+                        "?",
+                    )
+                    biller = id_to_biller_name.get(biller_id, "?")
+                    duplicados_log.append(
+                        f"NIT {nit} - '{empresa}' → facturador '{biller}'"
+                    )
+                unique_links[company_id] = biller_id
+            if duplicados_log:
+                self.logger.error(
+                    f"{len(duplicados_log)} vinculación(es) duplicada(s) omitida(s):",
+                    user_msg=f"{len(duplicados_log)} vinculación(es) duplicada(s) omitida(s):",
+                )
+
+                for dup in duplicados_log:
+                    self.logger.error(f"  {dup}", user_msg=f"  {dup}")
+            self.biller_company_repo.link_or_update_batch(list(unique_links.items()))
