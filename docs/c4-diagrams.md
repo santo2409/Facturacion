@@ -15,15 +15,17 @@ C4Context
 
     Person(usuario, "Operador de Facturación", "Personal administrativo que ejecuta el proceso de facturación mensual")
 
-    System(facturacion, "Sistema de Facturación SOANDES", "Aplicación CLI que automatiza la importación de datos, asignación de tarifas y generación de pre-facturas")
+    System(facturacion, "Sistema de Facturación SOANDES", "Aplicación CLI que automatiza la importación de datos, asignación de tarifas, generación de pre-facturas e inyección a Odoo")
 
-    System_Ext(rues, "RUES", "Registro Único Empresarial y Social de Colombia - Validación de NITs")
-    System_Ext(supabase, "Supabase (PostgreSQL)", "Base de datos relacional en la nube para catálogos y tarifas")
+    System_Ext(rues, "RUES", "Registro Único Empresarial y Social de Colombia - Validación de NITs y nombres de empresas")
+    System_Ext(supabase, "PostgreSQL", "Base de datos relacional para catálogos y tarifas")
+    System_Ext(odoo, "Odoo 14 / Avancys", "ERP destino para inyección de facturas via XML-RPC")
     System_Ext(excel, "Archivos Excel", "Fuentes de datos: tarifas, empresas, facturadores, consolidados")
 
     Rel(usuario, facturacion, "Ejecuta procesos via menú CLI")
-    Rel(facturacion, rues, "Consulta NITs via web scraping", "HTTPS/Playwright")
-    Rel(facturacion, supabase, "Lee/escribe catálogos y tarifas", "PostgreSQL/SSL")
+    Rel(facturacion, rues, "Consulta NITs y nombres via web scraping", "HTTPS/Playwright")
+    Rel(facturacion, supabase, "Lee/escribe catálogos y tarifas", "PostgreSQL/TCP")
+    Rel(facturacion, odoo, "Inyecta facturas y busca clientes", "XML-RPC/HTTPS")
     Rel(facturacion, excel, "Lee datos de entrada, genera consolidados y pre-facturas", "openpyxl/xlsxwriter")
     Rel(usuario, excel, "Provee archivos de entrada")
 ```
@@ -42,24 +44,31 @@ C4Container
 
     System_Boundary(sistema, "Sistema de Facturación") {
         Container(cli, "Aplicación CLI", "Python 3.12 / Rich", "Interfaz de menú interactivo para ejecutar procesos de facturación")
-        Container(core, "Core de Negocio", "Python / Polars", "Casos de uso: importación, normalización, asignación de tarifas, generación de pre-facturas")
-        Container(scraper, "Web Scraper", "Playwright / BeautifulSoup", "Automatización de consultas al RUES para validación de NITs")
+        Container(core, "Core de Negocio", "Python / Polars", "Casos de uso: importación, normalización, asignación, inyección")
+        Container(scraper, "Web Scraper", "Playwright / BeautifulSoup", "Consultas al RUES por NIT y por nombre de empresa")
+        Container(odoo_client, "Odoo Client", "XML-RPC", "Inyección de facturas y búsqueda de clientes en Avancys")
         Container(persistence, "Capa de Persistencia", "SQLAlchemy 2.0 / Alembic", "Repositorios de acceso a datos con patrón Repository")
         Container(etl, "Motor ETL", "Polars / fastexcel", "Procesamiento y transformación de datos desde/hacia Excel")
+        Container(logging_sys, "Sistema de Logging", "ExcelAuditHandler", "Auditoría en Excel + logs técnicos rotativos")
     }
 
     System_Ext(rues, "RUES", "Portal web de consulta empresarial")
-    ContainerDb(db, "PostgreSQL", "Supabase", "Catálogos: empresas, facturadores, tarifas, CUPS, ciudades, paquetes")
-    System_Ext(fs, "Sistema de Archivos", "Archivos Excel de entrada/salida")
+    System_Ext(odoo, "Odoo 14 / Avancys", "ERP con datos de clientes y facturas")
+    ContainerDb(db, "PostgreSQL", "Base de datos relacional", "Catálogos: empresas, facturadores, tarifas, CUPS, ciudades, paquetes")
+    System_Ext(fs, "Sistema de Archivos", "Archivos Excel de entrada/salida + logs")
 
     Rel(usuario, cli, "Interactúa via terminal")
     Rel(cli, core, "Invoca casos de uso")
     Rel(core, persistence, "Consulta/persiste datos")
     Rel(core, etl, "Procesa DataFrames")
-    Rel(core, scraper, "Valida NITs")
+    Rel(core, scraper, "Valida NITs y busca empresas")
+    Rel(core, odoo_client, "Inyecta facturas, busca clientes")
+    Rel(core, logging_sys, "Registra auditoría y errores")
     Rel(scraper, rues, "HTTP/Playwright")
+    Rel(odoo_client, odoo, "XML-RPC/HTTPS")
     Rel(persistence, db, "SQL/psycopg2")
     Rel(etl, fs, "Lee/escribe .xlsx")
+    Rel(logging_sys, fs, "Escribe user_audit.xlsx + logs.log")
 ```
 
 ---
@@ -74,38 +83,44 @@ C4Component
 
     Container_Boundary(core, "Core de Negocio") {
 
-        Component(assign, "Assign Module", "AssignRatesFromExcel", "Asigna tarifas a registros cruzando con catálogos de BD. Usa fuzzy matching para resolver nombres.")
+        Component(assign, "Assign Module", "AssignRatesFromExcel", "Cascada de resolución de empresas (6 pasos). Normaliza NITs, fechas, sufijos corporativos. Fuzzy matching.")
 
-        Component(preInvoice, "PreInvoice Module", "SplitByNit", "Genera archivos Excel individuales por NIT desde el consolidado.")
+        Component(preInvoice, "PreInvoice Module", "SplitByNit", "Genera archivos Excel individuales por NIT. Clasifica carpeta SET vs GENERAL.")
 
-        Component(rates, "Rates Module", "ImportRatesFromExcel", "Importa tarifas desde Excel y las persiste en BD con relaciones polimórficas.")
+        Component(rates, "Rates Module", "ImportRatesFromExcel", "Importa tarifas con dedup batch. Fuzzy city resolution. Rename de tarifas especiales por año.")
 
-        Component(billers, "Billers Module", "ImportBillersFromExcel", "Importa facturadores desde Excel y los asocia con empresas.")
+        Component(billers, "Billers Module", "ImportBillersFromExcel", "Importa facturadores. Dedup por company_id con log de omitidos.")
 
-        Component(company, "Company Module", "ImportCompaniesFromExcel", "Registra empresas y sus relaciones con paquetes y facturadores.")
+        Component(company, "Company Module", "ImportCompaniesFromExcel", "Registra empresas. Scraping + cache JSON. Vinculación con paquetes.")
 
         Component(dataProcessing, "DataProcessing Module", "NormalizeInformationFromExcel", "Normaliza datos de paquetes, proveedores y tarifas especiales.")
 
-        Component(scrapping, "Scrapping Module", "SearchNitsUseCase", "Valida NITs consultando el RUES via web scraping.")
+        Component(scrapping, "Scrapping Module", "RUESNitService", "Busca por NIT y por nombre con retry (3 intentos, 5s delay).")
+
+        Component(odooInjection, "OdooInjection Module", "InjectInvoicesToOdoo", "Anti-duplicados. Búsqueda NIT (=like) → nombre → VERIFICAR. Log Excel.")
     }
 
     Container_Boundary(shared, "Shared") {
-        Component(fuzz, "RapidFuzzBiller", "Fuzzy Matching", "Matching difuso de nombres con threshold configurable")
+        Component(fuzz, "RapidFuzzBiller", "Fuzzy Matching", "Matching difuso con token_sort_ratio + partial_ratio")
         Component(excel_io, "Excel I/O", "ExcelLoader + ExcelExporter", "Carga y exportación de archivos Excel")
-        Component(logging, "Logging System", "LoggerAdapter", "Logging dual: usuario + técnico")
+        Component(logging, "Logging System", "LoggerAdapter + ExcelAuditHandler", "Logging dual: auditoría Excel + técnico rotativo")
         Component(progress, "Progress", "RichProgress", "Barras de progreso para operaciones largas")
         Component(db_layer, "Database", "SQLAlchemy SessionLocal", "Conexión y sesiones de BD")
     }
 
     Rel(assign, fuzz, "Resuelve nombres")
+    Rel(assign, scrapping, "Cascada pasos 3-4")
+    Rel(assign, odooInjection, "Cascada pasos 5-6")
     Rel(assign, db_layer, "Consulta catálogos")
     Rel(assign, excel_io, "Exporta consolidado")
     Rel(preInvoice, excel_io, "Lee consolidado, escribe pre-facturas")
     Rel(rates, db_layer, "Persiste tarifas")
+    Rel(rates, fuzz, "Fuzzy city resolution")
     Rel(billers, db_layer, "Persiste facturadores")
     Rel(company, db_layer, "Persiste empresas")
+    Rel(company, scrapping, "Valida NITs nuevos")
     Rel(dataProcessing, excel_io, "Lee/escribe Excel normalizado")
-    Rel(scrapping, progress, "Muestra progreso")
+    Rel(odooInjection, excel_io, "Lee/escribe log de inyección")
 ```
 
 ---
@@ -128,72 +143,96 @@ classDiagram
         -rates_repo: RatesRepository
         -cup_repo: CupRepository
         -nit_service: RUESNitService
+        -odoo_repo: OdooConnectionRepository
         -fuzz: RapidFuzzBiller
         -progress: RichProgress
         -logger: LoggerAdapter
-        +execute(df: DataFrame, df_facture: DataFrame)
+        +execute(df, df_facture)
+        -_match_companies(df)
+        -_normalize_nit(nit) str
+        -_normalize_columns(df) DataFrame
+        -_normalize_fecha(df) DataFrame
     }
 
-    class BillerRepository {
+    class OdooConnectionRepository {
         <<abstract>>
-        +find_by_name(name: str)
-        +save(biller)
-        +save_batch(billers: list)
-        +all()
+        +find_client(nit) dict|None
+        +find_client_by_name(name) dict|None
+        +get_nit(partner_id) str|None
+        +create_invoice(data) int|None
     }
 
-    class CompanyRepository {
-        <<abstract>>
-        +find_by_nit(nit: str)
-        +save(company)
-        +save_batch(companies: list)
-        +find_by_name(name: str)
-        +all()
+    class XmlRpcOdooRepository {
+        -url: str
+        -db: str
+        -uid: int
+        -password: str
+        +find_client(nit) dict|None
+        +find_client_by_name(name) dict|None
+        +get_nit(partner_id) str|None
     }
 
-    class RatesRepository {
-        <<abstract>>
-        +find_rates(rateable_id, city_id, cup_id, activity_id, rateable_type)
-        +save_batch(rates: list)
+    class RUESNitService {
+        -_scraper: NitScraperRepository
+        -logger: LoggerAdapter
+        +search(nits) list~NitResult~
+        +search_by_name(name) NitResult|None
+        +writer(data, file_path)
     }
 
     class RapidFuzzBiller {
         -logger: LoggerAdapter
-        +fuzz_property(property_name: str, catalog: list, threshold: int): str|None
+        +fuzz_property(name, catalog, threshold) str|None
     }
 
-    class RUESNitService {
-        -logger: LoggerAdapter
-        +search(nits): list~NitResult~
-        +writer(data, file_path)
-    }
-
-    class SaBillerRepository {
-        -session: Session
-        -logger: LoggerAdapter
-        +find_by_name(name: str)
-        +save(biller)
-        +save_batch(billers: list)
-        +all()
-    }
-
-    class SaCompanyRepository {
-        -session: Session
-        -logger: LoggerAdapter
-        +find_by_nit(nit: str)
-        +save(company)
-        +save_batch(companies: list)
-        +find_by_name(name: str)
-        +all()
-    }
-
-    AssignRatesFromExcel --> BillerRepository
-    AssignRatesFromExcel --> CompanyRepository
-    AssignRatesFromExcel --> RatesRepository
-    AssignRatesFromExcel --> RapidFuzzBiller
+    AssignRatesFromExcel --> OdooConnectionRepository
     AssignRatesFromExcel --> RUESNitService
-    BillerRepository <|.. SaBillerRepository
-    CompanyRepository <|.. SaCompanyRepository
+    AssignRatesFromExcel --> RapidFuzzBiller
+    OdooConnectionRepository <|.. XmlRpcOdooRepository
+```
+
+---
+
+## Nivel 4: Diagrama de Código (Módulo OdooInjection)
+
+```mermaid
+classDiagram
+    class InjectInvoicesToOdoo {
+        -odoo_repo: OdooConnectionRepository
+        -log_generator: ExcelLogGenerator
+        -logger: LoggerAdapter
+        +execute(df, log_path)
+        -_filter_already_processed(empresas, log_path)
+    }
+
+    class ExcelLogGenerator {
+        +generate(results, path)
+        +read_successful_nits(path)$ set~str~
+    }
+
+    class OdooConnectionRepository {
+        <<abstract>>
+        +find_client(nit) dict|None
+        +find_client_by_name(name) dict|None
+        +get_nit(partner_id) str|None
+        +create_invoice(data) int|None
+    }
+
+    class XmlRpcOdooRepository {
+        -url: str
+        -db: str
+        -uid: int
+        -models: ServerProxy
+        -_cache: dict
+        +find_client(nit) dict|None
+        +find_client_by_name(name) dict|None
+        +get_nit(partner_id) str|None
+        +create_invoice(data) int|None
+    }
+
+    InjectInvoicesToOdoo --> OdooConnectionRepository
+    InjectInvoicesToOdoo --> ExcelLogGenerator
+    OdooConnectionRepository <|.. XmlRpcOdooRepository
 ```
 
 ---
@@ -202,38 +241,76 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class SearchNitsUseCase {
-        -scraper: NitScraperRepository
-        +execute(nits: list, show_progress: bool): list~NitResult~
-    }
-
     class NitScraperRepository {
         <<abstract>>
-        +search_nits(nits: list, show_progress: bool): list~NitResult~
+        +search_nits(nits, show_progress) list~NitResult~
+        +search_by_name(name) NitResult|None
     }
 
     class RuesPlaywrightScraper {
         -logger: LoggerAdapter
-        +search_nits(nits: list, show_progress: bool): list~NitResult~
-        -_search_nits_async(nits, show_progress): list~NitResult~
+        +search_nits(nits, show_progress) list~NitResult~
+        +search_by_name(name) NitResult|None
+    }
+
+    class RUESNitService {
+        -_scraper: NitScraperRepository
+        -logger: LoggerAdapter
+        +search(nits) list~NitResult~
+        +search_by_name(name) NitResult|None
+        +writer(data, file_path)
     }
 
     class NitResult {
         +nit: int
         +is_company: bool
-        +name: str | None
+        +name: str|None
     }
 
-    class RUESNitService {
-        -logger: LoggerAdapter
-        +search(nits): list~NitResult~
-        +writer(data, file_path)
-    }
-
-    SearchNitsUseCase --> NitScraperRepository
+    RUESNitService --> NitScraperRepository
     NitScraperRepository <|.. RuesPlaywrightScraper
-    RUESNitService --> SearchNitsUseCase
-    SearchNitsUseCase ..> NitResult : returns
+    RUESNitService ..> NitResult : returns
+```
+
+---
+
+## Diagrama de Flujo: Cascada de Resolución de Empresas
+
+```mermaid
+flowchart TD
+    START[Fila del Excel con NIT + Nombre] --> A{BD local por NIT?}
+    A -->|Sí| DONE[✓ Empresa resuelta]
+    A -->|No| B{BD local por Nombre?}
+    B -->|Sí| DONE
+    B -->|No| C{RUES por NIT?}
+    C -->|Sí| DONE
+    C -->|No| D{RUES por Nombre?}
+    D -->|Sí| DONE
+    D -->|No| E{Odoo por NIT =like?}
+    E -->|Sí| DONE
+    E -->|No| F{Odoo por Nombre ilike?}
+    F -->|Sí| DONE
+    F -->|No| G["⚠️ [NOVEDAD] - Sin resultado"]
+```
+
+---
+
+## Diagrama de Flujo: Inyección a Odoo
+
+```mermaid
+flowchart TD
+    A[Leer log previo de inyección] --> B[Filtrar NITs ya procesados OK]
+    B --> C[Para cada empresa del batch]
+    C --> D{Buscar cliente por NIT =like}
+    D -->|Encontrado| G[Crear factura en Odoo]
+    D -->|No encontrado| E{Buscar por nombre ilike}
+    E -->|Encontrado| G
+    E -->|No encontrado| F["Marcar VERIFICAR"]
+    G --> H[Registrar resultado en log Excel]
+    F --> H
+    H --> I{¿Más empresas?}
+    I -->|Sí| C
+    I -->|No| J[Escribir log_inyeccion.xlsx]
 ```
 
 ---
@@ -250,37 +327,47 @@ flowchart TD
     B -->|Opción 4| F[Cargar Tarifas]
     B -->|Opción 5| G[Registrar Empresas]
     B -->|Opción 6| H[Asignar Tarifas]
+    B -->|Opción 7| K[Inyectar a Odoo]
 
     C --> C1[Validar NITs en RUES]
     C1 --> C2[JSON con resultados]
 
     D --> D1[Excel → Polars DataFrame]
-    D1 --> D2[Persistir en BD]
+    D1 --> D2[Dedup por company_id]
+    D2 --> D3[Persistir en BD]
 
     E --> E1[Leer hojas: Paquetes, Proveedores, Especiales]
     E1 --> E2[Normalizar nombres y datos]
     E2 --> E3[Exportar Excel normalizado]
 
     F --> F1[Leer tarifas desde Excel]
-    F1 --> F2[Validar CUPS, ciudades, actividades]
-    F2 --> F3[Persistir rates en BD]
+    F1 --> F2[Fuzzy city resolution]
+    F2 --> F3[Rename tarifas especiales]
+    F3 --> F4[Dedup por clave compuesta]
+    F4 --> F5[Persistir rates en BD]
 
     G --> G1[Leer empresas desde Excel]
-    G1 --> G2[Asociar con paquetes y facturadores]
-    G2 --> G3[Persistir en BD]
+    G1 --> G2[Validar NITs RUES o cache JSON]
+    G2 --> G3[Asociar con paquetes]
+    G3 --> G4[Persistir en BD]
 
     H --> H1[Leer consolidado Excel]
-    H1 --> H2[Cruzar con catálogos BD]
-    H2 --> H3[Fuzzy matching de nombres]
-    H3 --> H4[Calcular tarifas por CUPS]
-    H4 --> H5[Generar CONSOLIDADO.xlsx]
-    H5 --> H6{¿Día < 5 o > 29?}
-    H6 -->|Sí| I[Generar Pre-Facturas]
-    H6 -->|No| J[Fin]
+    H1 --> H2[Cascada resolución empresas]
+    H2 --> H3[Normalizar NITs, fechas, sufijos]
+    H3 --> H4[Cruzar con catálogos BD]
+    H4 --> H5[Calcular tarifas por CUPS]
+    H5 --> H6[Generar CONSOLIDADO.xlsx]
+    H6 --> H7{¿Día < 5 o > 29?}
+    H7 -->|Sí| I[Generar Pre-Facturas por NIT]
+    H7 -->|No| J[Fin]
 
-    I --> I1[Separar por NIT]
-    I1 --> I2[Generar Excel por empresa]
-    I2 --> J
+    K --> K1[Leer pre-facturas]
+    K1 --> K2[Filtrar anti-duplicados]
+    K2 --> K3[Buscar clientes en Odoo]
+    K3 --> K4[Inyectar facturas XML-RPC]
+    K4 --> K5[Generar log_inyeccion.xlsx]
+
+    I --> J
 
     subgraph BD[PostgreSQL / Supabase]
         DB1[(companies)]
@@ -293,10 +380,10 @@ flowchart TD
         DB8[(specials)]
     end
 
-    D2 --> BD
-    F3 --> BD
-    G3 --> BD
-    H2 --> BD
+    D3 --> BD
+    F5 --> BD
+    G4 --> BD
+    H4 --> BD
 ```
 
 ---
@@ -312,18 +399,24 @@ C4Deployment
             Container(app, "Facturación CLI", "main.py", "Aplicación de consola interactiva")
         }
         Deployment_Node(browser, "Firefox Headless") {
-            Container(pw, "Playwright", "", "Navegador para web scraping")
+            Container(pw, "Playwright", "", "Navegador para web scraping RUES")
         }
         Deployment_Node(fs, "Sistema de Archivos") {
             Container(excel_in, "Excel Input", ".xlsx", "Archivos de datos de entrada")
             Container(excel_out, "Excel Output", ".xlsx", "Consolidados y pre-facturas generadas")
-            Container(logs, "Logs", ".log", "user_audit.log + logs.log")
+            Container(logs, "Logs", ".xlsx/.log", "user_audit.xlsx + logs.log")
         }
     }
 
-    Deployment_Node(cloud, "Supabase Cloud", "AWS") {
+    Deployment_Node(cloud_sb, "Servidor de Base de Datos") {
         Deployment_Node(pg, "PostgreSQL 15") {
             ContainerDb(database, "postgres", "Base de datos de facturación")
+        }
+    }
+
+    Deployment_Node(cloud_odoo, "Avancys Cloud") {
+        Deployment_Node(odoo_server, "Odoo 14") {
+            Container(odoo, "soandesv14", "ERP con datos de clientes y facturas")
         }
     }
 
@@ -333,7 +426,8 @@ C4Deployment
         }
     }
 
-    Rel(app, database, "psycopg2 + SSL", "TCP/6543")
+    Rel(app, database, "psycopg2", "TCP/5432")
+    Rel(app, odoo, "XML-RPC", "HTTPS/443")
     Rel(pw, rues, "HTTPS", "443")
     Rel(app, pw, "Playwright API")
     Rel(app, excel_in, "Lee")
