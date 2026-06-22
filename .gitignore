@@ -223,3 +223,4 @@ skills-lock.json
 pre-facturas/
 odoo-output/
 *.xlsx
+datos_supabase.dump
