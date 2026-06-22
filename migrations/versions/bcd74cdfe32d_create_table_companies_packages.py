@@ -20,11 +20,14 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "companies_packages",
-        sa.Column("company_id", sa.Integer, sa.ForeignKey("companies.id"), nullable=False),
+        sa.Column(
+            "company_id", sa.Integer, sa.ForeignKey("companies.id"), nullable=False
+        ),
         sa.Column("package_id", sa.Integer, nullable=False),
         sa.Column("model", sa.String(60), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP, server_default=sa.func.now()),
         sa.Column("updated_at", sa.TIMESTAMP, server_default=sa.func.now()),
+        sa.Column("deleted_at", sa.TIMESTAMP, nullable=True),
         sa.PrimaryKeyConstraint("company_id", "package_id", "model"),
         sa.UniqueConstraint("company_id"),
     )

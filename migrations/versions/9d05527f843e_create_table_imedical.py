@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column("nit_success", sa.String(12), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP, server_default=sa.func.now()),
         sa.Column("updated_at", sa.TIMESTAMP, server_default=sa.func.now()),
+        sa.Column("deleted_at", sa.TIMESTAMP, nullable=True),
         sa.UniqueConstraint("nit_success"),
     )
 

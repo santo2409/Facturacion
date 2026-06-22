@@ -44,14 +44,18 @@ class ImportCompaniesFromExcel:
         result_scrapping = None
 
         if not Path(file_path).exists():
-            result_scrapping = self.nit_service.search(df_nits)
+            with self.progress("Validando NITs (RUES)", total=len(df_nits)):
+                result_scrapping = self.nit_service.search(df_nits)
+                self.progress.advance()
             self.nit_service.writer(result_scrapping, file_path)
         else:
-            with open(file_path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-                result_scrapping = [
-                    Company(d.get("nit"), d.get("company")) for d in data
-                ]
+            with self.progress("Cargando datos de empresas", total=1):
+                with open(file_path, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                    result_scrapping = [
+                        Company(d.get("nit"), d.get("company")) for d in data
+                    ]
+                self.progress.advance()
 
         nit_df = pl.DataFrame(
             {
