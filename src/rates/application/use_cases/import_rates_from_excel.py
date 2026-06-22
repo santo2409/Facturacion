@@ -57,6 +57,24 @@ class ImportRatesFromExcel:
                 resolved.add(upper)
         return list(resolved)
 
+    def _resolve_names_with_renames(self, raw_names, catalog):
+        """Like _resolve_names but also returns {old_name: new_name} for fuzzy matches that differ."""
+        resolved = set()
+        renames = {}
+        for name in raw_names:
+            upper = name.upper()
+            if catalog and upper not in [c["name"] for c in catalog]:
+                slug = self.fuzz.fuzz_property(upper, catalog, threshold=95)
+                if slug and slug != upper:
+                    # Fuzzy matched to an existing name that differs → rename
+                    renames[slug] = upper
+                    resolved.add(upper)
+                else:
+                    resolved.add(slug if slug else upper)
+            else:
+                resolved.add(upper)
+        return list(resolved), renames
+
     def _progress_city(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Ciudades")
         cities = df["CIUDAD"].unique().to_list()
@@ -81,7 +99,7 @@ class ImportRatesFromExcel:
             self.package_repo.save_batch(pkg_entities)
             self.progress.advance()
 
-        self.__relationships_rates(df, package_all, Package.__name__)
+        self.__relationships_rates(df, self.package_repo.all(), Package.__name__)
 
     def _progress_providers(self, excel):
         df = self.mega.total_dataframe(self.loader, excel, "Proveedores")
@@ -102,11 +120,17 @@ class ImportRatesFromExcel:
         specials = df["CONTRATO"].unique().to_list()
         special_all = self.special_repo.all()
 
-        resolved = self._resolve_names(specials, special_all)
-        spec_entities = [Special(name) for name in resolved]
+        resolved, renames = self._resolve_names_with_renames(specials, special_all)
+        new_names = [name for name in resolved if name not in renames.values()]
+        spec_entities = [Special(name) for name in new_names]
 
         with self.progress("Importando tarifas especiales", total=1):
-            self.special_repo.save_batch(spec_entities)
+            if spec_entities:
+                self.special_repo.save_batch(spec_entities)
+            for old_name, new_name in renames.items():
+                spec_id = next((s["id"] for s in special_all if s["name"] == old_name), None)
+                if spec_id:
+                    self.special_repo.update(Special(new_name, id=spec_id))
             self.progress.advance()
 
         self.__relationships_rates(df, self.special_repo.all(), Special.__name__)
@@ -120,6 +144,15 @@ class ImportRatesFromExcel:
         city_map = {c["name"]: c["id"] for c in city_all}
         cup_map = {c["code"]: c["id"] for c in cups_all}
         activity_map = {c["name"]: c["id"] for c in activities_all}
+
+        # Build fuzzy city alias map for names not in catalog
+        city_alias = {}
+        for city_name in df["CIUDAD"].unique().to_list():
+            upper = city_name.upper()
+            if upper not in city_map:
+                slug = self.fuzz.fuzz_property(upper, city_all, threshold=90)
+                if slug:
+                    city_alias[upper] = city_map[slug]
 
         df = df.with_columns(
             pl.col("VALOR").cast(pl.Utf8).str.replace_all(r"\D", "").alias("VALOR")
@@ -135,7 +168,7 @@ class ImportRatesFromExcel:
             with self.progress("Importando tarifas", total=len(df)):
                 for row in df.iter_rows(named=True):
                     contract_id = contract_map.get(row["CONTRATO"].upper())
-                    city_id = city_map.get(row["CIUDAD"].upper())
+                    city_id = city_map.get(row["CIUDAD"].upper()) or city_alias.get(row["CIUDAD"].upper())
                     cup_id = cup_map.get(row["CUP"].upper())
                     activity_id = activity_map.get(row["INTRA O EXTRA"].upper())
                     rate_value = row["VALOR"]
@@ -192,13 +225,13 @@ class ImportRatesFromExcel:
                     )
 
                     if len(rates_batch) >= batch_size:
-                        self.rates_repo.save_batch(rates_batch)
+                        self._save_deduped(rates_batch)
                         rates_batch = []
 
                     self.progress.advance()
 
                 if rates_batch:
-                    self.rates_repo.save_batch(rates_batch)
+                    self._save_deduped(rates_batch)
 
         except Exception as error:
             self.logger.error(
@@ -206,3 +239,11 @@ class ImportRatesFromExcel:
                 exc_info=True,
                 user_msg="No se pudieron guardar las tarifas.",
             )
+
+    def _save_deduped(self, rates_batch: list[Rate]):
+        """Deduplicate by conflict key before inserting."""
+        unique = {}
+        for r in rates_batch:
+            key = (r.rateable_id, r.city_id, r.cup_id, r.activity_id, r.rateable_type)
+            unique[key] = r
+        self.rates_repo.save_batch(list(unique.values()))
