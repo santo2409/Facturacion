@@ -7,6 +7,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
+from src.assign.infrastructure.console.missing_rates_controller import (
+    generate_missing_rates,
+)
 from src.billers.infrastructure.console.import_billers_controller import import_billers
 from src.company.infrastructure.console.import_companies_rates_controller import (
     import_companies,
@@ -48,6 +51,9 @@ def console_app():
         table.add_row("4", "Cargar Tarifas")
         table.add_row("5", "Registrar Empresas - Paquetes")
         table.add_row("6", "Asignar Tarifas")
+        table.add_row("7", "Generar Pre Facturas")
+        table.add_row("8", "Cargar Pre Facturas")
+        table.add_row("9", "Generar Faltantes")
         table.add_row("0", "Salir")
 
         console.print(table)
@@ -74,9 +80,15 @@ def console_app():
             day = datetime.now().day
             should_generate = day < 5 or day > 29
             assign_rates(tech_logger, with_invoices=should_generate)
-            if should_generate:
-                generate_pre_invoices(tech_logger)
-                inject_invoices(tech_logger)
+        elif option == "7":
+            console.print("[green]Generando Pre Facturas...[/green]")
+            generate_pre_invoices(tech_logger)
+        elif option == "8":
+            console.print("[green]Inyectando Facturas...[/green]")
+            inject_invoices(tech_logger)
+        elif option == "9":
+            console.print("[green]Generando Faltantes...[/green]")
+            generate_missing_rates(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
