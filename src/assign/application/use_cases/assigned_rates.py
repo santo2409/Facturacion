@@ -540,13 +540,14 @@ class AssignRatesFromExcel:
         company_to_package = lookups["company_to_package"]
         packages_all = lookups["packages_all"]
 
+        default_package = "PAQUETE C 2025"
+
         # Build NIT → package_name mapping
         nit_to_pkg = {}
         for nit, comp in nit_to_company.items():
             pkg_tuple = company_to_package.get(comp["id"])
             if pkg_tuple:
                 pkg_id, model = pkg_tuple
-                # Find name by id and model
                 if model == Package.__name__:
                     name = next((p["name"] for p in packages_all if p["id"] == pkg_id), None)
                 elif model == Provider.__name__:
@@ -554,10 +555,10 @@ class AssignRatesFromExcel:
                 elif model == Special.__name__:
                     name = next((p["name"] for p in self.special_repo.all() if p["id"] == pkg_id), None)
                 else:
-                    name = next((p["name"] for p in packages_all if p["id"] == 30), None)
-                nit_to_pkg[nit] = name
+                    name = None
+                nit_to_pkg[nit] = name or default_package
             else:
-                nit_to_pkg[nit] = next((p["name"] for p in packages_all if p["id"] == 30), None)
+                nit_to_pkg[nit] = default_package
 
         if nit_to_pkg:
             df_pkg = pl.DataFrame({
@@ -567,6 +568,8 @@ class AssignRatesFromExcel:
             df = df.join(df_pkg, on="NIT", how="left")
         else:
             df = df.with_columns(pl.lit(None).cast(pl.Utf8).alias("PAQUETE"))
+
+        df = df.with_columns(pl.col("PAQUETE").fill_null(default_package))
 
         return df
 
@@ -579,6 +582,14 @@ class AssignRatesFromExcel:
         cup_code_to_id = lookups["cup_code_to_id"]
         activity_name_to_id = lookups["activity_name_to_id"]
         package_name_to_id = lookups["package_name_to_id"]
+        packages_all = lookups["packages_all"]
+
+        # Reverse lookups for logging
+        city_id_to_name = {v: k for k, v in city_name_to_id.items()}
+        activity_id_to_name = {v: k for k, v in activity_name_to_id.items()}
+
+        default_package = "PAQUETE C 2025"
+        default_pkg_tuple = package_name_to_id.get(default_package)
 
         headers = [h for h in df.columns if str(h).replace("-", "").isdigit()]
 
@@ -597,12 +608,8 @@ class AssignRatesFromExcel:
                 activity = row["TIPO DE ACTIVIDAD"]
                 pkg_name = row["PAQUETE"]
 
-                # Resolve package_id and model
                 comp = nit_to_company.get(nit)
-                if comp:
-                    pkg_tuple = company_to_package.get(comp["id"])
-                else:
-                    pkg_tuple = None
+                pkg_tuple = company_to_package.get(comp["id"]) if comp else None
 
                 if pkg_tuple:
                     package_id, model = pkg_tuple
@@ -624,6 +631,15 @@ class AssignRatesFromExcel:
                         cup_id = cup_code_to_id.get(str(h).strip())
                         if cup_id:
                             rate_keys_set.add((package_id, city_id, cup_id, activity_id, model))
+                            if default_pkg_tuple:
+                                def_id, def_model = default_pkg_tuple
+                                rate_keys_set.add((def_id, city_id, cup_id, activity_id, def_model))
+                                # Also add base CUP key for homologation fallback
+                                base_code = str(h).split("-")[0]
+                                if base_code != str(h):
+                                    base_cup_id = cup_code_to_id.get(base_code)
+                                    if base_cup_id:
+                                        rate_keys_set.add((def_id, city_id, base_cup_id, activity_id, def_model))
 
                 self.progress.advance()
 
@@ -638,8 +654,10 @@ class AssignRatesFromExcel:
             user_msg=f"{len(rates_cache)} tarifas encontradas.",
         )
 
-        # Phase 3: Build result columns
+        # Phase 3: Build result columns with fallback, collect unresolved for wildcard
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
+        fallback_logs = []
+        unresolved = []  # list of (idx, h, city_id, cup_id, activity_id, pkg_name, city, activity)
 
         for idx, row in enumerate(rows_data):
             nit = row["NIT"]
@@ -648,10 +666,7 @@ class AssignRatesFromExcel:
             pkg_name = row["PAQUETE"]
 
             comp = nit_to_company.get(nit)
-            if comp:
-                pkg_tuple = company_to_package.get(comp["id"])
-            else:
-                pkg_tuple = None
+            pkg_tuple = company_to_package.get(comp["id"]) if comp else None
 
             if pkg_tuple:
                 package_id, model = pkg_tuple
@@ -671,8 +686,199 @@ class AssignRatesFromExcel:
                     cup_id = cup_code_to_id.get(str(h).strip())
                     if cup_id:
                         key = (package_id, city_id, cup_id, activity_id, model)
-                        price = rates_cache.get(key, 1)
-                        result_cols[str(h)][idx] = int(price)
+                        price = rates_cache.get(key)
+                        if price:
+                            result_cols[str(h)][idx] = int(price)
+                        elif default_pkg_tuple:
+                            def_id, def_model = default_pkg_tuple
+                            fallback_key = (def_id, city_id, cup_id, activity_id, def_model)
+                            fallback_price = rates_cache.get(fallback_key)
+                            if fallback_price:
+                                result_cols[str(h)][idx] = int(fallback_price)
+                                fallback_logs.append(
+                                    f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
+                                    f"para la actividad '{activity}', se asignó tarifa del paquete '{default_package}'"
+                                )
+                            else:
+                                unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+                        else:
+                            unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+
+        # Phase 4: Wildcard fallback — find any rate for unresolved combinations
+        still_unresolved = []
+        if unresolved:
+            wildcard_keys = list({(city_id, cup_id, act_id) for _, _, city_id, cup_id, act_id, _, _, _ in unresolved})
+            wildcard_cache = self.rates_repo.find_any_rate(wildcard_keys)
+
+            # Build id→name maps for logging
+            pkg_id_to_name = {p["id"]: p["name"] for p in packages_all}
+            prov_id_to_name = {p["id"]: p["name"] for p in self.provider_repo.all()}
+            spec_id_to_name = {p["id"]: p["name"] for p in self.special_repo.all()}
+
+            wildcard_logs = []
+            for idx, h, city_id, cup_id, activity_id, pkg_name, city, activity in unresolved:
+                result_tuple = wildcard_cache.get((city_id, cup_id, activity_id))
+                if result_tuple:
+                    w_rate, w_type, w_id = result_tuple
+                    result_cols[str(h)][idx] = int(w_rate)
+                    # Resolve source name
+                    if w_type == "Package":
+                        source = pkg_id_to_name.get(w_id, str(w_id))
+                    elif w_type == "Provider":
+                        source = prov_id_to_name.get(w_id, str(w_id))
+                    else:
+                        source = spec_id_to_name.get(w_id, str(w_id))
+                    wildcard_logs.append(
+                        f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
+                        f"para la actividad '{activity}', se asignó tarifa del paquete '{source}'"
+                    )
+                else:
+                    still_unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+
+            if wildcard_logs:
+                unique_wlogs = sorted(set(wildcard_logs))
+                self.logger.warning(
+                    f"{len(wildcard_logs)} tarifas asignadas desde otros paquetes:\n"
+                    + "\n".join(f"  {l}" for l in unique_wlogs[:50]),
+                    user_msg=f"{len(wildcard_logs)} tarifas tomadas de otros paquetes por falta de tarifa.",
+                )
+
+        # Phase 5: CUP homologation — strip suffix and search base CUP in PAQUETE C 2025
+        still_unresolved_2 = []
+        if still_unresolved and default_pkg_tuple:
+            def_id, def_model = default_pkg_tuple
+            homolog_logs = []
+            for idx, h, city_id, cup_id, activity_id, pkg_name, city, activity in still_unresolved:
+                base_code = str(h).split("-")[0]
+                if base_code == str(h):
+                    still_unresolved_2.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+                    continue  # No dash — nothing to homologate here
+                base_cup_id = cup_code_to_id.get(base_code)
+                if not base_cup_id:
+                    still_unresolved_2.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+                    continue
+                homolog_key = (def_id, city_id, base_cup_id, activity_id, def_model)
+                homolog_price = rates_cache.get(homolog_key)
+                if homolog_price:
+                    result_cols[str(h)][idx] = int(homolog_price)
+                    homolog_logs.append(
+                        f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
+                        f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
+                        f"del paquete '{default_package}'"
+                    )
+                else:
+                    still_unresolved_2.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+
+            if homolog_logs:
+                unique_hlogs = sorted(set(homolog_logs))
+                self.logger.warning(
+                    f"{len(homolog_logs)} tarifas homologadas al CUP base en '{default_package}':\n"
+                    + "\n".join(f"  {l}" for l in unique_hlogs[:50]),
+                    user_msg=f"{len(homolog_logs)} tarifas homologadas al CUP base del paquete '{default_package}'.",
+                )
+        else:
+            still_unresolved_2 = list(still_unresolved)
+
+        # Phase 6: CUP homologation in any package — base CUP wildcard
+        still_unresolved_3 = []
+        if still_unresolved_2:
+            wildcard2_keys = set()
+            for _, h, city_id, _, activity_id, _, _, _ in still_unresolved_2:
+                base_code = str(h).split("-")[0]
+                if base_code == str(h):
+                    continue  # No dash — will go to Phase 7
+                base_cup_id = cup_code_to_id.get(base_code)
+                if base_cup_id:
+                    wildcard2_keys.add((city_id, base_cup_id, activity_id))
+
+            if wildcard2_keys:
+                wildcard2_cache = self.rates_repo.find_any_rate(list(wildcard2_keys))
+
+                pkg_id_to_name = {p["id"]: p["name"] for p in packages_all}
+                prov_id_to_name = {p["id"]: p["name"] for p in self.provider_repo.all()}
+                spec_id_to_name = {p["id"]: p["name"] for p in self.special_repo.all()}
+
+                wildcard2_logs = []
+                for idx, h, city_id, cup_id, activity_id, pkg_name, city, activity in still_unresolved_2:
+                    base_code = str(h).split("-")[0]
+                    if base_code == str(h):
+                        still_unresolved_3.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+                        continue
+                    base_cup_id = cup_code_to_id.get(base_code)
+                    if not base_cup_id:
+                        still_unresolved_3.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+                        continue
+                    result_tuple = wildcard2_cache.get((city_id, base_cup_id, activity_id))
+                    if result_tuple:
+                        w_rate, w_type, w_id = result_tuple
+                        result_cols[str(h)][idx] = int(w_rate)
+                        if w_type == "Package":
+                            source = pkg_id_to_name.get(w_id, str(w_id))
+                        elif w_type == "Provider":
+                            source = prov_id_to_name.get(w_id, str(w_id))
+                        else:
+                            source = spec_id_to_name.get(w_id, str(w_id))
+                        wildcard2_logs.append(
+                            f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
+                            f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
+                            f"del paquete '{source}'"
+                        )
+                    else:
+                        still_unresolved_3.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
+
+                if wildcard2_logs:
+                    unique_w2logs = sorted(set(wildcard2_logs))
+                    self.logger.warning(
+                        f"{len(wildcard2_logs)} tarifas homologadas al CUP base en cualquier paquete:\n"
+                        + "\n".join(f"  {l}" for l in unique_w2logs[:50]),
+                        user_msg=f"{len(wildcard2_logs)} tarifas homologadas al CUP base desde otros paquetes.",
+                    )
+            else:
+                still_unresolved_3 = list(still_unresolved_2)
+
+        # Phase 7: Any package, any city — search by cup_id + activity_id only
+        if still_unresolved_3:
+            cup_activity_keys = list({(cup_id, activity_id) for _, _, _, cup_id, activity_id, _, _, _ in still_unresolved_3})
+            cup_activity_cache = self.rates_repo.find_rate_by_cup_activity(cup_activity_keys)
+
+            if cup_activity_cache:
+                if 'pkg_id_to_name' not in dir():
+                    pkg_id_to_name = {p["id"]: p["name"] for p in packages_all}
+                    prov_id_to_name = {p["id"]: p["name"] for p in self.provider_repo.all()}
+                    spec_id_to_name = {p["id"]: p["name"] for p in self.special_repo.all()}
+
+                phase7_logs = []
+                for idx, h, city_id, cup_id, activity_id, pkg_name, city, activity in still_unresolved_3:
+                    result_tuple = cup_activity_cache.get((cup_id, activity_id))
+                    if result_tuple:
+                        w_rate, w_type, w_id = result_tuple
+                        result_cols[str(h)][idx] = int(w_rate)
+                        if w_type == "Package":
+                            source = pkg_id_to_name.get(w_id, str(w_id))
+                        elif w_type == "Provider":
+                            source = prov_id_to_name.get(w_id, str(w_id))
+                        else:
+                            source = spec_id_to_name.get(w_id, str(w_id))
+                        phase7_logs.append(
+                            f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}', "
+                            f"se asignó tarifa del paquete '{source}' (ciudad diferente)"
+                        )
+
+                if phase7_logs:
+                    unique_p7logs = sorted(set(phase7_logs))
+                    self.logger.warning(
+                        f"{len(phase7_logs)} tarifas asignadas desde cualquier ciudad/paquete:\n"
+                        + "\n".join(f"  {l}" for l in unique_p7logs[:50]),
+                        user_msg=f"{len(phase7_logs)} tarifas tomadas de otra ciudad por falta de tarifa local.",
+                    )
+
+        if fallback_logs:
+            unique_logs = sorted(set(fallback_logs))
+            self.logger.warning(
+                f"{len(fallback_logs)} tarifas asignadas desde paquete por defecto:\n"
+                + "\n".join(f"  {l}" for l in unique_logs[:50]),
+                user_msg=f"{len(fallback_logs)} tarifas tomadas del paquete '{default_package}' por falta de tarifa en el paquete original.",
+            )
 
         # Replace columns with computed values
         for h in headers:
