@@ -21,3 +21,21 @@ class FakeRatesRepo:
             if k in self._data:
                 result[k] = self._data[k]
         return result
+
+    def find_any_rate(self, keys):
+        result = {}
+        for city_id, cup_id, activity_id in keys:
+            for (rid, cid, cuid, aid, rtype), rate in self._data.items():
+                if cid == city_id and cuid == cup_id and aid == activity_id:
+                    result[(city_id, cup_id, activity_id)] = (rate, rtype, rid)
+                    break
+        return result
+
+    def find_rate_by_cup_activity(self, keys):
+        result = {}
+        for cup_id, activity_id in keys:
+            for (rid, cid, cuid, aid, rtype), rate in self._data.items():
+                if cuid == cup_id and aid == activity_id:
+                    result[(cup_id, activity_id)] = (rate, rtype, rid)
+                    break
+        return result

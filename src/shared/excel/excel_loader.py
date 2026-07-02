@@ -19,10 +19,11 @@ class ExcelLoader:
         return ExcelFile(path)
 
     def load_sheet(self, excel: ExcelFile, sheet: str):
-        return pl.read_excel(
+        df = pl.read_excel(
             excel.path,
             sheet_name=sheet,
             read_options={"dtypes": pl.Utf8},
             engine="calamine",
             infer_schema_length=0,
         )
+        return df.rename({c: c.strip() for c in df.columns if c != c.strip()})
