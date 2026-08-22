@@ -17,7 +17,7 @@ class NormalizeInformationFromExcel:
         df_provider = self.provider.normalize(loader.load_sheet(excel, "Proveedores"))
 
         df_special = self.special.normalize(
-            loader.load_sheet(excel, "TarifasEspeciales")
+            loader.load_sheets_by_prefix(excel, "TarifasEspeciales")
         )
 
         dataframes = {
