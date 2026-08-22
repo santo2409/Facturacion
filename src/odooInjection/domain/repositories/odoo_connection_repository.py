@@ -19,6 +19,12 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
+        """Resuelve múltiples NITs en el menor número de llamadas posible.
+        Retorna solo las claves encontradas: {nit: (id, name, "NIT")}."""
+        pass
+
+    @abstractmethod
     def get_nit(self, client_id: int) -> str | None:
         pass
 
