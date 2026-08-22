@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import polars as pl
 
 from src.activity.infrastructure.sa_activity_type_repository import (
@@ -30,7 +32,9 @@ from src.provider.infrastructure.persistence.sa_provider_repository import (
 from src.rates.infrastructure.persistence.sa_rates_repository import (
     SaRatesRepository,
 )
-from src.scrapping.infrastructure.console.nit_service import RUESNitService
+from src.scrapping.infrastructure.reporting.not_found_companies_log_generator import (
+    NotFoundCompaniesLogGenerator,
+)
 from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
@@ -87,11 +91,12 @@ def assign_rates(logger, with_invoices=False):
         activities_repo=SaActivityRepository(session, logger),
         rates_repo=SaRatesRepository(session, logger),
         cup_repo=SaCupRepository(session),
-        nit_service=RUESNitService(logger),
         fuzz=RapidFuzzBiller(logger),
         progress=RichProgress(),
         logger=logger,
         odoo_repo=odoo_repo,
+        not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
+        logs_dir=Path("logs"),
     )
 
     use_case.execute(df, df_facture)

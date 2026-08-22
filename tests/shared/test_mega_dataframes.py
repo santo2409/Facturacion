@@ -10,6 +10,12 @@ def _make_excel_and_loader(sheets_data: dict):
     excel.sheet_names = list(sheets_data.keys())
     loader = MagicMock()
     loader.load_sheet = lambda e, name: sheets_data.get(name, pl.DataFrame())
+
+    def _load_sheets_by_prefix(e, prefix):
+        frames = [df for name, df in sheets_data.items() if name.startswith(prefix)]
+        return pl.concat(frames, how="vertical_relaxed") if frames else pl.DataFrame()
+
+    loader.load_sheets_by_prefix = _load_sheets_by_prefix
     return excel, loader
 
 
@@ -62,3 +68,20 @@ def test_total_dataframe_empty_sheets():
     excel, loader = _make_excel_and_loader(sheets)
     result = mega.total_dataframe(loader, excel, "Paquetes")
     assert result.is_empty()
+
+
+def test_total_dataframe_multiple_tarifas_especiales_sheets():
+    mega = MegaDataFrames()
+    sheets = {
+        "Paquetes": pl.DataFrame({"CONTRATO": ["X"]}),
+        "Proveedores": pl.DataFrame({"CONTRATO": ["Y"]}),
+        "TarifasEspeciales1": pl.DataFrame({"CONTRATO": ["ESPECIAL UNO"]}),
+        "TarifasEspecialesBogota": pl.DataFrame({"CONTRATO": ["ESPECIAL DOS", "TARIFA X"]}),
+    }
+    excel, loader = _make_excel_and_loader(sheets)
+    result = mega.total_dataframe(loader, excel, "TarifasEspeciales")
+    contracts = result["CONTRATO"].to_list()
+    # Combines both sheets sharing the prefix and excludes TARIFA/PROVEEDOR/PAQUETE rows
+    assert "ESPECIAL UNO" in contracts
+    assert "ESPECIAL DOS" in contracts
+    assert "TARIFA X" not in contracts

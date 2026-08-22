@@ -17,8 +17,7 @@ class ExcelLogGenerator:
     def __init__(self, logger):
         self._logger = logger
 
-    @staticmethod
-    def read_successful_nits(log_path: Path) -> set[str]:
+    def read_successful_nits(self, log_path: Path) -> set[str]:
         """Lee log_inyeccion.xlsx previo y retorna NITs con estado OK."""
         if not log_path.exists():
             return set()
@@ -33,12 +32,63 @@ class ExcelLogGenerator:
                         nits.add(nit)
             wb.close()
             return nits
-        except Exception:
+        except Exception as e:
+            self._logger.warning(
+                f"No se pudo leer el log previo de inyección ({log_path}): {e}",
+                user_msg=(
+                    f"No se pudo leer el log de inyección previo ({log_path.name}); "
+                    "verifica que no esté abierto en Excel. Se reprocesarán todas las empresas."
+                ),
+            )
             return set()
+
+    def _read_previous_results(self, log_path: Path) -> dict[str, InvoiceResult]:
+        """Lee el log previo completo (no solo los OK) para fusionarlo con los
+        resultados de esta corrida, en vez de sobrescribir el histórico completo."""
+        previos: dict[str, InvoiceResult] = {}
+        if not log_path.exists():
+            return previos
+        try:
+            wb = openpyxl.load_workbook(log_path, data_only=True)
+            ws = wb.active
+            for row in ws.iter_rows(min_row=2):
+                nit_cell = row[1] if len(row) > 1 else None
+                if nit_cell is None or nit_cell.value in (None, ""):
+                    continue
+                nit = str(nit_cell.value).strip()
+                if not nit or nit == "None":
+                    continue
+                link_cell = row[6] if len(row) > 6 else None
+                link = link_cell.hyperlink.target if link_cell is not None and link_cell.hyperlink else ""
+                factura_id = row[5].value if len(row) > 5 and row[5].value not in ("", None) else None
+                previos[nit] = InvoiceResult(
+                    nit=nit,
+                    empresa=str(row[2].value or "") if len(row) > 2 else "",
+                    estado=str(row[3].value or "") if len(row) > 3 else "",
+                    detalle=str(row[4].value or "") if len(row) > 4 else "",
+                    factura_id=factura_id,
+                    link=link,
+                    hora=str(row[7].value or "") if len(row) > 7 else "",
+                )
+            wb.close()
+        except Exception as e:
+            self._logger.error(
+                f"No se pudo leer el histórico previo del log de inyección ({log_path}): {e}",
+                user_msg=(
+                    f"No se pudo leer el histórico previo de {log_path.name}; "
+                    "el log de esta corrida solo tendrá las empresas procesadas ahora."
+                ),
+            )
+        return previos
 
     def generate(self, resultados: list[InvoiceResult], output_dir: Path):
         output_dir.mkdir(parents=True, exist_ok=True)
         log_path = output_dir / "log_inyeccion.xlsx"
+
+        historial = self._read_previous_results(log_path)
+        for r in resultados:
+            historial[r.nit] = r
+        resultados = list(historial.values())
 
         wb = openpyxl.Workbook()
         ws = wb.active

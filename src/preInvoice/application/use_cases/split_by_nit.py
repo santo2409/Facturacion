@@ -39,6 +39,28 @@ FIXED_COLUMNS = [
 
 _FIXED_UPPER = {c.strip().upper() for c in FIXED_COLUMNS}
 
+# Colores de fase usados en assigned_rates (sin prefijo alpha "00")
+_PHASE_COLORS_6 = {
+    "FFF2CC",  # Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)
+    "F4B183",  # Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)
+    "BDD7EE",  # Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)
+    "9DC3E6",  # Fase 5 — Cualquier paquete (CUP base, misma ciudad)
+    "D5A6E6",  # Fase 6 — Cualquier paquete/ciudad (cup + actividad)
+    "FFB6C1",  # Fase 7 — Cualquier paquete, otra ciudad
+}
+
+# openpyxl almacena colores con prefijo alpha "00"
+_PHASE_COLORS_ARGB = {f"00{c}" for c in _PHASE_COLORS_6}
+
+_PHASE_LEGEND = [
+    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
+    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
+    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
+    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
+    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
+    ("FFB6C1", "Fase 7 — Cualquier paquete, otra ciudad"),
+]
+
 
 class SplitByNit:
     def __init__(self, logger, cup_repo: CupRepository | None = None, progress=None):
@@ -47,9 +69,27 @@ class SplitByNit:
         self.progress = progress
 
     def execute(self, source_path: Path, output_dir: Path):
-        wb_src = openpyxl.load_workbook(source_path, read_only=True, data_only=True)
+        # Cargar SIN read_only para acceder a formatos de celda
+        wb_src = openpyxl.load_workbook(source_path, data_only=True)
         ws_src = wb_src["Consolidado"]
-        all_rows = list(ws_src.iter_rows(values_only=True))
+
+        # Extraer valores y colores de fase simultáneamente
+        all_rows = []
+        # cell_colors[(data_row_idx, col_idx)] → color hex 6 chars (sin alpha)
+        cell_colors: dict[tuple[int, int], str] = {}
+
+        for row_idx, row in enumerate(ws_src.iter_rows()):
+            row_values = [cell.value for cell in row]
+            all_rows.append(tuple(row_values))
+
+            # Solo filas de datos (skip header en row_idx=0)
+            if row_idx >= 1:
+                data_idx = row_idx - 1
+                for col_idx, cell in enumerate(row):
+                    color = self._extract_phase_color(cell)
+                    if color:
+                        cell_colors[(data_idx, col_idx)] = color
+
         wb_src.close()
 
         header = all_rows[0]
@@ -83,12 +123,10 @@ class SplitByNit:
             raise ValueError("No se encontró 'Empresa'.")
 
         # Agrupar por carpeta destino → NIT
-        # GENERAL + FACTURAS no vacía  → "GENERAL"
-        # GENERAL + FACTURAS vacía     → "General sin factura"
-        # Otros                        → nombre del facturador
+        # Cada fila se almacena como tupla (data_row_idx_original, row_list)
         groups: dict[str, dict] = defaultdict(lambda: defaultdict(list))
-        for row in data_rows:
-            row = list(row) + [None] * (num_cols - len(row))
+        for data_idx, row_tuple in enumerate(data_rows):
+            row = list(row_tuple) + [None] * (num_cols - len(row_tuple))
             nit_val = row[nit_idx]
             if nit_val is None:
                 self.logger.warning("Fila sin NIT omitida")
@@ -113,13 +151,20 @@ class SplitByNit:
                 dest = "GENERAL" if has_set else "General sin factura"
             else:
                 dest = fact_val
-            groups[dest][nit_val].append(row)
+            groups[dest][nit_val].append((data_idx, row))
 
         total_nits = sum(len(nits) for nits in groups.values())
         self.logger.info(
             f"Carpetas destino: {len(groups)}, NITs: {total_nits}",
             user_msg=f"Se encontraron {len(groups)} carpetas destino y {total_nits} NITs.",
         )
+
+        # Nullificar 'Fecha Ingreso' para archivos de 'General sin factura'
+        fecha_ingreso_idx = self._find_column_index(header, "Fecha Ingreso")
+        if "General sin factura" in groups and fecha_ingreso_idx is not None:
+            for nit, indexed_rows in groups["General sin factura"].items():
+                for _, row in indexed_rows:
+                    row[fecha_ingreso_idx] = None
 
         # Cargar mapa de nombres CUPS una sola vez
         all_cups_codes = [str(header[i]) for i in cups_indices]
@@ -134,9 +179,10 @@ class SplitByNit:
                 ctx = self.progress(f"Generando pre-facturas: {facturador}", total=len(nit_groups))
                 ctx.__enter__()
 
-            for nit, rows in nit_groups.items():
+            for nit, indexed_rows in nit_groups.items():
                 try:
-                    active_cups = self._get_active_cups_indices(rows, cups_indices)
+                    rows_only = [row for _, row in indexed_rows]
+                    active_cups = self._get_active_cups_indices(rows_only, cups_indices)
                     final_indices = fixed_indices + active_cups
                     cups_positions = set(range(len(fixed_indices), len(final_indices)))
 
@@ -147,7 +193,12 @@ class SplitByNit:
                         header_out, cups_positions, cups_name_map
                     )
 
-                    empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                    # Construir mapa de colores para este archivo
+                    row_colors = self._build_row_colors(
+                        indexed_rows, final_indices, cell_colors
+                    )
+
+                    empresa_nombre = self._extract_empresa(rows_only, empresa_idx)
                     filename = self._sanitize_filename(
                         f"pre_factura_{nit}_{empresa_nombre}"
                     )
@@ -156,12 +207,14 @@ class SplitByNit:
                     ws = wb.active
                     ws.title = "BASE GENERAL"
                     self._write_sheet(
-                        ws, names_row, header_out, rows, final_indices, cups_positions
+                        ws, names_row, header_out, rows_only, final_indices,
+                        cups_positions, row_colors
                     )
+                    self._write_legend(wb)
 
                     wb.save(fact_dir / f"{filename}.xlsx")
                     self.logger.info(
-                        f"[{facturador}] Generado: {filename}.xlsx ({len(rows)} filas)",
+                        f"[{facturador}] Generado: {filename}.xlsx ({len(rows_only)} filas)",
                     )
                 except Exception as e:
                     self.logger.error(
@@ -191,9 +244,10 @@ class SplitByNit:
             ctx2.__enter__()
 
         for facturador, nit_groups in groups.items():
-            for nit, rows in nit_groups.items():
+            for nit, indexed_rows in nit_groups.items():
                 try:
-                    active_cups = self._get_active_cups_indices(rows, cups_indices)
+                    rows_only = [row for _, row in indexed_rows]
+                    active_cups = self._get_active_cups_indices(rows_only, cups_indices)
                     final_indices = fixed_indices + active_cups
                     cups_positions = set(range(len(fixed_indices), len(final_indices)))
 
@@ -204,7 +258,11 @@ class SplitByNit:
                         header_out, cups_positions, cups_name_map
                     )
 
-                    empresa_nombre = self._extract_empresa(rows, empresa_idx)
+                    row_colors = self._build_row_colors(
+                        indexed_rows, final_indices, cell_colors
+                    )
+
+                    empresa_nombre = self._extract_empresa(rows_only, empresa_idx)
                     sheet_name = self._sanitize_sheetname(empresa_nombre)
 
                     base_name = sheet_name
@@ -217,7 +275,8 @@ class SplitByNit:
 
                     ws = wb.create_sheet(title=sheet_name)
                     self._write_sheet(
-                        ws, names_row, header_out, rows, final_indices, cups_positions
+                        ws, names_row, header_out, rows_only, final_indices,
+                        cups_positions, row_colors
                     )
                 except Exception as e:
                     self.logger.error(
@@ -229,6 +288,7 @@ class SplitByNit:
         if self.progress:
             ctx2.__exit__(None, None, None)
 
+        self._write_legend(wb)
         wb.save(consolidado_path)
         self.logger.info(
             f"Proceso 2 completado: libro consolidado en {consolidado_path}",
@@ -236,6 +296,63 @@ class SplitByNit:
         )
 
     # ── Helpers ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _extract_phase_color(cell) -> str | None:
+        """Extrae el color de fase de una celda, retorna hex 6 chars o None."""
+        fill = cell.fill
+        if fill is None or fill.patternType is None:
+            return None
+        fg = fill.fgColor
+        if fg is None or fg.rgb is None:
+            return None
+        rgb = str(fg.rgb)
+        # openpyxl retorna ARGB (8 chars con alpha) o RGB (6 chars)
+        if len(rgb) == 8:
+            hex6 = rgb[2:]  # quitar alpha "00"
+        elif len(rgb) == 6:
+            hex6 = rgb
+        else:
+            return None
+        if hex6.upper() in _PHASE_COLORS_6:
+            return hex6.upper()
+        return None
+
+    @staticmethod
+    def _build_row_colors(
+        indexed_rows: list[tuple[int, list]],
+        final_indices: list[int],
+        cell_colors: dict[tuple[int, int], str],
+    ) -> dict[tuple[int, int], str]:
+        """
+        Construye mapa (out_row_idx, out_col_idx) → hex_color para las filas de salida.
+        """
+        row_colors = {}
+        for out_row_idx, (orig_data_idx, _) in enumerate(indexed_rows):
+            for out_col_idx, orig_col_idx in enumerate(final_indices):
+                color = cell_colors.get((orig_data_idx, orig_col_idx))
+                if color:
+                    row_colors[(out_row_idx, out_col_idx)] = color
+        return row_colors
+
+    @staticmethod
+    def _write_legend(wb):
+        """Agrega hoja Leyenda con los colores de fase."""
+        ws = wb.create_sheet(title="Leyenda")
+        ws.column_dimensions["A"].width = 6
+        ws.column_dimensions["B"].width = 55
+
+        h_font = Font(name="Arial", bold=True, size=10)
+        ws.cell(row=1, column=1, value="Color").font = h_font
+        ws.cell(row=1, column=2, value="Significado").font = h_font
+
+        # Fase 1: sin color (blanco)
+        ws.cell(row=2, column=1, value="").fill = PatternFill("solid", fgColor="FFFFFF")
+        ws.cell(row=2, column=2, value="Fase 1 — Paquete propio (sin fallback)")
+
+        for i, (color, label) in enumerate(_PHASE_LEGEND, start=3):
+            ws.cell(row=i, column=1, value="").fill = PatternFill("solid", fgColor=color)
+            ws.cell(row=i, column=2, value=label)
 
     @staticmethod
     def _make_unique_columns(cols):
@@ -284,7 +401,8 @@ class SplitByNit:
         return names
 
     def _write_sheet(
-        self, ws, names_row, header_out, rows, final_indices, cups_positions
+        self, ws, names_row, header_out, rows, final_indices, cups_positions,
+        row_colors=None
     ):
         thin = Side(style="thin", color="A6A6A6")
         border = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -296,6 +414,9 @@ class SplitByNit:
         h_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
         d_font = Font(name="Arial", size=9, color="1F1F1F")
         d_align = Alignment(horizontal="left", vertical="center")
+
+        # Cache de PatternFill por color para evitar crear objetos duplicados
+        fill_cache: dict[str, PatternFill] = {}
 
         # Fila 1: nombres descriptivos CUPS
         ws.append(names_row)
@@ -319,10 +440,17 @@ class SplitByNit:
         for r_idx, row in enumerate(rows):
             ws.append([row[i] for i in final_indices])
             ws.row_dimensions[r_idx + 3].height = 16
-            for cell in ws[r_idx + 3]:
+            for col_idx, cell in enumerate(ws[r_idx + 3]):
                 cell.font = d_font
                 cell.alignment = d_align
                 cell.border = border
+                # Aplicar color de fase si existe
+                if row_colors:
+                    color = row_colors.get((r_idx, col_idx))
+                    if color:
+                        if color not in fill_cache:
+                            fill_cache[color] = PatternFill("solid", fgColor=color)
+                        cell.fill = fill_cache[color]
 
         for col_cells in ws.columns:
             letter = get_column_letter(col_cells[0].column)

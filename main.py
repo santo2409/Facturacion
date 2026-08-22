@@ -1,4 +1,5 @@
 from datetime import datetime
+from os import getenv
 
 from dotenv import load_dotenv
 from rich import box
@@ -16,9 +17,6 @@ from src.company.infrastructure.console.import_companies_rates_controller import
 )
 from src.dataProcessing.infrastructure.console.import_information_controller import (
     import_information,
-)
-from src.odooInjection.infrastructure.console.inject_invoices_controller import (
-    inject_invoices,
 )
 from src.preInvoice.infrastructure.console.pre_invoice_controller import (
     generate_pre_invoices,
@@ -62,7 +60,7 @@ def console_app():
 
         if option == "1":
             console.print("[green]Ejecutando Web Scrapping...[/green]")
-            execute_web_scrapping()
+            execute_web_scrapping(tech_logger)
         elif option == "2":
             console.print("[green]Cargando Facturadores...[/green]")
             import_billers(tech_logger)
@@ -78,14 +76,16 @@ def console_app():
         elif option == "6":
             console.print("[green]Asignando Tarifas...[/green]")
             day = datetime.now().day
-            should_generate = day < 5 or day > 29
+            should_generate = day < int(getenv("DAY_INITIAL")) or day > int(
+                getenv("DAY_FINAL")
+            )
             assign_rates(tech_logger, with_invoices=should_generate)
         elif option == "7":
             console.print("[green]Generando Pre Facturas...[/green]")
             generate_pre_invoices(tech_logger)
         elif option == "8":
             console.print("[green]Inyectando Facturas...[/green]")
-            inject_invoices(tech_logger)
+            # inject_invoices(tech_logger)
         elif option == "9":
             console.print("[green]Generando Faltantes...[/green]")
             generate_missing_rates(tech_logger)

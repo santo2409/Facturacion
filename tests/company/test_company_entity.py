@@ -13,6 +13,17 @@ def test_company_equality():
     assert Company("900111111", "A") != Company("900222222", "A")
 
 
+def test_company_normalizes_int_nit_to_str():
+    c = Company(900111111, "EMPRESA A")
+    assert c.nit == "900111111"
+    assert isinstance(c.nit, str)
+
+
+def test_company_preserves_none_nit():
+    c = Company(None, "EMPRESA A")
+    assert c.nit is None
+
+
 def test_company_package_creation():
     cp = CompanyPackage(1, 10, "Package")
     assert cp.company_id == 1

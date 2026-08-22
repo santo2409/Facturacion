@@ -16,13 +16,11 @@ from tests.fakes.fake_city_repo import FakeCityRepo
 from tests.fakes.fake_activity_repo import FakeActivityRepo
 from tests.fakes.fake_rates_repo import FakeRatesRepo
 from tests.fakes.fake_cup_repo import FakeCupRepo
-from tests.fakes.fake_nit_service import FakeNitService
 from tests.fakes.fake_progress import FakeProgress
 from tests.fakes.fake_fuzz import FakeFuzz
 from tests.fakes.fake_logger import FakeLogger
 from tests.fakes.fake_odoo_repo import FakeOdooRepo
-from src.scrapping.domain.entities.nit_result import NitResult
-from tests.fakes.fake_odoo_repo import FakeOdooRepo
+from tests.fakes.fake_not_found_log_generator import FakeNotFoundLogGenerator
 from src.scrapping.domain.entities.nit_result import NitResult
 
 
@@ -51,10 +49,11 @@ def deps(tmp_path, monkeypatch):
         "activities_repo": FakeActivityRepo(),
         "rates_repo": FakeRatesRepo(),
         "cup_repo": FakeCupRepo([{"id": 1, "code": "890201", "name": "HEMOGRAMA"}]),
-        "nit_service": FakeNitService(),
         "fuzz": FakeFuzz(),
         "progress": FakeProgress(),
         "logger": FakeLogger(),
+        "not_found_log_generator": FakeNotFoundLogGenerator(),
+        "logs_dir": tmp_path / "logs",
     }
 
 
@@ -161,7 +160,7 @@ def test_assign_rates_replaces_1_with_price(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 5000
     assert result["Total"][0] == 5000
 
@@ -206,10 +205,15 @@ def test_match_companies_found_in_db(deps):
 
 
 def test_match_companies_rues_by_nit(deps):
-    """Paso 1: NIT no en BD, encontrado en RUES por NIT → actualiza nombre."""
-    deps["nit_service"] = FakeNitService(
-        results=[NitResult(nit=800999999, is_company=True, name="EMPRESA RUES")]
-    )
+    """Paso 1: NIT no en BD, encontrado en data.json (RUES) por NIT → actualiza nombre."""
+    # Write NIT to data.json so scraped_nits picks it up
+    import os
+    data_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+    with open(data_path, "w") as f:
+        json.dump([
+            {"nit": "900111111", "name": "EMPRESA A"},
+            {"nit": "800999999", "name": "EMPRESA RUES"},
+        ], f)
     uc = _build(deps)
     lookups = uc._build_lookups()
     df = _base_df("800999999", "NOMBRE ORIGINAL")
@@ -219,11 +223,14 @@ def test_match_companies_rues_by_nit(deps):
 
 
 def test_match_companies_rues_by_name(deps):
-    """Paso 2: NIT no encontrado en RUES, encontrado por nombre → actualiza NIT."""
-    deps["nit_service"] = FakeNitService(
-        results=[NitResult(nit=800999999, is_company=False)],
-        by_name_result=NitResult(nit=700111222, is_company=True, name="EMPRESA X"),
-    )
+    """Paso 2: NIT no encontrado, encontrado por nombre en data.json → actualiza NIT."""
+    import os
+    data_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+    with open(data_path, "w") as f:
+        json.dump([
+            {"nit": "900111111", "name": "EMPRESA A"},
+            {"nit": "700111222", "name": "EMPRESA X"},
+        ], f)
     uc = _build(deps)
     lookups = uc._build_lookups()
     df = _base_df("800999999", "EMPRESA X")
@@ -233,7 +240,6 @@ def test_match_companies_rues_by_name(deps):
 
 def test_match_companies_odoo_by_nit(deps):
     """Paso 3: No en RUES, encontrado en Odoo por NIT → actualiza nombre."""
-    deps["nit_service"] = FakeNitService(results=[])
     deps["odoo_repo"] = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "EMPRESA ODOO"}})
     uc = _build(deps)
     lookups = uc._build_lookups()
@@ -244,7 +250,6 @@ def test_match_companies_odoo_by_nit(deps):
 
 def test_match_companies_odoo_by_name(deps):
     """Paso 4: No en RUES ni Odoo/NIT, encontrado en Odoo por nombre → actualiza NIT."""
-    deps["nit_service"] = FakeNitService(results=[])
     deps["odoo_repo"] = FakeOdooRepo(clients={"900777777": {"id": 9, "name": "EMPRESA ODOO NAME"}})
     uc = _build(deps)
     lookups = uc._build_lookups()
@@ -253,9 +258,79 @@ def test_match_companies_odoo_by_name(deps):
     assert result["NIT"][0] == "900777777"
 
 
+# ── Tests para _validate_empresa (regresión: revertía en silencio el ────
+# nombre ya resuelto por Odoo de vuelta al valor desactualizado de BD local,
+# invirtiendo la prioridad documentada Odoo > BD local > RUES) ──────────
+
+def test_validate_empresa_respects_odoo_resolution(deps):
+    deps["company_repo"] = FakeCompanyRepo([
+        {"id": 1, "nit": "800999999", "name": "NOMBRE BD DESACTUALIZADO"},
+    ])
+    deps["odoo_repo"] = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "NOMBRE ODOO ACTUAL"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("800999999", "NOMBRE EXCEL")
+    df = uc._match_companies(df, lookups)
+    assert df["Empresa"][0] == "NOMBRE ODOO ACTUAL"
+
+    df = uc._validate_empresa(df, lookups)
+    assert df["Empresa"][0] == "NOMBRE ODOO ACTUAL"
+
+
+def test_validate_empresa_still_corrects_non_odoo_mismatches(deps):
+    deps["company_repo"] = FakeCompanyRepo([
+        {"id": 1, "nit": "900111111", "name": "EMPRESA A"},
+        {"id": 2, "nit": "700111222", "name": "EMPRESA X OFICIAL"},
+    ])
+    data = [{"nit": "700111222", "name": "EMPRESA X"}]
+    with open(os.path.join(os.getenv("DIRECTORY", ""), "data.json"), "w") as f:
+        json.dump(data, f)
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    # NIT del Excel no existe en BD local ni Odoo; se resuelve por RUES/nombre,
+    # que solo corrige el NIT y deja "Empresa" tal cual venía del Excel.
+    df = _base_df("800999999", "EMPRESA X")
+    df = uc._match_companies(df, lookups)
+    assert df["NIT"][0] == "700111222"
+    assert df["Empresa"][0] == "EMPRESA X"
+
+    df = uc._validate_empresa(df, lookups)
+    assert df["Empresa"][0] == "EMPRESA X OFICIAL"
+
+
+# ── Tests para _connect_odoo (regresión: la conexión a Odoo nunca se ────
+# establecía antes de usar el repo en execute(), por lo que el paso "Odoo
+# primero" fallaba en silencio en todas las filas) ──────────────────────
+
+def test_connect_odoo_marks_repo_as_connected(deps):
+    deps["odoo_repo"] = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "EMPRESA ODOO"}})
+    uc = _build(deps)
+    uc._connect_odoo()
+    assert uc.odoo_repo is not None
+    assert uc.odoo_repo._connected is True
+
+
+def test_connect_odoo_disables_repo_on_failure(deps):
+    class FailingOdooRepo(FakeOdooRepo):
+        def connect(self):
+            raise ConnectionError("Autenticación fallida")
+
+    deps["odoo_repo"] = FailingOdooRepo()
+    uc = _build(deps)
+    uc._connect_odoo()
+    assert uc.odoo_repo is None
+
+
+def test_connect_odoo_noop_when_no_repo_configured(deps):
+    deps["odoo_repo"] = None
+    uc = _build(deps)
+    uc._connect_odoo()
+    assert uc.odoo_repo is None
+
+
 def test_match_companies_not_found_keeps_defaults(deps):
     """Paso 5: No encontrado en ningún lado → datos originales + novedad en log."""
-    deps["nit_service"] = FakeNitService(results=[])
     deps["odoo_repo"] = FakeOdooRepo(clients={})
     uc = _build(deps)
     lookups = uc._build_lookups()
@@ -264,6 +339,52 @@ def test_match_companies_not_found_keeps_defaults(deps):
     assert result["NIT"][0] == "111111111"
     assert result["Empresa"][0] == "EMPRESA DESCONOCIDA"
     assert any("NOVEDAD" in m for m in deps["logger"].warnings)
+
+
+def test_match_companies_not_found_reports_to_not_found_log(deps):
+    """NIT no encontrado en ninguna fuente → se registra en empresas_no_encontradas.xlsx."""
+    deps["odoo_repo"] = FakeOdooRepo(clients={})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("111111111", "EMPRESA DESCONOCIDA")
+    uc._match_companies(df, lookups)
+
+    log_gen = deps["not_found_log_generator"]
+    assert len(log_gen.calls) == 1
+    logged_results, output_dir = log_gen.calls[0]
+    assert output_dir == deps["logs_dir"]
+    assert len(logged_results) == 1
+    assert logged_results[0].nit == "111111111"
+    assert logged_results[0].is_company is False
+    assert logged_results[0].name == "EMPRESA DESCONOCIDA"
+
+
+def test_match_companies_found_does_not_report_to_not_found_log(deps):
+    """NIT resuelto (BD local) → no se reporta a empresas_no_encontradas.xlsx."""
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = _base_df("900111111", "NOMBRE VIEJO")
+    uc._match_companies(df, lookups)
+
+    assert deps["not_found_log_generator"].calls == []
+
+
+def test_match_companies_not_found_dedupes_repeated_nit(deps):
+    """La misma empresa aparece en varias filas (una por examen) → una sola entrada en el log."""
+    deps["odoo_repo"] = FakeOdooRepo(clients={})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["111111111", "111111111", "111111111"],
+        "Empresa": ["EMPRESA DESCONOCIDA"] * 3,
+        "Base": ["X", "X", "X"],
+    })
+    uc._match_companies(df, lookups)
+
+    log_gen = deps["not_found_log_generator"]
+    assert len(log_gen.calls) == 1
+    logged_results, _ = log_gen.calls[0]
+    assert len(logged_results) == 1
 
 
 # ── Tests _match_companies cascada ────────────────────────────────────
@@ -281,10 +402,14 @@ def test_match_db_local_updates_nombre(deps):
 
 
 def test_match_rues_by_nit_updates_nombre(deps):
-    """Paso 1: RUES por NIT → actualiza nombre."""
-    deps["nit_service"] = FakeNitService(
-        results=[NitResult(nit=800999999, is_company=True, name="EMPRESA RUES")]
-    )
+    """Paso 1: RUES por NIT (data.json) → actualiza nombre."""
+    import os
+    data_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+    with open(data_path, "w") as f:
+        json.dump([
+            {"nit": "900111111", "name": "EMPRESA A"},
+            {"nit": "800999999", "name": "EMPRESA RUES"},
+        ], f)
     uc = AssignRatesFromExcel(**deps)
     lookups = uc._build_lookups()
     result = uc._match_companies(_row("800999999", "NOMBRE ORIGINAL"), lookups)
@@ -292,11 +417,14 @@ def test_match_rues_by_nit_updates_nombre(deps):
 
 
 def test_match_rues_by_name_updates_nit(deps):
-    """Paso 2: RUES por nombre → actualiza NIT."""
-    deps["nit_service"] = FakeNitService(
-        results=[NitResult(nit=800999999, is_company=False)],
-        by_name_result=NitResult(nit=700111222, is_company=True, name="EMPRESA X"),
-    )
+    """Paso 2: RUES por nombre (data.json) → actualiza NIT."""
+    import os
+    data_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+    with open(data_path, "w") as f:
+        json.dump([
+            {"nit": "900111111", "name": "EMPRESA A"},
+            {"nit": "700111222", "name": "EMPRESA X"},
+        ], f)
     uc = AssignRatesFromExcel(**deps)
     lookups = uc._build_lookups()
     result = uc._match_companies(_row("800999999", "EMPRESA X"), lookups)
@@ -305,7 +433,6 @@ def test_match_rues_by_name_updates_nit(deps):
 
 def test_match_odoo_by_nit_updates_nombre(deps):
     """Paso 3: Odoo por NIT → actualiza nombre."""
-    deps["nit_service"] = FakeNitService(results=[])
     odoo = FakeOdooRepo(clients={"800999999": {"id": 5, "name": "EMPRESA ODOO"}})
     uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo})
     lookups = uc._build_lookups()
@@ -315,7 +442,6 @@ def test_match_odoo_by_nit_updates_nombre(deps):
 
 def test_match_odoo_by_name_updates_nit(deps):
     """Paso 4: Odoo por nombre → actualiza NIT."""
-    deps["nit_service"] = FakeNitService(results=[])
     odoo = FakeOdooRepo(clients={"900777777": {"id": 9, "name": "EMPRESA ODOO NAME"}})
     uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo})
     lookups = uc._build_lookups()
@@ -325,7 +451,6 @@ def test_match_odoo_by_name_updates_nit(deps):
 
 def test_match_not_found_keeps_defaults_and_logs_novedad(deps):
     """Paso 5: No encontrado → datos originales + novedad en log."""
-    deps["nit_service"] = FakeNitService(results=[])
     odoo = FakeOdooRepo(clients={})
     logger = FakeLogger()
     uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo, "logger": logger})
@@ -334,6 +459,21 @@ def test_match_not_found_keeps_defaults_and_logs_novedad(deps):
     assert result["NIT"][0] == "111111111"
     assert result["Empresa"][0] == "EMPRESA DESCONOCIDA"
     assert any("NOVEDAD" in w for w in logger.warnings)
+
+
+def test_nit_sourced_from_odoo_is_truncated_to_9_digits_before_output(deps):
+    """El NIT que llega desde Odoo (get_nit) al hacer match por nombre puede
+    venir con más de 9 dígitos; el CONSOLIDADO debe respetar el máximo de 9,
+    igual que el NIT normalizado desde el Excel de entrada."""
+    odoo = FakeOdooRepo(clients={"900777777123": {"id": 9, "name": "EMPRESA ODOO NAME"}})
+    uc = AssignRatesFromExcel(**{**deps, "odoo_repo": odoo})
+    lookups = uc._build_lookups()
+
+    df = uc._match_companies(_row("000000000", "EMPRESA ODOO NAME"), lookups)
+    assert df["NIT"][0] == "900777777123"  # tal como lo devolvió Odoo, sin truncar
+
+    df = uc._normalize_nit(df)
+    assert df["NIT"][0] == "900777777"
 
 
 def test_assign_paquete_fallback_default(deps):
@@ -374,7 +514,7 @@ def test_assign_rates_fallback_to_default_package(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 7500
 
 
@@ -420,7 +560,7 @@ def test_assign_rates_wildcard_fallback(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 9999
 
 
@@ -474,7 +614,7 @@ def test_assign_rates_cup_homologation(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890208-03": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890208-03"][0] == 42000
 
 
@@ -523,7 +663,7 @@ def test_assign_rates_no_homologation_without_dash(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 1
 
 
@@ -550,7 +690,7 @@ def test_assign_rates_cup_homologation(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890208-03": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890208-03"][0] == 42000
 
 
@@ -598,7 +738,7 @@ def test_assign_rates_no_homologation_without_dash(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 1
 
 
@@ -626,7 +766,7 @@ def test_assign_rates_phase6_wildcard_base_cup(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890208-03": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890208-03"][0] == 55000
 
 
@@ -679,7 +819,7 @@ def test_assign_rates_phase7_any_city(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 33000
 
 
@@ -727,7 +867,7 @@ def test_assign_rates_phase7_any_city(deps):
         "PAQUETE": ["PAQUETE BASICO"],
         "890201": [1],
     })
-    result = uc._assign_rates(df, lookups)
+    result, _ = uc._assign_rates(df, lookups)
     assert result["890201"][0] == 33000
 
 
@@ -754,3 +894,140 @@ def test_assign_rates_phase7_logs_ciudad_diferente(deps):
     uc._assign_rates(df, lookups)
     assert any("ciudad diferente" in w for w in logger.warnings)
     assert any("OTRO PAQUETE" in w for w in logger.warnings)
+
+
+# ── cell_colors tests ─────────────────────────────────────────────────────────
+
+def test_cell_colors_phase2_yellow(deps):
+    """Phase 2 (PAQUETE C 2025 mismo CUP) → color FFFF99."""
+    deps["package_repo"] = FakePackageRepo([
+        {"id": 1, "name": "PAQUETE BASICO"},
+        {"id": 2, "name": "PAQUETE C 2025"},
+    ])
+    deps["rates_repo"]._data[(2, 1, 1, 1, "Package")] = 50000  # solo en PAQUETE C 2025
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890201": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert colors.get(("890201", 0)) == "FFF2CC"
+
+
+def test_cell_colors_phase3_orange(deps):
+    """Phase 3 (cualquier paquete, mismo CUP, misma ciudad) → color FFD580."""
+    deps["package_repo"] = FakePackageRepo([
+        {"id": 1, "name": "PAQUETE BASICO"},
+        {"id": 2, "name": "PAQUETE C 2025"},
+        {"id": 3, "name": "OTRO PAQUETE"},
+    ])
+    deps["rates_repo"]._data[(3, 1, 1, 1, "Package")] = 60000  # solo en OTRO PAQUETE
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890201": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert colors.get(("890201", 0)) == "F4B183"
+
+
+def test_cell_colors_phase4_lightblue(deps):
+    """Phase 4 (PAQUETE C 2025, CUP base) → color ADD8E6."""
+    deps["package_repo"] = FakePackageRepo([
+        {"id": 1, "name": "PAQUETE BASICO"},
+        {"id": 2, "name": "PAQUETE C 2025"},
+    ])
+    deps["cup_repo"] = FakeCupRepo([
+        {"id": 1, "code": "890201", "name": "HEMOGRAMA"},
+        {"id": 3, "code": "890208", "name": "BASE CUP"},
+        {"id": 4, "code": "890208-03", "name": "CUP CON GUION"},
+    ])
+    deps["rates_repo"]._data[(2, 1, 3, 1, "Package")] = 42000  # PAQUETE C 2025, CUP base
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890208-03": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert colors.get(("890208-03", 0)) == "BDD7EE"
+
+
+def test_cell_colors_phase5_blue(deps):
+    """Phase 5 (cualquier paquete, CUP base, misma ciudad) → color 87CEEB."""
+    deps["package_repo"] = FakePackageRepo([
+        {"id": 1, "name": "PAQUETE BASICO"},
+        {"id": 2, "name": "PAQUETE C 2025"},
+        {"id": 3, "name": "OTRO PAQUETE"},
+    ])
+    deps["cup_repo"] = FakeCupRepo([
+        {"id": 1, "code": "890201", "name": "HEMOGRAMA"},
+        {"id": 3, "code": "890208", "name": "BASE CUP"},
+        {"id": 4, "code": "890208-03", "name": "CUP CON GUION"},
+    ])
+    deps["rates_repo"]._data[(3, 1, 3, 1, "Package")] = 55000  # OTRO PAQUETE, CUP base
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890208-03": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert colors.get(("890208-03", 0)) == "9DC3E6"
+
+
+def test_cell_colors_phase6_lilac(deps):
+    """Phase 6 (any package, any city) → color DDA0DD."""
+    deps["package_repo"] = FakePackageRepo([
+        {"id": 1, "name": "PAQUETE BASICO"},
+        {"id": 2, "name": "PAQUETE C 2025"},
+        {"id": 3, "name": "OTRO PAQUETE"},
+    ])
+    deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000  # otra ciudad (id=99)
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890201": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert colors.get(("890201", 0)) == "D5A6E6"
+
+
+def test_cell_colors_phase1_no_color(deps):
+    """Phase 1 (paquete propio) → sin color."""
+    deps["rates_repo"]._data[(1, 1, 1, 1, "Package")] = 80000  # paquete propio
+
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900111111"],
+        "Ciudad": ["BOGOTA"],
+        "TIPO DE ACTIVIDAD": ["INTRA"],
+        "PAQUETE": ["PAQUETE BASICO"],
+        "890201": [1],
+    })
+    _, colors = uc._assign_rates(df, lookups)
+    assert ("890201", 0) not in colors
