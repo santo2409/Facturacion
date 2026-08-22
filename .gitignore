@@ -219,8 +219,10 @@ cspell.json
 node_modules/
 .cspell/
 skills-lock.json
-.kiro/
+.claude/
 pre-facturas/
 odoo-output/
 *.xlsx
 datos_supabase.dump
+CLAUDE.md
+.mcp.json

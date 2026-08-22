@@ -117,6 +117,7 @@ class CompanyModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nit = Column(String(12), nullable=False, unique=True)
     name = Column(String(255), nullable=False)
+    verified_at = Column(TIMESTAMP, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now())
 

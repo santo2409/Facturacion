@@ -27,3 +27,10 @@ class ExcelLoader:
             infer_schema_length=0,
         )
         return df.rename({c: c.strip() for c in df.columns if c != c.strip()})
+
+    def load_sheets_by_prefix(self, excel: ExcelFile, prefix: str) -> pl.DataFrame:
+        matching_sheets = [s for s in excel.sheet_names if s.startswith(prefix)]
+        if not matching_sheets:
+            return pl.DataFrame()
+        frames = [self.load_sheet(excel, sheet) for sheet in matching_sheets]
+        return pl.concat(frames, how="vertical_relaxed")

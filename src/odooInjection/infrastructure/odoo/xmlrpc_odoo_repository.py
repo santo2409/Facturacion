@@ -74,6 +74,68 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             return r[0]["id"], r[0]["name"], "NIT"
         return None, None, None
 
+    _BATCH_SIZE = 500
+    _LIKE_BATCH_SIZE = 50
+
+    def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
+        unique_nits = list(dict.fromkeys(n for n in nits if n))
+        found: dict[str, tuple[int, str, str]] = {}
+        for i in range(0, len(unique_nits), self._BATCH_SIZE):
+            chunk = unique_nits[i : i + self._BATCH_SIZE]
+            try:
+                found.update(self._find_clients_batch_chunk(chunk))
+            except Exception as e:
+                self._logger.warning(
+                    f"Fallo consultando Odoo en batch para {len(chunk)} NIT(s): {e}"
+                )
+        return found
+
+    def _find_clients_batch_chunk(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
+        found: dict[str, tuple[int, str, str]] = {}
+
+        try:
+            rows = self._execute(
+                "res.partner", "search_read",
+                [[["vat", "in", nits]]],
+                {"fields": ["id", "name", "vat"]},
+            )
+            for row in rows:
+                vat = row.get("vat")
+                if vat in nits and vat not in found:
+                    found[vat] = (row["id"], row["name"], "NIT")
+        except Exception as e:
+            self._logger.warning(
+                f"Fallo la búsqueda exacta de Odoo para {len(nits)} NIT(s): {e}"
+            )
+
+        pending = [n for n in nits if n not in found]
+        if not pending:
+            return found
+
+        for i in range(0, len(pending), self._LIKE_BATCH_SIZE):
+            sub_chunk = pending[i : i + self._LIKE_BATCH_SIZE]
+            try:
+                domain = ["|"] * (len(sub_chunk) - 1) + [
+                    ["vat", "=like", f"{n}%"] for n in sub_chunk
+                ]
+                rows = self._execute(
+                    "res.partner", "search_read",
+                    [domain],
+                    {"fields": ["id", "name", "vat"], "order": "id asc"},
+                )
+                for row in rows:
+                    vat = row.get("vat") or ""
+                    for n in sub_chunk:
+                        if n not in found and vat.startswith(n):
+                            found[n] = (row["id"], row["name"], "NIT")
+                            break
+            except Exception as e:
+                self._logger.warning(
+                    f"Fallo la búsqueda por patrón de Odoo para {len(sub_chunk)} NIT(s) "
+                    f"(quedan pendientes para RUES): {e}"
+                )
+        return found
+
     def find_client_by_name(self, name: str) -> tuple[int | None, str | None, str | None]:
         import re
         # Quitar sufijo societario para búsqueda flexible

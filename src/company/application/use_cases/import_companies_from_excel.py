@@ -8,6 +8,7 @@ from src.company.domain.entities.company import Company
 from src.company.domain.entities.company_package import CompanyPackage
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
+from src.scrapping.domain.entities.nit_result import NitResult
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.special.domain.entities.special import Special
@@ -24,6 +25,8 @@ class ImportCompaniesFromExcel:
         nit_service,
         progress: RichProgress,
         logger: LoggerAdapter,
+        not_found_log_generator=None,
+        logs_dir: Path = Path("logs"),
     ):
         self.company_repo = company_repo
         self.package_repo = package_repo
@@ -33,6 +36,8 @@ class ImportCompaniesFromExcel:
         self.nit_service = nit_service
         self.progress = progress
         self.logger = logger or LoggerAdapter(__name__)
+        self.not_found_log_generator = not_found_log_generator
+        self.logs_dir = logs_dir
 
     def execute(self, df: pl.DataFrame):
         self._progress_companies(df)
@@ -41,52 +46,76 @@ class ImportCompaniesFromExcel:
     def _progress_companies(self, df: pl.DataFrame):
         file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
         df_nits = df.select(pl.col("NIT")).to_series().to_list()
-        result_scrapping = None
 
-        if not Path(file_path).exists():
-            with self.progress("Validando NITs (RUES)", total=len(df_nits)):
-                result_scrapping = self.nit_service.search(df_nits)
-                self.progress.advance()
-            self.nit_service.writer(result_scrapping, file_path)
-        else:
+        df_companies = pl.DataFrame(self.company_repo.all())
+        pending_nits = df_nits
+        if df_companies.height > 0:
+            known = {str(n) for n in df_companies["nit"].to_list()}
+            pending_nits = [n for n in df_nits if str(n) not in known]
+
+        if not pending_nits:
+            return
+
+        cached: dict[str, NitResult] = {}
+        if Path(file_path).exists():
             with self.progress("Cargando datos de empresas", total=1):
                 with open(file_path, "r", encoding="utf-8") as file:
                     data = json.load(file)
-                    result_scrapping = [
-                        Company(d.get("nit"), d.get("company")) for d in data
-                    ]
+                for d in data:
+                    nit = str(d.get("nit"))
+                    cached[nit] = NitResult(
+                        nit=nit,
+                        is_company=d.get("is_company", bool(d.get("name"))),
+                        name=d.get("name"),
+                        checked_bases=d.get("checked_bases", ""),
+                    )
                 self.progress.advance()
 
-        nit_df = pl.DataFrame(
-            {
-                "NIT": [result.nit for result in result_scrapping if result.name],
-                "EMPRESA_NUEVA": [
-                    result.name for result in result_scrapping if result.name
-                ],
-            }
-        )
+        still_pending = [n for n in pending_nits if str(n) not in cached]
+        if still_pending:
+            with self.progress("Validando NITs (Odoo/RUES)", total=len(still_pending)):
+                new_results = self.nit_service.search(still_pending) or []
+                self.progress.advance()
+            for result in new_results:
+                cached[str(result.nit)] = result
+            self.nit_service.writer(list(cached.values()), file_path)
 
-        df = df.with_columns(pl.col("NIT").cast(pl.Utf8))
-        nit_df = nit_df.with_columns(pl.col("NIT").cast(pl.Utf8))
+        result_scrapping = [
+            cached[str(n)] for n in pending_nits if str(n) in cached
+        ]
 
-        df_updated = (
-            df.join(nit_df, on="NIT", how="left")
-            .with_columns(
-                pl.coalesce(["EMPRESA_NUEVA", "RAZON SOCIAL"]).alias("RAZON SOCIAL")
+        razon_social_by_nit = {
+            str(row["NIT"]).strip(): row["RAZON SOCIAL"]
+            for row in df.iter_rows(named=True)
+        }
+
+        def _is_found(result) -> bool:
+            return getattr(result, "is_company", bool(result.name)) and bool(result.name)
+
+        not_found = [
+            NitResult(
+                nit=str(result.nit),
+                is_company=False,
+                name=result.name or razon_social_by_nit.get(str(result.nit)),
+                checked_bases=getattr(result, "checked_bases", ""),
             )
-            .drop("EMPRESA_NUEVA")
-        )
+            for result in result_scrapping
+            if not _is_found(result)
+        ]
+        if not_found and self.not_found_log_generator:
+            self.not_found_log_generator.generate(not_found, self.logs_dir)
 
-        # Batch: collect unique companies by NIT, then upsert
+        # Batch: collect unique companies by NIT (solo NITs nuevos y verificados), then insert
         companies_map = {}
-        for row in df_updated.iter_rows(named=True):
-            nit = str(row["NIT"]).strip()[:9]
-            empresa = row["RAZON SOCIAL"].strip().upper()
-            companies_map[nit] = Company(nit, empresa)
+        for result in result_scrapping:
+            if _is_found(result):
+                nit = str(result.nit).strip()[:9]
+                companies_map[nit] = Company(nit, result.name.strip().upper())
 
-        with self.progress("Importando empresas", total=1):
-            self.company_repo.save_batch(list(companies_map.values()))
-            self.progress.advance()
+        if companies_map:
+            with self.progress("Importando empresas", total=1):
+                self.company_repo.save_batch(list(companies_map.values()))
+                self.progress.advance()
 
     def _progress_companies_to_packages(self, df: pl.DataFrame):
         pkg = pl.DataFrame(self.package_repo.all())

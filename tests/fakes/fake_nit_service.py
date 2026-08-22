@@ -6,8 +6,10 @@ class FakeNitService:
         self._results = results or []
         self._by_name_result = by_name_result
         self._written = None
+        self.called_with = None
 
     def search(self, nits):
+        self.called_with = list(nits)
         return self._results
 
     def search_by_name(self, name):

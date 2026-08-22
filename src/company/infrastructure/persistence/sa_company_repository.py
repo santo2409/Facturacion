@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,7 @@ class SaCompanyRepository:
             row = self.session.query(CompanyModel).filter_by(nit=nit).first()
             return (row.id, row.nit, row.name) if row else None
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving company by nit: {e}", exc_info=True, user_msg=f"No se pudo consultar la empresa. NIT {nit}")
             return None
 
@@ -23,6 +25,7 @@ class SaCompanyRepository:
             row = self.session.query(CompanyModel).filter(CompanyModel.name.ilike(name.strip())).first()
             return (row.id, row.nit, row.name) if row else None
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving company by name: {e}", exc_info=True, user_msg=f"No se pudo consultar la empresa. Nombre {name}")
             return None
 
@@ -35,8 +38,11 @@ class SaCompanyRepository:
                     user_msg=f"Ya existe una empresa con el nombre '{company.name}' (NIT {existing[1]}).",
                 )
                 return None
-            stmt = insert(CompanyModel).values(nit=company.nit, name=company.name)
-            stmt = stmt.on_conflict_do_update(index_elements=["nit"], set_={"name": stmt.excluded.name})
+            stmt = insert(CompanyModel).values(nit=company.nit, name=company.name, verified_at=func.now())
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["nit"],
+                set_={"name": stmt.excluded.name, "verified_at": stmt.excluded.verified_at},
+            )
             stmt = stmt.returning(CompanyModel.id, CompanyModel.nit, CompanyModel.name)
             row = self.session.execute(stmt).fetchone()
             self.session.commit()
@@ -68,8 +74,13 @@ class SaCompanyRepository:
                 existing_names[name_key] = c.nit
             if not filtered:
                 return []
-            stmt = insert(CompanyModel).values([{"nit": c.nit, "name": c.name} for c in filtered])
-            stmt = stmt.on_conflict_do_update(index_elements=["nit"], set_={"name": stmt.excluded.name})
+            stmt = insert(CompanyModel).values(
+                [{"nit": c.nit, "name": c.name, "verified_at": func.now()} for c in filtered]
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["nit"],
+                set_={"name": stmt.excluded.name, "verified_at": stmt.excluded.verified_at},
+            )
             stmt = stmt.returning(CompanyModel.id, CompanyModel.nit, CompanyModel.name)
             rows = self.session.execute(stmt).fetchall()
             self.session.commit()
@@ -84,6 +95,7 @@ class SaCompanyRepository:
             rows = self.session.query(CompanyModel).all()
             return [{"id": r.id, "nit": r.nit, "name": r.name.upper()} for r in rows]
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving companies: {e}", exc_info=True, user_msg="No se pudo obtener el listado de empresas.")
             return None
 
@@ -92,6 +104,7 @@ class SaCompanyRepository:
             row = self.session.query(CompanyPackageModel).filter_by(company_id=id).first()
             return (row.company_id, row.package_id, row.model) if row else None
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving company by id: {e}", exc_info=True, user_msg="No se pudo consultar la empresa.")
             return None
 
@@ -116,6 +129,7 @@ class SaCompanyRepository:
             rows = self.session.query(CompanyPackageModel).all()
             return [{"company": r.company_id, "package": r.package_id, "model": r.model} for r in rows]
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error searching companies_packages: {e}", exc_info=True, user_msg="No se pudo obtener las vinculaciones de empresas.")
             return None
 

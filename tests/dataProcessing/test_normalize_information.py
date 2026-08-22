@@ -19,6 +19,7 @@ def test_execute_calls_all_normalizers_and_exports():
 
     loader = MagicMock()
     loader.load_sheet.return_value = pl.DataFrame({"X": [1]})
+    loader.load_sheets_by_prefix.return_value = pl.DataFrame({"X": [1]})
     excel = MagicMock()
 
     uc.execute(excel, loader, "/tmp/output")
@@ -27,6 +28,9 @@ def test_execute_calls_all_normalizers_and_exports():
     prov_normalizer.normalize.assert_called_once()
     spec_normalizer.normalize.assert_called_once()
     exporter.export_dataframes.assert_called_once()
+
+    # Specials should be discovered via prefix, to support multiple sheets
+    loader.load_sheets_by_prefix.assert_called_once_with(excel, "TarifasEspeciales")
 
     # Verify the dict passed to exporter has correct keys
     call_args = exporter.export_dataframes.call_args[0]

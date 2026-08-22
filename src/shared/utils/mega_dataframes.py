@@ -11,7 +11,7 @@ class MegaDataFrames:
 
         df_packages = loader.load_sheet(excel, "Paquetes") if "Paquetes" in sheets else pl.DataFrame()
         df_providers = loader.load_sheet(excel, "Proveedores") if "Proveedores" in sheets else pl.DataFrame()
-        df_specials = loader.load_sheet(excel, "TarifasEspeciales") if "TarifasEspeciales" in sheets else pl.DataFrame()
+        df_specials = loader.load_sheets_by_prefix(excel, "TarifasEspeciales")
 
         if callback == "Paquetes":
             frames_to_concat = []
