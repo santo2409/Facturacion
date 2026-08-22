@@ -19,6 +19,14 @@ class FakeOdooRepo:
             return c["id"], c["name"], "NIT"
         return None, None, None
 
+    def find_clients_batch(self, nits):
+        result = {}
+        for nit in nits:
+            if nit in self._clients:
+                c = self._clients[nit]
+                result[nit] = (c["id"], c["name"], "NIT")
+        return result
+
     def find_client_by_name(self, name):
         for nit, c in self._clients.items():
             if c["name"] == name:
