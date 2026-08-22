@@ -56,10 +56,12 @@ class ExcelPreInvoiceReader(PreInvoiceReaderRepository):
         # Fila 1: nombres CUPS, Fila 2: headers (códigos), Fila 3+: datos
         headers = [str(h).strip() if h is not None else "" for h in all_rows[1]]
         cols_examenes = []
+        cols_examenes_idx = []
         for i in range(NUM_COLS_FIJAS, len(headers)):
             code = headers[i].rstrip(".0") if headers[i].endswith(".0") else headers[i]
             if code and _CUPS_RE.match(code):
                 cols_examenes.append(code)
+                cols_examenes_idx.append(i)
 
         filas = []
         for row in all_rows[2:]:
@@ -69,7 +71,7 @@ class ExcelPreInvoiceReader(PreInvoiceReaderRepository):
                 row_data[h] = self._clean_val(val)
 
             for j, code in enumerate(cols_examenes):
-                idx = NUM_COLS_FIJAS + j
+                idx = cols_examenes_idx[j]
                 val = row[idx] if idx < len(row) else None
                 has_value = (
                     val is not None
