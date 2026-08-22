@@ -56,3 +56,23 @@ def test_save_batch_rollback_on_error():
     result = repo.save_batch([Company("900111111", "A")])
     assert result == []
     session.rollback.assert_called_once()
+
+
+def test_all_rollback_on_error():
+    session = _mock_session()
+    session.query.side_effect = Exception("column companies.verified_at does not exist")
+
+    repo = SaCompanyRepository(session, FakeLogger())
+    result = repo.all()
+    assert result is None
+    session.rollback.assert_called_once()
+
+
+def test_find_by_nit_rollback_on_error():
+    session = _mock_session()
+    session.query.side_effect = Exception("DB error")
+
+    repo = SaCompanyRepository(session, FakeLogger())
+    result = repo.find_by_nit("900111111")
+    assert result is None
+    session.rollback.assert_called_once()
