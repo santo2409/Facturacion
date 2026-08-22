@@ -1,11 +1,13 @@
 import json
 import os
 import re
+from pathlib import Path
 
 import polars as pl
 
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
+from src.scrapping.domain.entities.nit_result import NitResult
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.text_normalizer import (
     normalize_name,
@@ -76,11 +78,12 @@ class AssignRatesFromExcel:
         activities_repo,
         rates_repo,
         cup_repo,
-        nit_service,
         fuzz,
         progress,
         logger,
         odoo_repo=None,
+        not_found_log_generator=None,
+        logs_dir: Path = Path("logs"),
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
@@ -92,31 +95,93 @@ class AssignRatesFromExcel:
         self.activities_repo = activities_repo
         self.rates_repo = rates_repo
         self.cup_repo = cup_repo
-        self.nit_service = nit_service
         self.fuzz = fuzz
         self.progress = progress
         self.logger = logger or LoggerAdapter(__name__)
         self.odoo_repo = odoo_repo
+        self.not_found_log_generator = not_found_log_generator
+        self.logs_dir = logs_dir
+
+    def _connect_odoo(self) -> None:
+        if not self.odoo_repo:
+            return
+        try:
+            self.odoo_repo.connect()
+        except Exception as e:
+            self.logger.warning(
+                f"No se pudo conectar a Odoo: {e}",
+                user_msg="No se pudo conectar a Odoo; se validarán empresas contra BD local y RUES únicamente.",
+            )
+            self.odoo_repo = None
 
     def execute(self, excel: pl.DataFrame, df_facture: pl.DataFrame):
+        self._connect_odoo()
+
         lookups = self._build_lookups()
         df = self._normalize_nit(excel)
         df = self._match_companies(df, lookups)
+        # _match_companies puede reemplazar el NIT con valores provenientes de
+        # Odoo (get_nit) o de RUES (data.json), que no pasan por el mismo
+        # truncamiento a 9 dígitos aplicado al NIT original del Excel.
+        df = self._normalize_nit(df)
         df = self._normalize_columns(df)
         df = self._normalize_city(df, lookups)
         df = self._assign_facturador(df, lookups)
         df = self._assign_paquete(df, lookups)
-        df = self._assign_rates(df, lookups)
+        df, cell_colors = self._assign_rates(df, lookups)
         df = self._validate_empresa(df, lookups)
         df = _enrich_with_invoices(df, df_facture, self.logger)
         df = self._order_columns(df)
 
         with self.progress("Exportando consolidado", total=1):
+            import xlsxwriter as _xlsxwriter
+            workbook = _xlsxwriter.Workbook("CONSOLIDADO.xlsx")
             df.write_excel(
-                "CONSOLIDADO.xlsx",
+                workbook,
                 worksheet="Consolidado",
                 table_style="Table Style Medium 2",
             )
+            # Apply cell colors from cascade fallback phases
+            if cell_colors:
+                _PHASE_LEGEND = [
+                    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
+                    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
+                    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
+                    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
+                    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
+                ]
+                ws = workbook.get_worksheet_by_name("Consolidado")
+                if ws is not None:
+                    # Build column index map: col_name → xlsxwriter col index
+                    col_names = df.columns
+                    col_index = {name: i for i, name in enumerate(col_names)}
+                    # Row 0 = header, data starts at row 1
+                    fmt_cache = {}
+                    for (col_name, row_idx), color in cell_colors.items():
+                        if col_name not in col_index:
+                            continue
+                        if color not in fmt_cache:
+                            fmt_cache[color] = workbook.add_format({
+                                "bg_color": f"#{color}",
+                                "num_format": "#,##0",
+                            })
+                        ws.write(row_idx + 1, col_index[col_name],
+                                 df[col_name][row_idx], fmt_cache[color])
+
+                # Add legend sheet
+                legend_ws = workbook.add_worksheet("Leyenda")
+                legend_ws.set_column(0, 0, 6)
+                legend_ws.set_column(1, 1, 55)
+                legend_ws.write(0, 0, "Color", workbook.add_format({"bold": True}))
+                legend_ws.write(0, 1, "Significado", workbook.add_format({"bold": True}))
+                white_fmt = workbook.add_format({"bg_color": "#FFFFFF"})
+                legend_ws.write(1, 0, "", white_fmt)
+                legend_ws.write(1, 1, "Fase 1 — Paquete propio (sin fallback)")
+                for row, (color, label) in enumerate(_PHASE_LEGEND, start=2):
+                    fmt = workbook.add_format({"bg_color": f"#{color}"})
+                    legend_ws.write(row, 0, "", fmt)
+                    legend_ws.write(row, 1, label)
+            workbook.close()
             self.progress.advance()
 
     # ── Column ordering ───────────────────────────────────────────────────
@@ -190,13 +255,17 @@ class AssignRatesFromExcel:
 
         # Scraped NITs from JSON
         scraped_nits = {}
+        scraped_name_to_nit = {}
         json_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
         if os.path.exists(json_path):
             with open(json_path, encoding="utf-8") as f:
                 for item in json.load(f):
                     nit = str(item.get("nit", ""))
+                    name = item.get("name", "")
                     if nit:
-                        scraped_nits[nit] = item.get("name", "")
+                        scraped_nits[nit] = name
+                    if name:
+                        scraped_name_to_nit[normalize_name(name)] = nit
 
         return {
             "nit_to_company": nit_to_company,
@@ -209,6 +278,7 @@ class AssignRatesFromExcel:
             "activity_name_to_id": activity_name_to_id,
             "package_name_to_id": package_name_to_id,
             "scraped_nits": scraped_nits,
+            "scraped_name_to_nit": scraped_name_to_nit,
             "cities_all": cities_all,
             "packages_all": packages_all,
         }
@@ -230,14 +300,14 @@ class AssignRatesFromExcel:
     def _match_companies(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
         name_to_company = lookups["name_to_company"]
-        _rues_nit_cache: dict = {}
-        _rues_name_cache: dict = {}
+        odoo_resolved_nits = lookups.setdefault("odoo_resolved_nits", set())
         _odoo_nit_cache: dict = {}
         _odoo_name_cache: dict = {}
 
         matched_nits = []
         matched_empresas = []
         cambios = []
+        not_found_by_nit: dict[str, NitResult] = {}
 
         with self.progress("Validando empresas", total=df.height):
             for row in df.iter_rows(named=True):
@@ -250,7 +320,8 @@ class AssignRatesFromExcel:
                         try:
                             cid, cname, _ = self.odoo_repo.find_client(nit, empresa)
                             _odoo_nit_cache[nit] = (cid, cname)
-                        except Exception:
+                        except Exception as e:
+                            self.logger.warning(f"Fallo consultando Odoo por NIT {nit}: {e}")
                             _odoo_nit_cache[nit] = (None, None)
 
                     odoo_id, odoo_name = _odoo_nit_cache.get(nit, (None, None))
@@ -259,6 +330,7 @@ class AssignRatesFromExcel:
                             cambios.append(f"NIT {nit}: nombre '{empresa}' → '{odoo_name}' [Odoo/NIT]")
                         matched_nits.append(nit)
                         matched_empresas.append(odoo_name)
+                        odoo_resolved_nits.add(nit)
                         self.progress.advance()
                         continue
 
@@ -269,7 +341,8 @@ class AssignRatesFromExcel:
                             cid, cname, _ = self.odoo_repo.find_client_by_name(empresa)
                             nuevo_nit = self.odoo_repo.get_nit(cid) if cid else None
                             _odoo_name_cache[empresa] = (cid, nuevo_nit)
-                        except Exception:
+                        except Exception as e:
+                            self.logger.warning(f"Fallo consultando Odoo por nombre '{empresa}': {e}")
                             _odoo_name_cache[empresa] = (None, None)
 
                     odoo_id, odoo_nit = _odoo_name_cache.get(empresa, (None, None))
@@ -278,6 +351,7 @@ class AssignRatesFromExcel:
                             cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{odoo_nit}' [Odoo/nombre]")
                         matched_nits.append(odoo_nit)
                         matched_empresas.append(empresa)
+                        odoo_resolved_nits.add(odoo_nit)
                         self.progress.advance()
                         continue
 
@@ -301,35 +375,26 @@ class AssignRatesFromExcel:
                     self.progress.advance()
                     continue
 
-                # ── 3. RUES por NIT ───────────────────────────────────────────
-                if nit and nit not in _rues_nit_cache:
-                    try:
-                        results = self.nit_service.search([[nit]]) or []
-                        _rues_nit_cache[nit] = results[0] if results else None
-                    except Exception:
-                        _rues_nit_cache[nit] = None
+                # ── 3. RUES por NIT (data.json) ──────────────────────────────────
+                scraped_nits = lookups["scraped_nits"]
+                if nit and nit in scraped_nits:
+                    scraped_name = scraped_nits[nit]
+                    if scraped_name:
+                        if scraped_name != empresa:
+                            cambios.append(f"NIT {nit}: nombre '{empresa}' → '{scraped_name}' [RUES/NIT]")
+                        matched_nits.append(nit)
+                        matched_empresas.append(scraped_name)
+                        self.progress.advance()
+                        continue
 
-                rues_by_nit = _rues_nit_cache.get(nit)
-                if rues_by_nit and rues_by_nit.is_company and rues_by_nit.name:
-                    nuevo_nombre = rues_by_nit.name
-                    cambios.append(f"NIT {nit}: nombre '{empresa}' → '{nuevo_nombre}' [RUES/NIT]")
-                    matched_nits.append(nit)
-                    matched_empresas.append(nuevo_nombre)
-                    self.progress.advance()
-                    continue
-
-                # ── 3.5. RUES por nombre ──────────────────────────────────────
-                if empresa and empresa not in _rues_name_cache:
-                    try:
-                        _rues_name_cache[empresa] = self.nit_service.search_by_name(empresa)
-                    except Exception:
-                        _rues_name_cache[empresa] = None
-
-                rues_by_name = _rues_name_cache.get(empresa)
-                if rues_by_name and rues_by_name.is_company and rues_by_name.nit:
-                    nuevo_nit = str(rues_by_name.nit)
-                    cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
-                    matched_nits.append(nuevo_nit)
+                # ── 3.5. RUES por nombre (data.json) ──────────────────────────
+                scraped_name_to_nit = lookups["scraped_name_to_nit"]
+                empresa_norm = normalize_name(empresa) if empresa else ""
+                if empresa_norm and empresa_norm in scraped_name_to_nit:
+                    nuevo_nit = scraped_name_to_nit[empresa_norm]
+                    if nuevo_nit and nuevo_nit != nit:
+                        cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
+                    matched_nits.append(nuevo_nit or nit)
                     matched_empresas.append(empresa)
                     self.progress.advance()
                     continue
@@ -338,6 +403,12 @@ class AssignRatesFromExcel:
                 novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en Odoo, BD local ni RUES"
                 cambios.append(novedad)
                 self.logger.warning(novedad, user_msg=f"No se encontró registro para NIT {nit} ({empresa}).")
+                not_found_by_nit[nit] = NitResult(
+                    nit=nit,
+                    is_company=False,
+                    name=empresa,
+                    checked_bases="Odoo, BD local, RUES" if self.odoo_repo else "BD local, RUES",
+                )
                 matched_nits.append(nit)
                 matched_empresas.append(empresa)
                 self.progress.advance()
@@ -348,6 +419,9 @@ class AssignRatesFromExcel:
                 f"_match_companies: {len(cambios)} cambios/novedades:\n" + "\n".join(f"  {c}" for c in cambios),
                 user_msg=f"{len(cambios)} actualizaciones/novedades registradas en empresas.",
             )
+
+        if not_found_by_nit and self.not_found_log_generator:
+            self.not_found_log_generator.generate(list(not_found_by_nit.values()), self.logs_dir)
 
         return df.with_columns([
             pl.Series("NIT", matched_nits),
@@ -656,6 +730,14 @@ class AssignRatesFromExcel:
 
         # Phase 3: Build result columns with fallback, collect unresolved for wildcard
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
+        # cell_colors[(col, row_idx)] = hex color — populated per fallback phase
+        cell_colors: dict[tuple[str, int], str] = {}
+        _COLOR_PHASE2 = "FFF2CC"   # Dorado suave — PAQUETE C 2025, mismo CUP
+        _COLOR_PHASE3 = "F4B183"   # Naranja profesional — cualquier paquete, mismo CUP, misma ciudad
+        _COLOR_PHASE4 = "BDD7EE"   # Azul acero claro — PAQUETE C 2025, CUP base
+        _COLOR_PHASE5 = "9DC3E6"   # Azul medio — cualquier paquete, CUP base, misma ciudad
+        _COLOR_PHASE6 = "D5A6E6"   # Púrpura medio — cualquier paquete, otra ciudad (cup+actividad)
+        _COLOR_PHASE7 = "FFB6C1"   # Rosa     — cualquier paquete, otra ciudad (cup+actividad)
         fallback_logs = []
         unresolved = []  # list of (idx, h, city_id, cup_id, activity_id, pkg_name, city, activity)
 
@@ -695,6 +777,7 @@ class AssignRatesFromExcel:
                             fallback_price = rates_cache.get(fallback_key)
                             if fallback_price:
                                 result_cols[str(h)][idx] = int(fallback_price)
+                                cell_colors[(str(h), idx)] = _COLOR_PHASE2
                                 fallback_logs.append(
                                     f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                                     f"para la actividad '{activity}', se asignó tarifa del paquete '{default_package}'"
@@ -721,6 +804,7 @@ class AssignRatesFromExcel:
                 if result_tuple:
                     w_rate, w_type, w_id = result_tuple
                     result_cols[str(h)][idx] = int(w_rate)
+                    cell_colors[(str(h), idx)] = _COLOR_PHASE3
                     # Resolve source name
                     if w_type == "Package":
                         source = pkg_id_to_name.get(w_id, str(w_id))
@@ -761,6 +845,7 @@ class AssignRatesFromExcel:
                 homolog_price = rates_cache.get(homolog_key)
                 if homolog_price:
                     result_cols[str(h)][idx] = int(homolog_price)
+                    cell_colors[(str(h), idx)] = _COLOR_PHASE4
                     homolog_logs.append(
                         f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                         f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
@@ -812,6 +897,7 @@ class AssignRatesFromExcel:
                     if result_tuple:
                         w_rate, w_type, w_id = result_tuple
                         result_cols[str(h)][idx] = int(w_rate)
+                        cell_colors[(str(h), idx)] = _COLOR_PHASE5
                         if w_type == "Package":
                             source = pkg_id_to_name.get(w_id, str(w_id))
                         elif w_type == "Provider":
@@ -853,6 +939,7 @@ class AssignRatesFromExcel:
                     if result_tuple:
                         w_rate, w_type, w_id = result_tuple
                         result_cols[str(h)][idx] = int(w_rate)
+                        cell_colors[(str(h), idx)] = _COLOR_PHASE6
                         if w_type == "Package":
                             source = pkg_id_to_name.get(w_id, str(w_id))
                         elif w_type == "Provider":
@@ -896,16 +983,20 @@ class AssignRatesFromExcel:
             f"Columna Total generada: {len(headers)} columnas CUP, {df.height} filas",
             user_msg=f"Columna Total calculada para {df.height} registros.",
         )
-        return df
+        return df, cell_colors
 
     # ── Validate Empresa matches DB ───────────────────────────────────────
 
     def _validate_empresa(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
+        odoo_resolved_nits = lookups.get("odoo_resolved_nits", set())
 
+        # Odoo tiene prioridad sobre BD local (ver cascada en _match_companies);
+        # los NIT ya resueltos vía Odoo no deben revertirse al nombre de BD local.
         db_nit_to_name = {
             nit: normalize_name(c["name"])
             for nit, c in nit_to_company.items()
+            if nit not in odoo_resolved_nits
         }
 
         # Check mismatches
