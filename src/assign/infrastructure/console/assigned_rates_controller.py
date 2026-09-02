@@ -50,14 +50,14 @@ def assign_rates(logger, with_invoices=False):
     loader = ExcelLoader()
 
     # Libro consolidado (tarifas)
-    path = ask_excel_path()
+    path = ask_excel_path("Ruta del Excel de TARIFAS (consolidado)")
     excel = loader.load(path)
     sheet = ask_sheet_name(excel.sheet_names)
     df = loader.load_sheet(excel, sheet)
 
     # Libro de facturas (solo si se generarán pre-facturas)
     if with_invoices:
-        facture_path = ask_excel_path()
+        facture_path = ask_excel_path("Ruta del Excel con NÚMEROS DE FACTURA")
         facture_excel = loader.load(facture_path)
         facture_sheet = ask_sheet_name(facture_excel.sheet_names)
         df_facture = loader.load_sheet(facture_excel, facture_sheet)
