@@ -36,3 +36,32 @@ def test_fuzz_empty_catalog():
     # extractOne raises on empty list
     result = fuzz.fuzz_property("TEST", [])
     assert result is None
+
+
+# ── T02: similarity() ────────────────────────────────────────────────────────
+
+
+def test_similarity_returns_score_between_identical_texts():
+    fuzz = RapidFuzzBiller(FakeLogger())
+    assert fuzz.similarity("EMPRESA A", "EMPRESA A") == 100
+
+
+def test_similarity_returns_low_score_for_different_texts():
+    fuzz = RapidFuzzBiller(FakeLogger())
+    assert fuzz.similarity("ENTIDADES O SOCIEDADES EN EL EXTERIOR", "ACMI MEXICO") < 50
+
+
+def test_similarity_returns_high_score_for_reordered_tokens():
+    fuzz = RapidFuzzBiller(FakeLogger())
+    score = fuzz.similarity("MARIO ALBERTO HUERTAS COTES", "HUERTAS COTES MARIO ALBERTO")
+    assert score == 100
+
+
+def test_similarity_returns_int():
+    fuzz = RapidFuzzBiller(FakeLogger())
+    assert isinstance(fuzz.similarity("A", "B"), int)
+
+
+def test_similarity_returns_zero_on_error():
+    fuzz = RapidFuzzBiller(FakeLogger())
+    assert fuzz.similarity(None, "EMPRESA A") == 0
