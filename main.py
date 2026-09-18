@@ -12,6 +12,9 @@ from src.assign.infrastructure.console.missing_rates_controller import (
     generate_missing_rates,
 )
 from src.billers.infrastructure.console.import_billers_controller import import_billers
+from src.company.infrastructure.console.detect_duplicates_controller import (
+    detect_duplicate_companies,
+)
 from src.company.infrastructure.console.import_companies_rates_controller import (
     import_companies,
 )
@@ -52,6 +55,7 @@ def console_app():
         table.add_row("7", "Generar Pre Facturas")
         table.add_row("8", "Cargar Pre Facturas")
         table.add_row("9", "Generar Faltantes")
+        table.add_row("10", "Detectar Empresas Duplicadas")
         table.add_row("0", "Salir")
 
         console.print(table)
@@ -89,6 +93,9 @@ def console_app():
         elif option == "9":
             console.print("[green]Generando Faltantes...[/green]")
             generate_missing_rates(tech_logger)
+        elif option == "10":
+            console.print("[green]Detectando Empresas Duplicadas...[/green]")
+            detect_duplicate_companies(tech_logger)
         elif option == "0":
             console.print("[red]Saliendo...[/red]")
             break
