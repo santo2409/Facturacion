@@ -15,9 +15,11 @@ _MAX_RETRIES = 2
 
 
 class RUESNitService:
-    def __init__(self, logger: LoggerAdapter = None, odoo_repo=None, nit_cache_repo=None):
+    def __init__(
+        self, logger: LoggerAdapter = None, odoo_repo=None, nit_cache_repo=None, scraper=None
+    ):
         self.logger = logger or LoggerAdapter(__name__)
-        self._scraper = RuesPlaywrightScraper(logger=self.logger)
+        self._scraper = scraper or RuesPlaywrightScraper(logger=self.logger)
         self._use_case = SearchNitsWithOdooFallbackUseCase(
             SearchNitsUseCase(self._scraper),
             odoo_repo=odoo_repo,
