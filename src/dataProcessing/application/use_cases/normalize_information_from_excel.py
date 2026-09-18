@@ -1,12 +1,24 @@
+from pathlib import Path
+
 from src.shared.excel.excel_loader import ExcelLoader
 
 
 class NormalizeInformationFromExcel:
-    def __init__(self, package, provider, special, export):
+    def __init__(
+        self,
+        package,
+        provider,
+        special,
+        export,
+        novelties_log_generator=None,
+        logs_dir: Path = Path("logs"),
+    ):
         self.package = package
         self.provider = provider
         self.special = special
         self.export = export
+        self.novelties_log_generator = novelties_log_generator
+        self.logs_dir = logs_dir
 
     def execute(self, excel, loader, output):
         self._export_excel(excel, loader, output)
@@ -27,3 +39,11 @@ class NormalizeInformationFromExcel:
         }
 
         self.export.export_dataframes(dataframes, output)
+
+        if self.novelties_log_generator:
+            novelties = (
+                list(self.package.novelties)
+                + list(self.provider.novelties)
+                + list(self.special.novelties)
+            )
+            self.novelties_log_generator.generate(novelties, self.logs_dir)
