@@ -19,6 +19,12 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_clients_by_name(self, name: str, limit: int = 10) -> list[dict]:
+        """Candidatos por nombre para verificación difusa.
+        Retorna [{"id": int, "name": str, "vat": str}] con el vat ya normalizado."""
+        pass
+
+    @abstractmethod
     def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
         """Resuelve múltiples NITs en el menor número de llamadas posible.
         Retorna solo las claves encontradas: {nit: (id, name, "NIT")}."""
