@@ -16,15 +16,31 @@ from src.shared.utils.console import console
 
 DEFAULT_CONCURRENCY = 1
 MAX_CONCURRENCY = 5
+DEFAULT_REQUEST_DELAY_MS = 1000
+
+RUES_URL = "https://www.rues.org.co/"
+_SEARCH_INPUT = "input[type='search'], input#search"
+_SUBMIT_BUTTON = "xpath=/html/body/div[1]/div[2]/div/div/div/div[2]/form/button[2]"
+_RESULTS_CONTAINER = "xpath=/html/body/div[1]/main/div/div/div/div"
+_MODAL_CLOSE = "button.swal2-close"
 
 
 class RuesPlaywrightScraper(NitScraperRepository):
-    def __init__(self, logger: LoggerAdapter = None, concurrency: int | None = None):
+    def __init__(
+        self,
+        logger: LoggerAdapter = None,
+        concurrency: int | None = None,
+        browser_factory=None,
+    ):
         self.logger = logger or LoggerAdapter(__name__)
         env_value = os.getenv("RUES_SCRAPER_CONCURRENCY")
         raw = concurrency if concurrency is not None else (int(env_value) if env_value else DEFAULT_CONCURRENCY)
         self.concurrency = max(1, min(raw, MAX_CONCURRENCY))
         self._result_timeout_ms = int(os.getenv("RUES_RESULT_TIMEOUT_MS", "10000"))
+        self._request_delay_ms = int(
+            os.getenv("RUES_REQUEST_DELAY_MS", str(DEFAULT_REQUEST_DELAY_MS))
+        )
+        self._browser_factory = browser_factory or async_playwright
 
     def _prepare_nits(self, nits: list) -> list[int]:
         """Valida y normaliza la lista de NITs de entrada a una lista plana de enteros."""
@@ -51,83 +67,117 @@ class RuesPlaywrightScraper(NitScraperRepository):
         chunks = [items[i::n] for i in range(n)]
         return [c for c in chunks if c]
 
-    async def _search_single_nit(self, page, nit_int: int) -> NitResult:
-        my_nit = str(nit_int)[:9]
+    async def _sleep(self, seconds: float) -> None:
+        await asyncio.sleep(seconds)
 
-        input_box = page.locator("input[type='search'], input#search")
+    async def _open_page(self, context):
+        """Abre la página de RUES y descarta el modal de bienvenida."""
+        page = await context.new_page()
+        await page.goto(RUES_URL, wait_until="networkidle")
+        try:
+            close_button = page.locator(_MODAL_CLOSE)
+            await close_button.wait_for(timeout=10000)
+            await close_button.click()
+        except PlaywrightTimeoutError:
+            pass
+        return page
+
+    async def _submit_search(self, page, term: str) -> None:
+        input_box = page.locator(_SEARCH_INPUT)
         await input_box.wait_for(timeout=5000)
         await input_box.clear()
-        await input_box.fill(my_nit)
+        await input_box.fill(term)
 
-        submit_button = page.locator(
-            "xpath=/html/body/div[1]/div[2]/div/div/div/div[2]/form/button[2]"
-        )
+        submit_button = page.locator(_SUBMIT_BUTTON)
         await submit_button.wait_for(timeout=5000)
         await submit_button.click()
 
+    async def _first_card(self, page):
+        """Devuelve el primer `.card-result` de la página, o None si no aparece."""
         try:
             card_result = page.locator(".card-result").first
             await card_result.wait_for(timeout=self._result_timeout_ms)
-
-            container_html = await page.locator(
-                "xpath=/html/body/div[1]/main/div/div/div/div"
-            ).inner_html()
-
-            soup = BeautifulSoup(container_html, "html.parser")
-            result = soup.find("div", class_="card-result")
-
-            for item in result:
-                name_company = item.contents[0].text
-                return NitResult(nit=nit_int, is_company=True, name=name_company)
+            container_html = await page.locator(_RESULTS_CONTAINER).inner_html()
         except PlaywrightTimeoutError:
-            pass
+            return None
+
+        soup = BeautifulSoup(container_html, "html.parser")
+        return soup.find("div", class_="card-result")
+
+    async def _search_single_nit(self, page, nit_int: int) -> NitResult:
+        await self._submit_search(page, str(nit_int)[:9])
+
+        card = await self._first_card(page)
+        if card:
+            for item in card:
+                return NitResult(nit=nit_int, is_company=True, name=item.contents[0].text)
 
         return NitResult(nit=nit_int, is_company=False)
 
-    async def _worker(self, browser, nit_chunk: list[int], progress, task_id) -> list[NitResult]:
-        local_results: list[NitResult] = []
+    async def _search_single_name(self, page, name: str) -> NitResult | None:
+        await self._submit_search(page, name)
+
+        card = await self._first_card(page)
+        if not card:
+            return None
+
+        for item in card:
+            content = item.contents
+            name_company = content[0].text
+            nit_text = ""
+            for c in content:
+                text = getattr(c, "text", str(c)).strip()
+                if text.isdigit() and 6 <= len(text) <= 12:
+                    nit_text = text
+                    break
+            if nit_text:
+                return NitResult(nit=int(nit_text), is_company=True, name=name_company)
+
+        return None
+
+    async def _worker(self, browser, chunk: list, progress, task_id, search_fn) -> list[tuple]:
+        """Procesa un chunk en una sola página, emparejando cada ítem con su resultado."""
+        pairs: list[tuple] = []
         context = await browser.new_context()
         try:
-            page = await context.new_page()
-            await page.goto("https://www.rues.org.co/", wait_until="networkidle")
+            page = await self._open_page(context)
 
-            try:
-                close_button = page.locator("button.swal2-close")
-                await close_button.wait_for(timeout=10000)
-                await close_button.click()
-            except PlaywrightTimeoutError:
-                pass
-
-            for nit_int in nit_chunk:
+            for index, item in enumerate(chunk):
                 try:
-                    local_results.append(await self._search_single_nit(page, nit_int))
+                    pairs.append((item, await search_fn(page, item)))
                 except Exception as e:
-                    self.logger.error(f"Error buscando NIT {nit_int}: {e}", exc_info=True)
+                    self.logger.error(f"Error consultando '{item}' en RUES: {e}", exc_info=True)
                 finally:
                     progress.update(task_id, advance=1)
+
+                if self._request_delay_ms and index < len(chunk) - 1:
+                    await self._sleep(self._request_delay_ms / 1000)
         except Exception as e:
-            self.logger.error(f"Fallo un worker de scraping: {e}", exc_info=True)
+            self.logger.error(f"Falló un worker de scraping: {e}", exc_info=True)
         finally:
             await context.close()
-        return local_results
+        return pairs
 
-    async def _search_nits_async(
-        self, nits: list, show_progress: bool = False
-    ) -> list[NitResult]:
-        """Método asíncrono interno para realizar el scraping"""
-        valid_nits = self._prepare_nits(nits)
-        if not valid_nits:
+    async def _run_batch(
+        self, items: list, search_fn, description: str, show_progress: bool
+    ) -> list[tuple]:
+        """Lanza UN navegador y reparte los ítems entre workers concurrentes."""
+        if not items:
             return []
-        chunks = self._split(valid_nits, self.concurrency)
 
-        results: list[NitResult] = []
-        async with async_playwright() as p:
+        chunks = self._split(items, self.concurrency)
+        pairs: list[tuple] = []
+
+        async with self._browser_factory() as p:
             browser = await p.firefox.launch(headless=True)
             try:
                 with Progress(console=console, disable=not show_progress) as progress:
-                    task_id = progress.add_task("Buscando NITs", total=len(valid_nits))
+                    task_id = progress.add_task(description, total=len(items))
                     worker_results = await asyncio.gather(
-                        *[self._worker(browser, chunk, progress, task_id) for chunk in chunks],
+                        *[
+                            self._worker(browser, chunk, progress, task_id, search_fn)
+                            for chunk in chunks
+                        ],
                         return_exceptions=True,
                     )
                 for chunk_result in worker_results:
@@ -137,70 +187,39 @@ class RuesPlaywrightScraper(NitScraperRepository):
                             exc_info=True,
                         )
                         continue
-                    results.extend(chunk_result)
+                    pairs.extend(chunk_result)
             finally:
                 await browser.close()
-        return results
+        return pairs
+
+    async def _search_nits_async(
+        self, nits: list, show_progress: bool = False
+    ) -> list[NitResult]:
+        valid_nits = self._prepare_nits(nits)
+        pairs = await self._run_batch(
+            valid_nits, self._search_single_nit, "Buscando NITs", show_progress
+        )
+        return [result for _, result in pairs if result is not None]
+
+    async def _search_names_async(
+        self, names: list[str], show_progress: bool = False
+    ) -> dict[str, NitResult]:
+        cleaned = [name for name in dict.fromkeys(names) if name and name.strip()]
+        pairs = await self._run_batch(
+            cleaned, self._search_single_name, "Buscando empresas por nombre", show_progress
+        )
+        return {name: result for name, result in pairs if result is not None}
 
     def search_nits(self, nits: list, show_progress: bool = False) -> list[NitResult]:
         """Método síncrono que envuelve la lógica asíncrona"""
         return asyncio.run(self._search_nits_async(nits, show_progress))
 
+    def search_names(
+        self, names: list[str], show_progress: bool = False
+    ) -> dict[str, NitResult]:
+        """Busca varias empresas por nombre reutilizando un único navegador."""
+        return asyncio.run(self._search_names_async(names, show_progress))
+
     def search_by_name(self, name: str) -> NitResult | None:
         """Busca una empresa por nombre en el RUES. Retorna el primer resultado o None."""
-        return asyncio.run(self._search_by_name_async(name))
-
-    async def _search_by_name_async(self, name: str) -> NitResult | None:
-        async with async_playwright() as p:
-            browser = await p.firefox.launch(headless=True)
-            page = await browser.new_page()
-            try:
-                await page.goto("https://www.rues.org.co/", wait_until="networkidle")
-                try:
-                    close_button = page.locator("button.swal2-close")
-                    await close_button.wait_for(timeout=10000)
-                    await close_button.click()
-                except PlaywrightTimeoutError:
-                    pass
-
-                input_box = page.locator("input[type='search'], input#search")
-                await input_box.wait_for(timeout=5000)
-                await input_box.clear()
-                await input_box.fill(name)
-
-                submit_button = page.locator(
-                    "xpath=/html/body/div[1]/div[2]/div/div/div/div[2]/form/button[2]"
-                )
-                await submit_button.wait_for(timeout=5000)
-                await submit_button.click()
-
-                try:
-                    card_result = page.locator(".card-result").first
-                    await card_result.wait_for(timeout=10000)
-
-                    container_html = await page.locator(
-                        "xpath=/html/body/div[1]/main/div/div/div/div"
-                    ).inner_html()
-
-                    soup = BeautifulSoup(container_html, "html.parser")
-                    result = soup.find("div", class_="card-result")
-
-                    for item in result:
-                        content = item.contents
-                        name_company = content[0].text
-                        # Extraer NIT del resultado
-                        nit_text = ""
-                        for c in content:
-                            text = getattr(c, "text", str(c)).strip()
-                            if text.isdigit() and 6 <= len(text) <= 12:
-                                nit_text = text
-                                break
-                        if nit_text:
-                            return NitResult(nit=int(nit_text), is_company=True, name=name_company)
-                except PlaywrightTimeoutError:
-                    pass
-            except Exception as e:
-                self.logger.error(f"Error buscando por nombre '{name}': {e}", exc_info=True)
-            finally:
-                await browser.close()
-        return None
+        return self.search_names([name]).get(name)
