@@ -226,3 +226,4 @@ odoo-output/
 datos_supabase.dump
 CLAUDE.md
 .mcp.json
+specs/
