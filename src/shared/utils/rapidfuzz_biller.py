@@ -32,3 +32,11 @@ class RapidFuzzBiller:
 
         except Exception as excep:
             self.logger.error(f"Error in fuzz_property: {excep}", exc_info=True, user_msg="Error al buscar coincidencias. El proceso continuará sin esta validación.")
+
+    def similarity(self, a: str, b: str) -> int:
+        """Puntaje 0-100 de parecido entre dos textos ya normalizados por el llamador."""
+        try:
+            return int(fuzz.token_sort_ratio(a, b))
+        except Exception as excep:
+            self.logger.error(f"Error in similarity: {excep}", exc_info=True)
+            return 0
