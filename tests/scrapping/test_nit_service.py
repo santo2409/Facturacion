@@ -6,7 +6,27 @@ from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.infrastructure.console.nit_service import RUESNitService
 from tests.fakes.fake_logger import FakeLogger
 from tests.fakes.fake_nit_cache_repo import FakeNitCacheRepo
+from tests.fakes.fake_nit_scraper import FakeNitScraper
 from tests.fakes.fake_odoo_repo import FakeOdooRepo
+
+
+def test_search_uses_injected_scraper_without_launching_browser():
+    scraper = FakeNitScraper(by_nit={"111": NitResult("111", True, "EMPRESA RUES")})
+    service = RUESNitService(logger=FakeLogger(), scraper=scraper)
+
+    result = service.search(["111"])
+
+    assert result[0].name == "EMPRESA RUES"
+    assert scraper.search_nits_calls == [["111"]]
+
+
+def test_search_by_name_uses_injected_scraper():
+    scraper = FakeNitScraper(
+        by_name={"EMPRESA A": NitResult("111", True, "EMPRESA A")}
+    )
+    service = RUESNitService(logger=FakeLogger(), scraper=scraper)
+
+    assert service.search_by_name("EMPRESA A").name == "EMPRESA A"
 
 
 def test_writer_creates_json_file(tmp_path):
