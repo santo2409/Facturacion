@@ -10,3 +10,11 @@ class SearchNitsUseCase:
 
     def execute(self, nits: list, show_progress: bool = False) -> list[NitResult]:
         return self.scraper.search_nits(nits, show_progress)
+
+    def execute_names(
+        self, names: list[str], show_progress: bool = False
+    ) -> dict[str, NitResult]:
+        return self.scraper.search_names(names, show_progress)
+
+    def execute_by_name(self, name: str) -> NitResult | None:
+        return self.scraper.search_by_name(name)
