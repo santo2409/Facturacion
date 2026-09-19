@@ -28,3 +28,19 @@ def test_warns_user_when_sheet_has_no_empresa_column():
 
     assert result == {}
     assert logger.warnings
+
+
+def test_import_rues_nits_no_usa_os_getenv_directory_directo():
+    """spec 007 RF-06: DIRECTORY se resuelve vía get_paths_config(), no con
+    os.getenv("DIRECTORY") directo (que no tiene valor por defecto y lanza
+    TypeError si la variable falta). execute_web_scrapping tiene E/S real
+    (Excel, Odoo, RUES) sin puntos de inyección hoy, por eso se verifica a
+    nivel de fuente en vez de ejecutar la función completa."""
+    import inspect
+
+    from src.scrapping.infrastructure.console import import_rues_nits
+
+    source = inspect.getsource(import_rues_nits)
+
+    assert 'os.getenv("DIRECTORY")' not in source
+    assert "get_paths_config" in source
