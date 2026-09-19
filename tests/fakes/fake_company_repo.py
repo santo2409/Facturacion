@@ -1,8 +1,12 @@
-class FakeCompanyRepo:
+from src.company.domain.repositories.company_repository import CompanyRepository
+
+
+class FakeCompanyRepo(CompanyRepository):
     def __init__(self, initial=None):
         self._data = initial or []
         self._packages = []
         self._next_id = max((c["id"] for c in self._data), default=0) + 1
+        self.batches = []
 
     def find_by_nit(self, nit):
         row = next((c for c in self._data if c["nit"] == nit), None)
@@ -35,6 +39,7 @@ class FakeCompanyRepo:
         return list(self._packages)
 
     def companies_packages_batch(self, batch):
+        self.batches.append(list(batch))
         for cp in batch:
             existing = next((p for p in self._packages if p["company"] == cp.company_id), None)
             if existing:
