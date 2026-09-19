@@ -6,6 +6,9 @@ from src.company.application.use_cases.import_companies_from_excel import (
 from src.company.infrastructure.persistence.sa_company_repository import (
     SaCompanyRepository,
 )
+from src.company.infrastructure.reporting.not_linked_companies_log_generator import (
+    NotLinkedCompaniesLogGenerator,
+)
 from src.package.infrastructure.persistence.sa_package_repository import (
     SaPackageRepository,
 )
@@ -34,15 +37,15 @@ from src.special.infrastructure.persistence.sa_special_repository import (
 )
 
 
-def import_companies(logger):
+def _load_dataframe():
     path = ask_excel_path()
     loader = ExcelLoader()
     excel = loader.load(path)
-
     sheet = ask_sheet_name(excel.sheet_names)
-    df = loader.load_sheet(excel, sheet)
+    return loader.load_sheet(excel, sheet)
 
-    session = get_session()
+
+def _build_use_case(session, logger) -> ImportCompaniesFromExcel:
     company_repo = SaCompanyRepository(session, logger)
 
     config = get_odoo_config()
@@ -58,7 +61,7 @@ def import_companies(logger):
         )
     nit_cache_repo = SaCompanyNitCacheRepository(company_repo, logger=logger)
 
-    use_case = ImportCompaniesFromExcel(
+    return ImportCompaniesFromExcel(
         company_repo=company_repo,
         package_repo=SaPackageRepository(session, logger),
         provider_repo=SaProviderRepository(session, logger),
@@ -69,6 +72,22 @@ def import_companies(logger):
         logger=logger,
         not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
         logs_dir=Path("logs"),
+        not_linked_log_generator=NotLinkedCompaniesLogGenerator(logger),
     )
 
-    use_case.execute(df)
+
+def import_companies(logger):
+    df = _load_dataframe()
+
+    session = get_session()
+    try:
+        use_case = _build_use_case(session, logger)
+        use_case.execute(df)
+    except Exception as e:
+        logger.error(
+            f"Error registrando empresas: {e}",
+            exc_info=True,
+            user_msg="Ocurrió un error al registrar las empresas.",
+        )
+    finally:
+        session.close()
