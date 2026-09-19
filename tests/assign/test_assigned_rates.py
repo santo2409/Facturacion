@@ -1031,3 +1031,30 @@ def test_cell_colors_phase1_no_color(deps):
     })
     _, colors = uc._assign_rates(df, lookups)
     assert ("890201", 0) not in colors
+
+
+def test_build_lookups_sin_directory_resuelve_al_valor_unico_por_defecto(deps, monkeypatch):
+    """spec 007 RF-07: el valor por defecto de DIRECTORY debe venir de la
+    misma fuente que el resto del sistema (get_paths_config), no de un
+    ``os.getenv("DIRECTORY", "")`` propio que diverge del "." usado en
+    otros módulos (p. ej. logging_config.py)."""
+    import os as _os
+
+    from src.shared.config import DEFAULT_DIRECTORY
+
+    monkeypatch.delenv("DIRECTORY", raising=False)
+    seen_paths = []
+    real_exists = _os.path.exists
+    monkeypatch.setattr(
+        _os.path, "exists", lambda p: seen_paths.append(p) or real_exists(p)
+    )
+    uc = AssignRatesFromExcel(**deps)
+
+    uc._build_lookups()
+
+    assert seen_paths, "no se consultó ningún data.json"
+    expected = _os.path.join(DEFAULT_DIRECTORY, "data.json")
+    assert seen_paths[0] == expected, (
+        f"json_path usó '{seen_paths[0]}', no el valor por defecto único "
+        f"'{expected}'"
+    )
