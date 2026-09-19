@@ -8,6 +8,7 @@ import polars as pl
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.shared.config import get_paths_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.text_normalizer import (
     normalize_name,
@@ -256,7 +257,7 @@ class AssignRatesFromExcel:
         # Scraped NITs from JSON
         scraped_nits = {}
         scraped_name_to_nit = {}
-        json_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+        json_path = os.path.join(get_paths_config()["directory"], "data.json")
         if os.path.exists(json_path):
             with open(json_path, encoding="utf-8") as f:
                 for item in json.load(f):
