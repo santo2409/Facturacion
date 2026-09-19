@@ -24,6 +24,7 @@ from src.scrapping.infrastructure.reporting.not_found_companies_log_generator im
 from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
     RuesPlaywrightScraper,
 )
+from src.shared.config import get_paths_config
 from src.shared.database.database import get_session
 from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.console import console
@@ -92,7 +93,7 @@ def execute_web_scrapping(logger):
     )
 
     route_book = os.path.join(os.getenv("BOOK_ROUTE"), os.getenv("BOOK_NAME"))
-    file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
+    file_path = os.path.join(get_paths_config()["directory"], "data.json")
 
     book_df = pl.read_excel(
         route_book, sheet_name="nits", engine="calamine", infer_schema_length=0
