@@ -2,11 +2,12 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from src.company.domain.repositories.company_repository import CompanyRepository
 from src.shared.database.models import CompanyModel, CompanyPackageModel
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
 
-class SaCompanyRepository:
+class SaCompanyRepository(CompanyRepository):
     def __init__(self, session: Session, logger: LoggerAdapter = None):
         self.session = session
         self.logger = logger or LoggerAdapter(__name__)
