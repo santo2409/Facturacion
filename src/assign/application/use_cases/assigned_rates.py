@@ -137,18 +137,27 @@ class AssignRatesFromExcel:
         self._connect_odoo()
 
         lookups = self._build_lookups()
-        df = self._normalize_nit(excel)
+        df = self._capture_raw_nit(excel)
+        df = self._apply_imedical(df, lookups)
+        df = self._normalize_nit(df)
         df = self._match_companies(df, lookups)
         # _match_companies puede reemplazar el NIT con valores provenientes de
         # Odoo (get_nit) o de RUES (data.json), que no pasan por el mismo
         # truncamiento a 9 dígitos aplicado al NIT original del Excel.
         df = self._normalize_nit(df)
         df = self._normalize_columns(df)
+        # _apply_tian va después de _normalize_columns: pl_normalize_name
+        # borra los paréntesis, así que el sufijo "(TIAN)" solo puede
+        # aplicarse una vez la razón social ya quedó normalizada. Va antes
+        # de asignar facturador/paquete/tarifas (RF-13) para que la fila
+        # herede los de TIAN.
+        df = self._apply_tian(df, lookups)
         df = self._normalize_city(df, lookups)
         df = self._assign_facturador(df, lookups)
         df = self._assign_paquete(df, lookups)
         df, cell_colors = self._assign_rates(df, lookups)
         df = self._validate_empresa(df, lookups)
+        df = self._drop_internal_columns(df)
         df = _enrich_with_invoices(df, df_facture, self.logger)
         df = self._order_columns(df)
 
