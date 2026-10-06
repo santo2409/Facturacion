@@ -568,6 +568,15 @@ class AssignRatesFromExcel:
                 empresa_norm = normalize_name(empresa) if empresa else ""
                 if empresa_norm and empresa_norm in scraped_name_to_nit:
                     nuevo_nit = scraped_name_to_nit[empresa_norm]
+                    if nit in imedical_locked_nits and nuevo_nit and nuevo_nit != nit:
+                        cambios.append(
+                            f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {nuevo_nit} "
+                            f"sugerido por RUES/nombre"
+                        )
+                        matched_nits.append(nit)
+                        matched_empresas.append(empresa)
+                        self.progress.advance()
+                        continue
                     if nuevo_nit and nuevo_nit != nit:
                         cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
                     matched_nits.append(nuevo_nit or nit)
