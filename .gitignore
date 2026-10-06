@@ -229,5 +229,7 @@ CLAUDE.md
 specs/
 graphify-out/
 .eon-data/
+.eon/
+.eonignore
 .env.start
 data/
