@@ -113,7 +113,7 @@ src/<módulo>/
 | Fuzzy matching | RapidFuzz, Unidecode |
 | CLI | Rich |
 | Logging | logging + ExcelAuditHandler (user_audit.xlsx) |
-| Testing | pytest + fakes manuales (194 tests) |
+| Testing | pytest + fakes manuales (643 tests) |
 
 ## Tests
 
