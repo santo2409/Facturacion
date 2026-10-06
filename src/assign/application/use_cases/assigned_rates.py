@@ -790,6 +790,105 @@ class AssignRatesFromExcel:
                         return "", ""
         return "", ""
 
+    # ── TIAN: redirección de facturación (spec 008 RF-12..20) ──────────────
+
+    def _apply_tian(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
+        """Redirige a facturarse bajo TIAN_NIT las filas cuyo NIT está en la
+        tabla `tian`, ANTES de asignar facturador/paquete/tarifas (RF-13), de
+        modo que hereden los de TIAN.
+
+        Va después de _normalize_columns (RF-09 del plan): pl_normalize_name
+        borra los paréntesis, así que el sufijo "(TIAN)" solo puede aplicarse
+        una vez la razón social ya quedó normalizada."""
+        tian_nit = lookups.get("tian_nit", "")
+        if not tian_nit:
+            self.logger.error(
+                "TIAN: variable de entorno TIAN_NIT no está definida; se omite la redirección.",
+                user_msg="No se definió TIAN_NIT: las empresas de la tabla TIAN no se redirigieron.",
+            )
+            return df
+
+        nit_to_company = lookups["nit_to_company"]
+        tian_company = nit_to_company.get(tian_nit)
+        if not tian_company:
+            self.logger.error(
+                f"TIAN: el NIT {tian_nit} (TIAN_NIT) no existe en companies; se aborta la redirección.",
+                user_msg=f"El NIT de TIAN ({tian_nit}) no existe en la base de datos: no se redirigió ninguna empresa.",
+            )
+            return df
+
+        company_to_package = lookups["company_to_package"]
+        if tian_company["id"] not in company_to_package:
+            self.logger.error(
+                f"TIAN: la empresa {tian_nit} no tiene paquete asignado; se aborta la redirección.",
+                user_msg=f"TIAN (NIT {tian_nit}) no tiene paquete asignado: no se redirigió ninguna empresa.",
+            )
+            return df
+
+        tian_nits = lookups.get("tian_nits", set())
+        if not tian_nits:
+            return df
+
+        raw_source = "_NIT_RAW" if "_NIT_RAW" in df.columns else "NIT"
+        raw_nits = df[raw_source].cast(pl.Utf8).str.replace_all(r"[^\d]", "").to_list()
+        current_nits = df["NIT"].cast(pl.Utf8).to_list()
+        empresas = df["Empresa"].cast(pl.Utf8).to_list()
+
+        nuevos_nit = list(current_nits)
+        nuevas_empresas = list(empresas)
+        asignaciones: dict[str, TianAssignment] = {}
+
+        for i, nit_actual in enumerate(current_nits):
+            if nit_actual in tian_nits:
+                candidato = nit_actual
+            elif raw_nits[i] in tian_nits:
+                candidato = raw_nits[i]
+            else:
+                continue
+            if candidato == tian_nit:
+                continue
+
+            nit_original = nit_actual
+            empresa_original = empresas[i]
+            name_canonica = nit_to_company.get(nit_original, {}).get("name") or empresa_original
+            name_final = name_canonica if name_canonica.endswith("(TIAN)") else f"{name_canonica}(TIAN)"
+
+            nuevos_nit[i] = tian_nit
+            nuevas_empresas[i] = name_final
+
+            if nit_original in asignaciones:
+                previa = asignaciones[nit_original]
+                asignaciones[nit_original] = TianAssignment(
+                    nit_original=previa.nit_original,
+                    name_original=previa.name_original,
+                    nit_tian=tian_nit,
+                    name_final=name_final,
+                    rows=previa.rows + 1,
+                )
+            else:
+                asignaciones[nit_original] = TianAssignment(
+                    nit_original=nit_original,
+                    name_original=empresa_original,
+                    nit_tian=tian_nit,
+                    name_final=name_final,
+                    rows=1,
+                )
+
+        if not asignaciones:
+            return df
+
+        lookups["tian_rerouted_nits"] = {tian_nit}
+
+        df = df.with_columns([
+            pl.Series("NIT", nuevos_nit),
+            pl.Series("Empresa", nuevas_empresas),
+        ])
+
+        if self.tian_log_generator:
+            self.tian_log_generator.generate(list(asignaciones.values()), self.logs_dir)
+
+        return df
+
     # ── City normalization with pre-computed fuzzy ─────────────────────────
 
     def _normalize_city(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
