@@ -5,11 +5,14 @@ from pathlib import Path
 
 import polars as pl
 
+from src.company.domain.entities.imedical_correction import ImedicalCorrection
+from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
-from src.shared.config import get_paths_config
+from src.shared.config import get_paths_config, get_tian_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.text_normalizer import (
     normalize_name,
     pl_normalize_name,
