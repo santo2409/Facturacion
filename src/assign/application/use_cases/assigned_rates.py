@@ -475,15 +475,47 @@ class AssignRatesFromExcel:
                         try:
                             cid, cname, _ = self.odoo_repo.find_client_by_name(empresa)
                             nuevo_nit = self.odoo_repo.get_nit(cid) if cid else None
-                            _odoo_name_cache[empresa] = (cid, nuevo_nit)
+                            _odoo_name_cache[empresa] = (cid, cname, nuevo_nit)
                         except Exception as e:
                             self.logger.warning(f"Fallo consultando Odoo por nombre '{empresa}': {e}")
-                            _odoo_name_cache[empresa] = (None, None)
+                            _odoo_name_cache[empresa] = (None, None, None)
 
-                    odoo_id, odoo_nit = _odoo_name_cache.get(empresa, (None, None))
+                    odoo_id, odoo_name_match, odoo_nit = _odoo_name_cache.get(empresa, (None, None, None))
                     if odoo_id and odoo_nit:
+                        if nit in imedical_locked_nits and odoo_nit != nit:
+                            cambios.append(
+                                f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {odoo_nit} "
+                                f"sugerido por Odoo/nombre"
+                            )
+                            matched_nits.append(nit)
+                            matched_empresas.append(empresa)
+                            self.progress.advance()
+                            continue
                         if odoo_nit != nit:
                             cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{odoo_nit}' [Odoo/nombre]")
+
+                        # ── R2: auto-registro en imedical (RF-06..RF-11) ──
+                        raw_nit_error = row.get("_NIT_RAW") or nit
+                        if (
+                            self.imedical_repo
+                            and tiene_columna_base
+                            and _es_base_imedical(row.get("Base"))
+                            and raw_nit_error
+                            and raw_nit_error != odoo_nit
+                            and raw_nit_error[:9] != odoo_nit
+                            and raw_nit_error not in imedical_known_nit_errors
+                            and raw_nit_error not in candidatos_imedical
+                            and odoo_name_match
+                        ):
+                            match = name_matcher.best_match(empresa, [{"name": odoo_name_match}])
+                            if match:
+                                candidatos_imedical[raw_nit_error] = ImedicalCorrection(
+                                    nit_error=raw_nit_error,
+                                    nit_success=odoo_nit,
+                                    name=odoo_name_match,
+                                    name_error=empresa,
+                                )
+
                         matched_nits.append(odoo_nit)
                         matched_empresas.append(empresa)
                         odoo_resolved_nits.add(odoo_nit)
