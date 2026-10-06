@@ -536,6 +536,15 @@ class AssignRatesFromExcel:
                 empresa_norm = normalize_name(empresa) if empresa else ""
                 if empresa_norm and empresa_norm in name_to_company:
                     comp = name_to_company[empresa_norm]
+                    if nit in imedical_locked_nits and comp["nit"] != nit:
+                        cambios.append(
+                            f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {comp['nit']} "
+                            f"sugerido por BD local/nombre"
+                        )
+                        matched_nits.append(nit)
+                        matched_empresas.append(comp["name"])
+                        self.progress.advance()
+                        continue
                     cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{comp['nit']}' [BD local/nombre]")
                     matched_nits.append(comp["nit"])
                     matched_empresas.append(comp["name"])
