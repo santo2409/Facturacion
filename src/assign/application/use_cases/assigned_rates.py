@@ -303,6 +303,37 @@ class AssignRatesFromExcel:
                     if name:
                         scraped_name_to_nit[normalize_name(name)] = nit
 
+        # imedical: nit_error (crudo) -> nit_success, solo correcciones reales
+        # (spec 008 RF-03): se excluyen las filas no-op (nit_error == nit_success)
+        # y aquellas que el truncado a 9 dígitos ya resuelve sin tabla alguna.
+        # Se indexa por clave doble (cruda y truncada a 9) para que la corrección
+        # se aplique aunque el DataFrame no traiga la columna _NIT_RAW (RF-02).
+        imedical_map: dict[str, str] = {}
+        imedical_known_nit_errors: set[str] = set()
+        if self.imedical_repo:
+            for row in self.imedical_repo.all():
+                raw = re.sub(r"\D", "", str(row["nit_error"]))
+                success = str(row["nit_success"])
+                imedical_known_nit_errors.add(raw)
+                if not raw or raw == success:
+                    continue
+                if raw[:9] == success:
+                    continue
+                imedical_map[raw] = success
+                truncated = raw[:9]
+                if truncated != raw:
+                    imedical_map[truncated] = success
+
+        # tian: NITs que deben facturarse bajo TIAN_NIT (spec 008 RF-12/RF-16).
+        # Se excluye el propio NIT de TIAN para que no se auto-redirija.
+        tian_nit = get_tian_config()["nit"]
+        tian_nits: set[str] = set()
+        if self.tian_repo:
+            for row in self.tian_repo.all():
+                raw = re.sub(r"\D", "", str(row["nit_error"]))
+                if raw and raw != tian_nit:
+                    tian_nits.add(raw)
+
         return {
             "nit_to_company": nit_to_company,
             "name_to_company": name_to_company,
