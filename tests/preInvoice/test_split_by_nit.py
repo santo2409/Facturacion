@@ -158,8 +158,8 @@ def test_fecha_ingreso_se_conserva_en_general_sin_factura(consolidado_general_si
     fecha_col_idx = headers.index("Fecha Ingreso")
 
     for row in ws.iter_rows(min_row=3, values_only=True):
-        assert row[fecha_col_idx] is None, (
-            f"Se esperaba 'Fecha Ingreso' en None, pero se encontró: {row[fecha_col_idx]}"
+        assert row[fecha_col_idx] == "15/01/2026", (
+            f"Se esperaba 'Fecha Ingreso' conservada, pero se encontró: {row[fecha_col_idx]}"
         )
     wb.close()
 
