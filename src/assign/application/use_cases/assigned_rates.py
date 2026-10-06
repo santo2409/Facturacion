@@ -97,6 +97,9 @@ class AssignRatesFromExcel:
         odoo_repo=None,
         not_found_log_generator=None,
         logs_dir: Path = Path("logs"),
+        imedical_repo=None,
+        tian_repo=None,
+        tian_log_generator=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
