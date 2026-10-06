@@ -20,3 +20,22 @@ def test_get_paths_config_respeta_valor_explicito(monkeypatch):
     monkeypatch.setenv("DIRECTORY", "/tmp/x")
 
     assert get_paths_config()["directory"] == "/tmp/x"
+
+
+def test_get_tian_config_lee_env_tian_nit(monkeypatch):
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+
+    assert get_tian_config()["nit"] == "900293402"
+
+
+def test_get_tian_config_vacio_si_env_no_definida(monkeypatch):
+    """Sin valor por defecto en código (RF-19): quien consuma la config decide abortar."""
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+
+    assert get_tian_config()["nit"] == ""
+
+
+def test_get_tian_config_normaliza_cadena_vacia(monkeypatch):
+    monkeypatch.setenv("TIAN_NIT", "")
+
+    assert get_tian_config()["nit"] == ""
