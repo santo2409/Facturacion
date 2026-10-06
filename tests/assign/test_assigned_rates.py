@@ -1059,3 +1059,1069 @@ def test_build_lookups_sin_directory_resuelve_al_valor_unico_por_defecto(deps, m
         f"json_path usó '{seen_paths[0]}', no el valor por defecto único "
         f"'{expected}'"
     )
+
+
+# ── T10: _build_lookups — imedical y tian (spec 008) ────────────────────
+
+def test_build_lookups_imedical_map_excluye_filas_noop(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "800050383", "name": "DALIMENTOS LTDA", "nit_success": "800050383", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert lookups["imedical_map"] == {}
+
+
+def test_build_lookups_imedical_map_excluye_filas_ya_corregidas_por_truncado(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "8000613577", "name": "IMPLANTES Y SISTEMAS ORTOPEDICOS SA", "nit_success": "800061357", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert lookups["imedical_map"] == {}
+
+
+def test_build_lookups_imedical_map_indexa_por_clave_doble_cruda_y_truncada(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "1015426422", "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ", "nit_success": "860504759", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert lookups["imedical_map"]["1015426422"] == "860504759"
+    assert lookups["imedical_map"]["101542642"] == "860504759"
+
+
+def test_build_lookups_tian_nits_excluye_el_propio_tian_nit(deps, monkeypatch):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["tian_repo"] = FakeTianRepo([
+        {"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"},
+        {"nit_error": "900293402", "name": "TIAN IPS S A S"},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert "800082633" in lookups["tian_nits"]
+    assert "900293402" not in lookups["tian_nits"]
+    assert lookups["tian_nit"] == "900293402"
+
+
+def test_build_lookups_sin_imedical_repo_devuelve_map_vacio(deps):
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert lookups["imedical_map"] == {}
+    assert lookups["imedical_known_nit_errors"] == set()
+
+
+def test_build_lookups_sin_tian_repo_devuelve_set_vacio(deps, monkeypatch):
+    # Independiente del TIAN_NIT real del .env (otro módulo del proceso puede
+    # cargarlo vía load_dotenv durante la suite completa; ver DIRECTORY arriba).
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    assert lookups["tian_nits"] == set()
+    assert lookups["tian_nit"] == ""
+
+
+# ── T11: _capture_raw_nit + _apply_imedical (spec 008 RF-01..05) ────────
+
+def test_apply_imedical_corrige_nit_del_excel(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "191461130", "name": "HUERTAS COTES MARIO ALBERTO", "nit_success": "19146113", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["191461130"], "Empresa": ["HUERTAS COTES"]})
+    df = uc._capture_raw_nit(df)
+
+    result = uc._apply_imedical(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+
+
+def test_apply_imedical_usa_nit_crudo_sin_truncar_como_clave(deps):
+    """El nit_error de imedical tiene 10 dígitos; el NIT del Excel debe
+    matchear con el crudo, sin haber pasado por _normalize_nit (AC-02)."""
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "1015426422", "name": "KONRAD LORENZ", "nit_success": "860504759", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["1015426422"], "Empresa": ["X"]})
+    df = uc._capture_raw_nit(df)
+
+    result = uc._apply_imedical(df, lookups)
+
+    assert result["NIT"][0] == "860504759"
+
+
+def test_apply_imedical_no_cuenta_filas_noop_como_correccion(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "800050383", "name": "DALIMENTOS LTDA", "nit_success": "800050383", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800050383"], "Empresa": ["DALIMENTOS"]})
+    df = uc._capture_raw_nit(df)
+
+    result = uc._apply_imedical(df, lookups)
+
+    assert result["NIT"][0] == "800050383"
+    assert not any("imedical" in w.lower() for w in deps["logger"].warnings)
+
+
+def test_apply_imedical_no_cuenta_filas_ya_resueltas_por_truncado(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "8000613577", "name": "IMPLANTES SA", "nit_success": "800061357", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["8000613577"], "Empresa": ["IMPLANTES"]})
+    df = uc._capture_raw_nit(df)
+
+    result = uc._apply_imedical(df, lookups)
+
+    # el mapeo no aplica (excluido de imedical_map en _build_lookups),
+    # así que el NIT queda tal como venía del Excel
+    assert result["NIT"][0] == "8000613577"
+
+
+def test_apply_imedical_deja_intacto_nit_sin_coincidencia(deps):
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["900999999"], "Empresa": ["X"]})
+    df = uc._capture_raw_nit(df)
+
+    result = uc._apply_imedical(df, lookups)
+
+    assert result["NIT"][0] == "900999999"
+
+
+def test_apply_imedical_registra_correccion_en_logger_dual(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "191461130", "name": "HUERTAS COTES", "nit_success": "19146113", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["191461130"], "Empresa": ["X"]})
+    df = uc._capture_raw_nit(df)
+
+    uc._apply_imedical(df, lookups)
+
+    assert any("191461130" in i and "19146113" in i for i in deps["logger"].infos)
+
+
+def test_apply_imedical_sin_columna_nit_raw_usa_nit_limpiado(deps):
+    """Tolerancia para tests que llaman el método aislado sin pasar por
+    _capture_raw_nit."""
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "191461130", "name": "HUERTAS COTES", "nit_success": "19146113", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["191461130"], "Empresa": ["X"]})
+
+    result = uc._apply_imedical(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+
+
+def test_apply_imedical_publica_nits_bloqueados_en_lookups(deps):
+    """Prerrequisito de T12 (RF-04): _match_companies necesita saber qué NIT
+    fueron corregidos por imedical para no dejarlos sobrescribir por las
+    ramas que resuelven por nombre."""
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "191461130", "name": "HUERTAS COTES", "nit_success": "19146113", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["191461130"], "Empresa": ["X"]})
+    df = uc._capture_raw_nit(df)
+
+    uc._apply_imedical(df, lookups)
+
+    assert lookups["imedical_locked_nits"] == {"19146113"}
+
+
+def test_apply_imedical_no_bloquea_nits_sin_correccion(deps):
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["900999999"], "Empresa": ["X"]})
+    df = uc._capture_raw_nit(df)
+
+    uc._apply_imedical(df, lookups)
+
+    assert lookups.get("imedical_locked_nits", set()) == set()
+
+
+# ── T12: lock de NIT corregido por imedical en _match_companies (RF-04) ──
+
+def test_match_companies_imedical_es_final_frente_a_odoo_por_nombre(deps):
+    """Un NIT ya corregido por imedical no debe ser sobrescrito por la rama
+    Odoo-por-nombre, aunque Odoo devuelva un NIT distinto (AC-06)."""
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={"900555555": {"id": 9, "name": "HUERTAS COTES"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["imedical_locked_nits"] = {"19146113"}
+    df = pl.DataFrame({"NIT": ["19146113"], "Empresa": ["HUERTAS COTES"], "Base": ["X"]})
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+
+
+def test_match_companies_imedical_es_final_frente_a_bd_local_por_nombre(deps):
+    deps["company_repo"]._data.append({"id": 99, "nit": "900777777", "name": "HUERTAS COTES"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["imedical_locked_nits"] = {"19146113"}
+    df = pl.DataFrame({"NIT": ["19146113"], "Empresa": ["HUERTAS COTES"], "Base": ["X"]})
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+
+
+def test_match_companies_imedical_es_final_frente_a_rues_por_nombre(deps, tmp_path):
+    import json
+    data = [{"nit": "900888888", "name": "HUERTAS COTES"}]
+    with open(tmp_path / "data.json", "w") as f:
+        json.dump(data, f)
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["imedical_locked_nits"] = {"19146113"}
+    df = pl.DataFrame({"NIT": ["19146113"], "Empresa": ["HUERTAS COTES"], "Base": ["X"]})
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+
+
+def test_match_companies_imedical_permite_que_odoo_corrija_nombre_sin_tocar_nit(deps):
+    """La rama por NIT (Odoo-por-NIT) sí puede actualizar el nombre; el NIT
+    bloqueado no cambia (AC-07)."""
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={"19146113": {"id": 9, "name": "HUERTAS COTES MARIO ALBERTO"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["imedical_locked_nits"] = {"19146113"}
+    df = pl.DataFrame({"NIT": ["19146113"], "Empresa": ["HUERTAS COTES"], "Base": ["X"]})
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == "19146113"
+    assert result["Empresa"][0] == "HUERTAS COTES MARIO ALBERTO"
+
+
+def test_match_companies_imedical_logea_novedad_cuando_una_fuente_discrepa(deps):
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={"900555555": {"id": 9, "name": "HUERTAS COTES"}})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["imedical_locked_nits"] = {"19146113"}
+    df = pl.DataFrame({"NIT": ["19146113"], "Empresa": ["HUERTAS COTES"], "Base": ["X"]})
+
+    uc._match_companies(df, lookups)
+
+    assert any(
+        "imedical" in msg.lower() and "900555555" in msg
+        for msg in deps["logger"].infos
+    )
+
+
+# ── T13: _apply_tian (spec 008 RF-12..20) ────────────────────────────────
+
+def _tian_deps(deps, monkeypatch, tian_rows=None, tian_nit="900293402", tian_has_package=True):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    from tests.fakes.fake_tian_log_generator import FakeTianLogGenerator
+    monkeypatch.setenv("TIAN_NIT", tian_nit)
+    deps["company_repo"]._data.append({"id": 255, "nit": tian_nit, "name": "TIAN IPS S A S"})
+    if tian_has_package:
+        deps["company_repo"]._packages.append({"company": 255, "package": 6, "model": "Special"})
+    deps["tian_repo"] = FakeTianRepo(tian_rows or [])
+    deps["tian_log_generator"] = FakeTianLogGenerator()
+    return deps
+
+
+def test_apply_tian_reemplaza_nit_por_tian_nit(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    deps["company_repo"]._data.append({"id": 629, "nit": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["LABORATORIOS DERMANAT SAS"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "900293402"
+
+
+def test_apply_tian_agrega_sufijo_con_nombre_canonico_de_bd(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    deps["company_repo"]._data.append({"id": 629, "nit": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["LABORATORIOS DERMANAT SAS"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["Empresa"][0] == "LABORATORIOS DERMANAT S.A.S(TIAN)"
+
+
+def test_apply_tian_usa_nombre_del_excel_si_empresa_no_esta_en_bd(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["DEL EXCEL SAS"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["Empresa"][0] == "DEL EXCEL SAS(TIAN)"
+
+
+def test_apply_tian_sufijo_es_idempotente(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    deps["company_repo"]._data.append({"id": 629, "nit": "800082633", "name": "LABORATORIOS DERMANAT S.A.S(TIAN)"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["Empresa"][0] == "LABORATORIOS DERMANAT S.A.S(TIAN)"
+
+
+def test_apply_tian_no_redirige_la_propia_tian(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[
+        {"nit_error": "800082633", "name": "X"},
+        {"nit_error": "900293402", "name": "TIAN IPS"},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["900293402"], "Empresa": ["TIAN IPS S A S"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "900293402"
+    assert result["Empresa"][0] == "TIAN IPS S A S"
+
+
+def test_apply_tian_considera_nit_crudo_y_corregido_por_imedical(deps, monkeypatch):
+    """El NIT ya corregido por imedical (RF-01) debe poder caer en tian (AC-21)."""
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    # simula que _apply_imedical ya corrigió el NIT crudo a 800082633
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"], "_NIT_RAW": ["1015426422"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "900293402"
+
+
+def test_apply_tian_aborta_si_tian_nit_no_esta_en_env(deps, monkeypatch):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "X"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "800082633"
+    assert not result["NIT"].is_null().any()
+    assert any("TIAN_NIT" in e for e in deps["logger"].errors)
+
+
+def test_apply_tian_aborta_si_tian_nit_no_existe_en_companies(deps, monkeypatch):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    from tests.fakes.fake_tian_log_generator import FakeTianLogGenerator
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "X"}])
+    deps["tian_log_generator"] = FakeTianLogGenerator()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "800082633"
+    assert any("900293402" in e for e in deps["logger"].errors)
+    assert deps["tian_log_generator"].calls == []
+
+
+def test_apply_tian_aborta_si_tian_nit_no_tiene_paquete_asignado(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}], tian_has_package=False)
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "800082633"
+    assert any("paquete" in e.lower() for e in deps["logger"].errors)
+
+
+def test_apply_tian_publica_tian_rerouted_nits_en_lookups(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    uc._apply_tian(df, lookups)
+
+    assert lookups.get("tian_rerouted_nits") == {"900293402"}
+
+
+def test_apply_tian_acumula_tian_assignment_por_nit_original_con_conteo_de_filas(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["800082633", "800082633", "900111111"],
+        "Empresa": ["DERMANAT", "DERMANAT", "EMPRESA A"],
+    })
+
+    uc._apply_tian(df, lookups)
+
+    calls = deps["tian_log_generator"].calls
+    assert len(calls) == 1
+    rows, output_dir = calls[0]
+    assert len(rows) == 1
+    assert rows[0].nit_original == "800082633"
+    assert rows[0].rows == 2
+    assert output_dir == deps["logs_dir"]
+
+
+def test_apply_tian_invoca_generador_con_logs_dir(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    uc._apply_tian(df, lookups)
+
+    assert len(deps["tian_log_generator"].calls) == 1
+    _, output_dir = deps["tian_log_generator"].calls[0]
+    assert output_dir == deps["logs_dir"]
+
+
+def test_apply_tian_sin_generador_configurado_no_falla(deps, monkeypatch):
+    _tian_deps(deps, monkeypatch, tian_rows=[{"nit_error": "800082633", "name": "X"}])
+    deps["tian_log_generator"] = None
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633"], "Empresa": ["X"]})
+
+    result = uc._apply_tian(df, lookups)
+
+    assert result["NIT"][0] == "900293402"
+
+
+# ── T14: escape de tian_rerouted_nits en _validate_empresa (AC-22) ──────
+
+def test_validate_empresa_no_pisa_nombre_con_sufijo_tian(deps):
+    deps["company_repo"]._data.append({"id": 255, "nit": "900293402", "name": "TIAN IPS S A S"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["tian_rerouted_nits"] = {"900293402"}
+    df = pl.DataFrame({
+        "NIT": ["900293402"],
+        "Empresa": ["LABORATORIOS DERMANAT S.A.S(TIAN)"],
+    })
+
+    result = uc._validate_empresa(df, lookups)
+
+    assert result["Empresa"][0] == "LABORATORIOS DERMANAT S.A.S(TIAN)"
+
+
+# ── T15: auto-registro en imedical (rama 1.5 de _match_companies) ───────
+# spec 008 RF-06..RF-11
+
+class _OdooRepoConNombreFijo:
+    """Fake mínimo: find_client_by_name siempre devuelve el mismo (id, nombre),
+    sin exigir igualdad exacta con el nombre buscado — permite simular que
+    Odoo confirma un candidato cuyo nombre difiere del Excel (AC-12)."""
+
+    def __init__(self, nit, name):
+        self._nit = nit
+        self._name = name
+
+    def find_client(self, nit, name):
+        return None, None, None
+
+    def find_client_by_name(self, name):
+        return 1, self._name, "nombre"
+
+    def get_nit(self, client_id):
+        return self._nit
+
+
+def test_autoregistro_cuando_base_imedical_y_odoo_confirma_por_nombre(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    saved = deps["imedical_repo"].saved_batches
+    assert len(saved) == 1
+    assert len(saved[0]) == 1
+
+
+def test_autoregistro_guarda_nit_error_crudo_sin_truncar(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    correccion = deps["imedical_repo"].saved_batches[0][0]
+    assert correccion.nit_error == "1015426422"
+    assert correccion.nit_success == "860504759"
+
+
+def test_autoregistro_guarda_ambos_nombres_correcto_y_del_excel(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    correccion = deps["imedical_repo"].saved_batches[0][0]
+    assert correccion.name == "FUNDACION UNIVERSITARIA KONRAD LORENZ"
+    assert correccion.name_error == "FUNDACION UNIVERSITARIA KONRAD LORENZ"
+
+
+def test_autoregistro_no_se_dispara_si_base_no_contiene_imedical(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["SOANDES JULIO"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+
+
+def test_autoregistro_detecta_imedical_como_subcadena_case_insensitive(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["imedical agosto 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert len(deps["imedical_repo"].saved_batches) == 1
+
+
+def test_autoregistro_no_se_dispara_si_similitud_de_nombre_es_baja(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860504759", "EMPRESA TOTALMENTE DIFERENTE SAS")
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+
+
+def test_autoregistro_no_registra_si_nit_resuelto_igual_al_del_excel(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("900555555", "FUNDACION UNIVERSITARIA KONRAD LORENZ")
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["900555555"],
+        "_NIT_RAW": ["900555555"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+
+
+def test_autoregistro_no_registra_si_truncado_a_9_ya_corrige(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("800061357", "IMPLANTES Y SISTEMAS ORTOPEDICOS SA")
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["800061357"],
+        "_NIT_RAW": ["8000613577"],
+        "Empresa": ["IMPLANTES Y SISTEMAS ORTOPEDICOS SA"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+
+
+def test_autoregistro_no_registra_nit_ya_presente_en_imedical(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860504759", "FUNDACION UNIVERSITARIA KONRAD LORENZ")
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "1015426422", "name": "X", "nit_success": "Y", "name_error": None},
+    ])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+
+
+def test_autoregistro_deduplica_nit_repetido_en_la_misma_corrida(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860504759", "FUNDACION UNIVERSITARIA KONRAD LORENZ")
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"] * 3,
+        "_NIT_RAW": ["1015426422"] * 3,
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"] * 3,
+        "Base": ["IMEDICAL AGOSTO 1-20"] * 3,
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert len(deps["imedical_repo"].saved_batches) == 1
+    assert len(deps["imedical_repo"].saved_batches[0]) == 1
+
+
+def test_autoregistro_escribe_en_una_sola_llamada_batch(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+
+    class _OdooRepoDosEmpresas:
+        def find_client(self, nit, name):
+            return None, None, None
+
+        def find_client_by_name(self, name):
+            mapa = {
+                "FUNDACION UNIVERSITARIA KONRAD LORENZ": (1, "FUNDACION UNIVERSITARIA KONRAD LORENZ"),
+                "ADECCO SERVICIOS COLOMBIA SA": (2, "ADECCO SERVICIOS COLOMBIA SA"),
+            }
+            cid, cname = mapa.get(name, (None, None))
+            return cid, cname, "nombre"
+
+        def get_nit(self, client_id):
+            return {1: "860504759", 2: "830050228"}.get(client_id)
+
+    deps["odoo_repo"] = _OdooRepoDosEmpresas()
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642", "114087658"],
+        "_NIT_RAW": ["1015426422", "1140876585"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ", "ADECCO SERVICIOS COLOMBIA SA"],
+        "Base": ["IMEDICAL AGOSTO 1-20", "IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert len(deps["imedical_repo"].saved_batches) == 1
+    assert len(deps["imedical_repo"].saved_batches[0]) == 2
+
+
+def test_autoregistro_tolera_ausencia_de_columna_base(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860504759", "FUNDACION UNIVERSITARIA KONRAD LORENZ")
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert deps["imedical_repo"].saved_batches == []
+    assert any("base" in w.lower() for w in deps["logger"].warnings)
+
+
+def test_autoregistro_sin_imedical_repo_configurado_no_escribe(deps):
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860504759", "FUNDACION UNIVERSITARIA KONRAD LORENZ")
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == "860504759"
+
+
+def test_autoregistro_no_anade_llamadas_extra_a_odoo(deps):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    odoo = FakeOdooRepo(clients={
+        "860504759": {"id": 9, "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"},
+    })
+    llamadas = []
+    original = odoo.find_client_by_name
+
+    def contando(name):
+        llamadas.append(name)
+        return original(name)
+
+    odoo.find_client_by_name = contando
+    deps["odoo_repo"] = odoo
+    deps["imedical_repo"] = FakeImedicalRepo()
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["101542642"],
+        "_NIT_RAW": ["1015426422"],
+        "Empresa": ["FUNDACION UNIVERSITARIA KONRAD LORENZ"],
+        "Base": ["IMEDICAL AGOSTO 1-20"],
+    })
+
+    uc._match_companies(df, lookups)
+
+    assert llamadas == ["FUNDACION UNIVERSITARIA KONRAD LORENZ"]
+
+
+# ── T16: nombre canónico por NIT al cierre de _match_companies (RF-21/22) ─
+
+def test_unifica_variantes_de_nombre_con_mismo_nit_al_nombre_de_bd(deps):
+    """Tres filas del mismo NIT con variantes de nombre deben terminar con
+    la misma razón social, tomada de BD local (AC-26)."""
+    deps["company_repo"]._data.append({"id": 397, "nit": "860050906", "name": "ADECCO COLOMBIA SA"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["860050906", "860050906", "860050906"],
+        "Empresa": ["ADECCO COLOMBIA SA", "ADECCO COLOMBIA S.A", "ADECCO COLOMBIA"],
+        "Base": ["X", "X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    nombres = set(result["Empresa"].to_list())
+    assert nombres == {"ADECCO COLOMBIA SA"}
+
+
+def test_unificacion_prioriza_nombre_de_odoo_sobre_bd_local(deps):
+    from tests.fakes.fake_odoo_repo import FakeOdooRepo
+    deps["odoo_repo"] = FakeOdooRepo(clients={"860050906": {"id": 1, "name": "ADECCO COLOMBIA SAS (ODOO)"}})
+    deps["company_repo"]._data.append({"id": 397, "nit": "860050906", "name": "ADECCO COLOMBIA SA"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["860050906", "860050906"],
+        "Empresa": ["ADECCO COLOMBIA SAS (ODOO)", "ADECCO COLOMBIA S.A"],
+        "Base": ["X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    nombres = set(result["Empresa"].to_list())
+    assert nombres == {"ADECCO COLOMBIA SAS (ODOO)"}
+
+
+def test_unificacion_no_fusiona_empresas_distintas_con_nombre_parecido(deps):
+    """ADECCO COLOMBIA SA y ADECCO SERVICIOS COLOMBIA SA son dos clientes
+    distintos, con NIT distintos: deben conservar sus nombres (AC-27)."""
+    deps["company_repo"]._data.append({"id": 397, "nit": "860050906", "name": "ADECCO COLOMBIA SA"})
+    deps["company_repo"]._data.append({"id": 487, "nit": "830050228", "name": "ADECCO SERVICIOS COLOMBIA SA"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["860050906", "830050228"],
+        "Empresa": ["ADECCO COLOMBIA SA", "ADECCO SERVICIOS COLOMBIA SA"],
+        "Base": ["X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["Empresa"][0] == "ADECCO COLOMBIA SA"
+    assert result["Empresa"][1] == "ADECCO SERVICIOS COLOMBIA SA"
+
+
+def test_unificacion_es_estrictamente_por_nit_no_por_similitud(deps):
+    """Dos NIT distintos con nombres casi idénticos en el Excel NO deben
+    fusionarse por parecido; cada uno conserva su propio nombre de BD."""
+    deps["company_repo"]._data.append({"id": 1, "nit": "111111111", "name": "EMPRESA UNO SAS"})
+    deps["company_repo"]._data.append({"id": 2, "nit": "222222222", "name": "EMPRESA DOS SAS"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["111111111", "222222222"],
+        "Empresa": ["EMPRESA UNO SAS", "EMPRESA DOS SAS"],
+        "Base": ["X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["Empresa"][0] == "EMPRESA UNO SAS"
+    assert result["Empresa"][1] == "EMPRESA DOS SAS"
+
+
+def test_unificacion_ignora_filas_con_nit_vacio(deps):
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["", ""],
+        "Empresa": ["EMPRESA X", "EMPRESA Y"],
+        "Base": ["X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["Empresa"][0] == "EMPRESA X"
+    assert result["Empresa"][1] == "EMPRESA Y"
+
+
+def test_unificacion_cierra_hueco_de_ramas_por_nombre_que_no_actualizan_empresa(deps):
+    """Caso límite: dos filas con NIT distintos en el Excel (ninguno conocido
+    en BD) resueltas ambas por Odoo-por-nombre al MISMO NIT final. Las ramas
+    1.5/3.5 no tocan `Empresa` (dejan el texto crudo del Excel), así que sin
+    un epílogo de canonización el mismo NIT final queda con dos nombres
+    distintos — justo lo que RF-21 prohíbe."""
+    deps["odoo_repo"] = _OdooRepoConNombreFijo("860050906", "ADECCO COLOMBIA SA")
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({
+        "NIT": ["999000001", "999000002"],
+        "Empresa": ["ADECCO COLOMBIA VARIANTE A", "ADECCO COLOMBIA VARIANTE B"],
+        "Base": ["X", "X"],
+    })
+
+    result = uc._match_companies(df, lookups)
+
+    assert result["NIT"][0] == result["NIT"][1] == "860050906"
+    nombres = set(result["Empresa"].to_list())
+    assert len(nombres) == 1
+
+
+# ── T17: integración en execute() (spec 008) ─────────────────────────────
+
+def _full_row(**overrides):
+    base = {
+        "NIT": "800082633",
+        "Empresa": "LABORATORIOS DERMANAT S.A.S",
+        "Base": "GENERAL",
+        "Ciudad": "BOGOTA",
+        "TIPO DE ACTIVIDAD": "INTRA",
+        "Fecha Ingreso": "01/01/2025",
+        "Empresa Misión": "",
+        "Sede": "",
+        "Medio de Pago": "",
+        "Tipo Examen": "",
+        "Cargo": "",
+        "Paciente": "PACIENTE X",
+        "N° Identificación": "111",
+        "890201": 1,
+    }
+    base.update(overrides)
+    return base
+
+
+def test_execute_aplica_imedical_antes_de_match_companies(deps, monkeypatch, tmp_path):
+    """El NIT crudo de imedical (10 dígitos) debe corregirse antes de que
+    _match_companies intente resolverlo por cualquier otra vía."""
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    monkeypatch.chdir(tmp_path)
+    deps["company_repo"]._data.append({"id": 629, "nit": "860504759", "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ"})
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "1015426422", "name": "FUNDACION UNIVERSITARIA KONRAD LORENZ", "nit_success": "860504759", "name_error": None},
+    ])
+    uc = _build(deps)
+    df = pl.DataFrame([_full_row(NIT="1015426422", Empresa="KONRAD LORENZ")])
+    df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
+
+    uc.execute(df, df_facture)
+
+    wb = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    ws = wb["Consolidado"]
+    headers = [c.value for c in ws[1]]
+    nit_col = headers.index("NIT") + 1
+    assert ws.cell(2, nit_col).value == "860504759"
+
+
+def test_execute_aplica_tian_despues_de_normalize_columns_y_antes_de_asignar_paquete(deps, monkeypatch, tmp_path):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    from tests.fakes.fake_tian_log_generator import FakeTianLogGenerator
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["company_repo"]._data.append({"id": 255, "nit": "900293402", "name": "TIAN IPS S A S"})
+    deps["company_repo"]._packages.append({"company": 255, "package": 6, "model": "Special"})
+    deps["company_repo"]._data.append({"id": 629, "nit": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"})
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    deps["tian_log_generator"] = FakeTianLogGenerator()
+    uc = _build(deps)
+    df = pl.DataFrame([_full_row()])
+    df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
+
+    uc.execute(df, df_facture)
+
+    wb = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    ws = wb["Consolidado"]
+    headers = [c.value for c in ws[1]]
+    nit_col = headers.index("NIT") + 1
+    empresa_col = headers.index("Empresa") + 1
+    assert ws.cell(2, nit_col).value == "900293402"
+    assert ws.cell(2, empresa_col).value == "LABORATORIOS DERMANAT S.A.S(TIAN)"
+
+
+def test_execute_fila_tian_hereda_paquete_y_facturador_de_tian(deps, monkeypatch, tmp_path):
+    """AC-19: una empresa de tian SIN paquete propio usa las tarifas de TIAN
+    (Special id=6), no el PAQUETE C 2025 por defecto."""
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["company_repo"]._data.append({"id": 255, "nit": "900293402", "name": "TIAN IPS S A S"})
+    deps["company_repo"]._packages.append({"company": 255, "package": 6, "model": "Special"})
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    deps["biller_company_repo"]._data.append({"company": 255, "biller": 1})
+    # tarifa de TIAN (Special 6) distinta a cualquier tarifa por defecto
+    deps["rates_repo"]._data[(6, 1, 1, 1, "Special")] = 99999
+    uc = _build(deps)
+    df = pl.DataFrame([_full_row()])
+    df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
+
+    uc.execute(df, df_facture)
+
+    wb = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    ws = wb["Consolidado"]
+    headers = [c.value for c in ws[1]]
+    cup_col = headers.index("890201") + 1
+    facturador_col = headers.index("FACTURADOR") + 1
+    assert ws.cell(2, cup_col).value == 99999
+    assert ws.cell(2, facturador_col).value == "ALFA"
+
+
+def test_execute_no_deja_columnas_auxiliares_en_el_resultado(deps, monkeypatch, tmp_path):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["company_repo"]._data.append({"id": 255, "nit": "900293402", "name": "TIAN IPS S A S"})
+    deps["company_repo"]._packages.append({"company": 255, "package": 6, "model": "Special"})
+    deps["imedical_repo"] = FakeImedicalRepo()
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "LABORATORIOS DERMANAT S.A.S"}])
+    uc = _build(deps)
+    df = pl.DataFrame([_full_row()])
+    df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
+
+    uc.execute(df, df_facture)
+
+    wb = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    ws = wb["Consolidado"]
+    headers = [c.value for c in ws[1]]
+    assert "_NIT_RAW" not in headers
+    assert not any(str(h).startswith("_") for h in headers if h)
+
+
+def test_execute_es_idempotente_en_segunda_corrida_sobre_el_mismo_excel(deps, monkeypatch, tmp_path):
+    from tests.fakes.fake_imedical_repo import FakeImedicalRepo
+    monkeypatch.chdir(tmp_path)
+    deps["company_repo"]._data.append({"id": 629, "nit": "19146113", "name": "HUERTAS COTES MARIO ALBERTO"})
+    deps["imedical_repo"] = FakeImedicalRepo([
+        {"nit_error": "191461130", "name": "HUERTAS COTES MARIO ALBERTO", "nit_success": "19146113", "name_error": None},
+    ])
+    uc = _build(deps)
+    df = pl.DataFrame([_full_row(NIT="191461130", Empresa="HUERTAS COTES")])
+    df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
+
+    uc.execute(df, df_facture)
+    wb1 = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    rows1 = [tuple(r) for r in wb1["Consolidado"].iter_rows(values_only=True)]
+
+    uc2 = _build(deps)
+    df2 = pl.DataFrame([_full_row(NIT="191461130", Empresa="HUERTAS COTES")])
+    uc2.execute(df2, df_facture)
+    wb2 = openpyxl.load_workbook(tmp_path / "CONSOLIDADO.xlsx")
+    rows2 = [tuple(r) for r in wb2["Consolidado"].iter_rows(values_only=True)]
+
+    assert rows1 == rows2
+    assert len(deps["imedical_repo"].saved_batches) == 0
