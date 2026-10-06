@@ -608,6 +608,61 @@ class AssignRatesFromExcel:
         if not_found_by_nit and self.not_found_log_generator:
             self.not_found_log_generator.generate(list(not_found_by_nit.values()), self.logs_dir)
 
+        # ── R4: nombre canónico por NIT (spec 008 RF-21/RF-22) ──────────────
+        # Las ramas por NIT (1, 2, 3) ya resuelven el nombre desde una fuente
+        # autoritativa aplicada de forma idéntica a cada fila de ese NIT, así
+        # que por sí solas no producen divergencia. El hueco real está en las
+        # ramas por nombre (1.5, 3.5), que conservan el nombre crudo del
+        # Excel: si dos filas con NIT distinto en el Excel terminan en el
+        # mismo NIT final por esas ramas, cada una conserva SU propio nombre
+        # original y quedan divergentes para un mismo NIT.
+        #
+        # Se actúa solo cuando hay divergencia real dentro de este lote (no
+        # se toca un NIT con un único nombre ya consistente), para no
+        # adelantar aquí la corrección contra BD que _validate_empresa aplica
+        # deliberadamente después. Nunca por similitud (AC-27): la clave es
+        # siempre el NIT final, jamás el nombre.
+        name_variants_by_nit: dict[str, set] = {}
+        for resolved_nit, empresa_resuelta in zip(matched_nits, matched_empresas):
+            if resolved_nit:
+                name_variants_by_nit.setdefault(resolved_nit, set()).add(empresa_resuelta)
+        nits_con_divergencia = {nit for nit, names in name_variants_by_nit.items() if len(names) > 1}
+
+        if nits_con_divergencia:
+            canonical_name_by_nit: dict[str, str] = {}
+            for i, resolved_nit in enumerate(matched_nits):
+                if (
+                    resolved_nit in nits_con_divergencia
+                    and resolved_nit in odoo_resolved_nits
+                    and resolved_nit not in canonical_name_by_nit
+                ):
+                    canonical_name_by_nit[resolved_nit] = matched_empresas[i]
+            for i, resolved_nit in enumerate(matched_nits):
+                if (
+                    resolved_nit in nits_con_divergencia
+                    and resolved_nit in nit_to_company
+                    and resolved_nit not in canonical_name_by_nit
+                ):
+                    canonical_name_by_nit[resolved_nit] = nit_to_company[resolved_nit]["name"]
+            for i, resolved_nit in enumerate(matched_nits):
+                if resolved_nit in nits_con_divergencia and resolved_nit not in canonical_name_by_nit:
+                    canonical_name_by_nit[resolved_nit] = matched_empresas[i]
+            for i, resolved_nit in enumerate(matched_nits):
+                if resolved_nit in nits_con_divergencia:
+                    matched_empresas[i] = canonical_name_by_nit[resolved_nit]
+
+        if candidatos_imedical and self.imedical_repo:
+            n = self.imedical_repo.save_batch(list(candidatos_imedical.values()))
+            if n:
+                self.logger.info(
+                    f"imedical: {n} corrección(es) nueva(s) registrada(s) automáticamente:\n"
+                    + "\n".join(
+                        f"  {c.nit_error} → {c.nit_success} ('{c.name_error}' → '{c.name}')"
+                        for c in candidatos_imedical.values()
+                    ),
+                    user_msg=f"{n} corrección(es) nueva(s) registradas en i-medical.",
+                )
+
         return df.with_columns([
             pl.Series("NIT", matched_nits),
             pl.Series("Empresa", matched_empresas),
