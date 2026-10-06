@@ -18,6 +18,15 @@ from src.city.infrastructure.persistence.sa_city_repository import (
 from src.company.infrastructure.persistence.sa_company_repository import (
     SaCompanyRepository,
 )
+from src.company.infrastructure.persistence.sa_imedical_repository import (
+    SaImedicalRepository,
+)
+from src.company.infrastructure.persistence.sa_tian_repository import (
+    SaTianRepository,
+)
+from src.company.infrastructure.reporting.tian_companies_log_generator import (
+    TianCompaniesLogGenerator,
+)
 from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.odooInjection.config import get_odoo_config
 from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
