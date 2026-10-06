@@ -159,13 +159,6 @@ class SplitByNit:
             user_msg=f"Se encontraron {len(groups)} carpetas destino y {total_nits} NITs.",
         )
 
-        # Nullificar 'Fecha Ingreso' para archivos de 'General sin factura'
-        fecha_ingreso_idx = self._find_column_index(header, "Fecha Ingreso")
-        if "General sin factura" in groups and fecha_ingreso_idx is not None:
-            for nit, indexed_rows in groups["General sin factura"].items():
-                for _, row in indexed_rows:
-                    row[fecha_ingreso_idx] = None
-
         # Cargar mapa de nombres CUPS una sola vez
         all_cups_codes = [str(header[i]) for i in cups_indices]
         cups_name_map = self._build_cups_name_map(all_cups_codes)
