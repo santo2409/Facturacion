@@ -106,6 +106,9 @@ def assign_rates(logger, with_invoices=False):
         odoo_repo=odoo_repo,
         not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
         logs_dir=Path("logs"),
+        imedical_repo=SaImedicalRepository(session, logger),
+        tian_repo=SaTianRepository(session, logger),
+        tian_log_generator=TianCompaniesLogGenerator(logger),
     )
 
     use_case.execute(df, df_facture)
