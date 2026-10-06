@@ -348,7 +348,63 @@ class AssignRatesFromExcel:
             "scraped_name_to_nit": scraped_name_to_nit,
             "cities_all": cities_all,
             "packages_all": packages_all,
+            "imedical_map": imedical_map,
+            "imedical_known_nit_errors": imedical_known_nit_errors,
+            "tian_nits": tian_nits,
+            "tian_nit": tian_nit,
         }
+
+    # ── i-medical: NIT crudo y corrección (spec 008 RF-01..05) ─────────────
+
+    def _capture_raw_nit(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Guarda el NIT en dígitos crudos, SIN truncar (RF-02): _normalize_nit
+        trunca a 9 dígitos y el lookup de imedical necesita el valor completo,
+        porque 64 de las 103 filas de la tabla tienen nit_error de 10+ dígitos."""
+        return df.with_columns(
+            pl.col("NIT")
+            .cast(pl.Utf8)
+            .str.strip_chars()
+            .str.replace_all(r"[^\d]", "")
+            .alias("_NIT_RAW")
+        )
+
+    def _apply_imedical(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
+        """Corrige el NIT usando la tabla imedical (nit_error -> nit_success).
+
+        Usa _NIT_RAW si está presente (flujo normal de execute()); si no,
+        tolera ser invocado con un DataFrame mínimo limpiando NIT en el acto
+        (para tests que ejercitan el método aislado)."""
+        imedical_map = lookups.get("imedical_map", {})
+        if not imedical_map:
+            return df
+
+        raw_source = "_NIT_RAW" if "_NIT_RAW" in df.columns else "NIT"
+        raw_nits = (
+            df[raw_source]
+            .cast(pl.Utf8)
+            .str.replace_all(r"[^\d]", "")
+            .to_list()
+        )
+
+        locked_nits = lookups.setdefault("imedical_locked_nits", set())
+        corregidos = []
+        nuevos_nit = list(df["NIT"].cast(pl.Utf8))
+        for i, raw in enumerate(raw_nits):
+            nit_success = imedical_map.get(raw)
+            if nit_success and nit_success != nuevos_nit[i]:
+                corregidos.append((raw, nit_success))
+                nuevos_nit[i] = nit_success
+                locked_nits.add(nit_success)
+
+        if corregidos:
+            unique = sorted(set(corregidos))
+            self.logger.info(
+                f"imedical: {len(corregidos)} NIT corregido(s):\n"
+                + "\n".join(f"  {origen} → {destino}" for origen, destino in unique),
+                user_msg=f"{len(corregidos)} NIT corregido(s) según la tabla i-medical.",
+            )
+
+        return df.with_columns(pl.Series("NIT", nuevos_nit))
 
     # ── NIT normalization ─────────────────────────────────────────────────
 
