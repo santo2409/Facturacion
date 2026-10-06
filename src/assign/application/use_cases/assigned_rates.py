@@ -32,6 +32,15 @@ def _fecha_warning(fecha, fecha_limite) -> str:
     return ""
 
 
+def _es_base_imedical(base) -> bool:
+    """True si la columna Base de la fila proviene de i-medical (spec 008
+    RF-06a). Tolerante a mayúsculas/minúsculas y a variantes con guiones o
+    espacios (ej. 'IMEDICAL AGOSTO 1-20', 'imedical agosto 1-20')."""
+    if not base:
+        return False
+    return "IMEDICAL" in normalize_name(str(base))
+
+
 def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) -> pl.DataFrame:
     """Añade columna FACTURAS a df cruzando por N° Identificación."""
     id_col = "N° Identificación"
