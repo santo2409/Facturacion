@@ -63,3 +63,18 @@ def test_pl_normalize_upper():
     result = df.select(pl_normalize_upper("col").alias("col"))
     assert result["col"][0] == "HELLO WORLD"
     assert result["col"][1] == "TEST"
+
+
+def test_normalize_text_key_transliterates_and_collapses():
+    from src.shared.utils.text_normalizer import normalize_text_key
+
+    assert normalize_text_key("  Coprológico  ") == "COPROLOGICO"
+    assert normalize_text_key("TRIGLICÉRIDOS") == "TRIGLICERIDOS"
+    assert normalize_text_key("") == ""
+    assert normalize_text_key(None) == ""
+
+
+def test_normalize_company_name_delegates_to_normalize_text_key():
+    from src.shared.utils.text_normalizer import normalize_company_name, normalize_text_key
+
+    assert normalize_company_name("Clínica SAS") == normalize_text_key("Clínica SAS")

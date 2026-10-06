@@ -139,8 +139,8 @@ def consolidado_general_sin_factura(tmp_path):
     return path, tmp_path
 
 
-def test_fecha_ingreso_null_en_general_sin_factura(consolidado_general_sin_factura, logger, cup_repo):
-    """Archivos en 'General sin factura' deben tener 'Fecha Ingreso' en null."""
+def test_fecha_ingreso_se_conserva_en_general_sin_factura(consolidado_general_sin_factura, logger, cup_repo):
+    """Archivos en 'General sin factura' conservan 'Fecha Ingreso' (spec 009)."""
     path, output_dir = consolidado_general_sin_factura
     SplitByNit(logger, cup_repo).execute(path, output_dir)
 
@@ -148,7 +148,7 @@ def test_fecha_ingreso_null_en_general_sin_factura(consolidado_general_sin_factu
     carpeta = output_dir / "General sin factura"
     assert carpeta.exists(), "No se creó la carpeta 'General sin factura'"
 
-    # Abrir el archivo generado y verificar que 'Fecha Ingreso' es None
+    # Abrir el archivo generado y verificar que 'Fecha Ingreso' se conserva
     archivo = next(carpeta.glob("*900333333*"))
     wb = openpyxl.load_workbook(archivo, read_only=True)
     ws = wb.active
@@ -158,8 +158,8 @@ def test_fecha_ingreso_null_en_general_sin_factura(consolidado_general_sin_factu
     fecha_col_idx = headers.index("Fecha Ingreso")
 
     for row in ws.iter_rows(min_row=3, values_only=True):
-        assert row[fecha_col_idx] is None, (
-            f"Se esperaba 'Fecha Ingreso' en None, pero se encontró: {row[fecha_col_idx]}"
+        assert row[fecha_col_idx] == "15/01/2026", (
+            f"Se esperaba 'Fecha Ingreso' conservada, pero se encontró: {row[fecha_col_idx]}"
         )
     wb.close()
 

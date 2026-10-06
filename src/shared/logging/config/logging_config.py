@@ -1,10 +1,10 @@
 import logging.config
-import os
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
+from src.shared.config import get_paths_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.logging.spec import root_logger_guard
 from src.shared.logging.spec.spec_loader import SpecLoader
@@ -27,7 +27,7 @@ def setup_logging() -> LoggerAdapter:
         validation = spec["validation"]
 
     # Inject tech_logger
-    logs_dir = os.getenv("DIRECTORY", ".")
+    logs_dir = get_paths_config()["directory"]
     logs_path = str(Path(logs_dir) / "logs.log")
     Path(logs_dir).mkdir(parents=True, exist_ok=True)
 

@@ -13,5 +13,12 @@ class NitCacheRepository(ABC):
         """Retorna solo los NITs encontrados en caché, indexados por NIT (str)."""
 
     @abstractmethod
-    def save_many(self, results: list[NitResult]) -> None:
-        """Persiste los resultados positivos (is_company=True) en el caché."""
+    def get_by_names(self, names: list[str]) -> dict[str, NitResult]:
+        """Retorna solo los nombres encontrados en caché, indexados por el
+        nombre tal como lo pasó el llamador."""
+
+    @abstractmethod
+    def save_many(self, results: list[NitResult]) -> list[str]:
+        """Persiste los resultados positivos (is_company=True) en el caché y
+        retorna los NITs que NO pudieron persistirse, para que el llamador
+        pueda reportarlos como novedad."""

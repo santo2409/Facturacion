@@ -5,10 +5,14 @@ from pathlib import Path
 
 import polars as pl
 
+from src.company.domain.entities.imedical_correction import ImedicalCorrection
+from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.shared.config import get_paths_config, get_tian_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.text_normalizer import (
     normalize_name,
     pl_normalize_name,
@@ -26,6 +30,15 @@ def _fecha_warning(fecha, fecha_limite) -> str:
     if fecha > fecha_limite:
         return f"fecha futura respecto al periodo ({fecha} > {fecha_limite})"
     return ""
+
+
+def _es_base_imedical(base) -> bool:
+    """True si la columna Base de la fila proviene de i-medical (spec 008
+    RF-06a). Tolerante a mayúsculas/minúsculas y a variantes con guiones o
+    espacios (ej. 'IMEDICAL AGOSTO 1-20', 'imedical agosto 1-20')."""
+    if not base:
+        return False
+    return "IMEDICAL" in normalize_name(str(base))
 
 
 def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) -> pl.DataFrame:
@@ -84,6 +97,9 @@ class AssignRatesFromExcel:
         odoo_repo=None,
         not_found_log_generator=None,
         logs_dir: Path = Path("logs"),
+        imedical_repo=None,
+        tian_repo=None,
+        tian_log_generator=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
@@ -101,6 +117,9 @@ class AssignRatesFromExcel:
         self.odoo_repo = odoo_repo
         self.not_found_log_generator = not_found_log_generator
         self.logs_dir = logs_dir
+        self.imedical_repo = imedical_repo
+        self.tian_repo = tian_repo
+        self.tian_log_generator = tian_log_generator
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
@@ -118,18 +137,27 @@ class AssignRatesFromExcel:
         self._connect_odoo()
 
         lookups = self._build_lookups()
-        df = self._normalize_nit(excel)
+        df = self._capture_raw_nit(excel)
+        df = self._apply_imedical(df, lookups)
+        df = self._normalize_nit(df)
         df = self._match_companies(df, lookups)
         # _match_companies puede reemplazar el NIT con valores provenientes de
         # Odoo (get_nit) o de RUES (data.json), que no pasan por el mismo
         # truncamiento a 9 dígitos aplicado al NIT original del Excel.
         df = self._normalize_nit(df)
         df = self._normalize_columns(df)
+        # _apply_tian va después de _normalize_columns: pl_normalize_name
+        # borra los paréntesis, así que el sufijo "(TIAN)" solo puede
+        # aplicarse una vez la razón social ya quedó normalizada. Va antes
+        # de asignar facturador/paquete/tarifas (RF-13) para que la fila
+        # herede los de TIAN.
+        df = self._apply_tian(df, lookups)
         df = self._normalize_city(df, lookups)
         df = self._assign_facturador(df, lookups)
         df = self._assign_paquete(df, lookups)
         df, cell_colors = self._assign_rates(df, lookups)
         df = self._validate_empresa(df, lookups)
+        df = self._drop_internal_columns(df)
         df = _enrich_with_invoices(df, df_facture, self.logger)
         df = self._order_columns(df)
 
@@ -212,6 +240,14 @@ class AssignRatesFromExcel:
         "Total",
     ]
 
+    # Columnas auxiliares usadas internamente por el pipeline (spec 008
+    # RF-23): nunca deben llegar al CONSOLIDADO.xlsx.
+    _INTERNAL_COLUMNS = ("_NIT_RAW",)
+
+    def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:
+        presentes = [c for c in self._INTERNAL_COLUMNS if c in df.columns]
+        return df.drop(presentes) if presentes else df
+
     def _order_columns(self, df: pl.DataFrame) -> pl.DataFrame:
         fixed = [c for c in self._FIXED_COLUMNS_ORDER if c in df.columns]
         others = sorted(
@@ -256,7 +292,7 @@ class AssignRatesFromExcel:
         # Scraped NITs from JSON
         scraped_nits = {}
         scraped_name_to_nit = {}
-        json_path = os.path.join(os.getenv("DIRECTORY", ""), "data.json")
+        json_path = os.path.join(get_paths_config()["directory"], "data.json")
         if os.path.exists(json_path):
             with open(json_path, encoding="utf-8") as f:
                 for item in json.load(f):
@@ -266,6 +302,37 @@ class AssignRatesFromExcel:
                         scraped_nits[nit] = name
                     if name:
                         scraped_name_to_nit[normalize_name(name)] = nit
+
+        # imedical: nit_error (crudo) -> nit_success, solo correcciones reales
+        # (spec 008 RF-03): se excluyen las filas no-op (nit_error == nit_success)
+        # y aquellas que el truncado a 9 dígitos ya resuelve sin tabla alguna.
+        # Se indexa por clave doble (cruda y truncada a 9) para que la corrección
+        # se aplique aunque el DataFrame no traiga la columna _NIT_RAW (RF-02).
+        imedical_map: dict[str, str] = {}
+        imedical_known_nit_errors: set[str] = set()
+        if self.imedical_repo:
+            for row in self.imedical_repo.all():
+                raw = re.sub(r"\D", "", str(row["nit_error"]))
+                success = str(row["nit_success"])
+                imedical_known_nit_errors.add(raw)
+                if not raw or raw == success:
+                    continue
+                if raw[:9] == success:
+                    continue
+                imedical_map[raw] = success
+                truncated = raw[:9]
+                if truncated != raw:
+                    imedical_map[truncated] = success
+
+        # tian: NITs que deben facturarse bajo TIAN_NIT (spec 008 RF-12/RF-16).
+        # Se excluye el propio NIT de TIAN para que no se auto-redirija.
+        tian_nit = get_tian_config()["nit"]
+        tian_nits: set[str] = set()
+        if self.tian_repo:
+            for row in self.tian_repo.all():
+                raw = re.sub(r"\D", "", str(row["nit_error"]))
+                if raw and raw != tian_nit:
+                    tian_nits.add(raw)
 
         return {
             "nit_to_company": nit_to_company,
@@ -281,7 +348,63 @@ class AssignRatesFromExcel:
             "scraped_name_to_nit": scraped_name_to_nit,
             "cities_all": cities_all,
             "packages_all": packages_all,
+            "imedical_map": imedical_map,
+            "imedical_known_nit_errors": imedical_known_nit_errors,
+            "tian_nits": tian_nits,
+            "tian_nit": tian_nit,
         }
+
+    # ── i-medical: NIT crudo y corrección (spec 008 RF-01..05) ─────────────
+
+    def _capture_raw_nit(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Guarda el NIT en dígitos crudos, SIN truncar (RF-02): _normalize_nit
+        trunca a 9 dígitos y el lookup de imedical necesita el valor completo,
+        porque 64 de las 103 filas de la tabla tienen nit_error de 10+ dígitos."""
+        return df.with_columns(
+            pl.col("NIT")
+            .cast(pl.Utf8)
+            .str.strip_chars()
+            .str.replace_all(r"[^\d]", "")
+            .alias("_NIT_RAW")
+        )
+
+    def _apply_imedical(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
+        """Corrige el NIT usando la tabla imedical (nit_error -> nit_success).
+
+        Usa _NIT_RAW si está presente (flujo normal de execute()); si no,
+        tolera ser invocado con un DataFrame mínimo limpiando NIT en el acto
+        (para tests que ejercitan el método aislado)."""
+        imedical_map = lookups.get("imedical_map", {})
+        if not imedical_map:
+            return df
+
+        raw_source = "_NIT_RAW" if "_NIT_RAW" in df.columns else "NIT"
+        raw_nits = (
+            df[raw_source]
+            .cast(pl.Utf8)
+            .str.replace_all(r"[^\d]", "")
+            .to_list()
+        )
+
+        locked_nits = lookups.setdefault("imedical_locked_nits", set())
+        corregidos = []
+        nuevos_nit = list(df["NIT"].cast(pl.Utf8))
+        for i, raw in enumerate(raw_nits):
+            nit_success = imedical_map.get(raw)
+            if nit_success and nit_success != nuevos_nit[i]:
+                corregidos.append((raw, nit_success))
+                nuevos_nit[i] = nit_success
+                locked_nits.add(nit_success)
+
+        if corregidos:
+            unique = sorted(set(corregidos))
+            self.logger.info(
+                f"imedical: {len(corregidos)} NIT corregido(s):\n"
+                + "\n".join(f"  {origen} → {destino}" for origen, destino in unique),
+                user_msg=f"{len(corregidos)} NIT corregido(s) según la tabla i-medical.",
+            )
+
+        return df.with_columns(pl.Series("NIT", nuevos_nit))
 
     # ── NIT normalization ─────────────────────────────────────────────────
 
@@ -301,8 +424,20 @@ class AssignRatesFromExcel:
         nit_to_company = lookups["nit_to_company"]
         name_to_company = lookups["name_to_company"]
         odoo_resolved_nits = lookups.setdefault("odoo_resolved_nits", set())
+        imedical_locked_nits = lookups.get("imedical_locked_nits", set())
         _odoo_nit_cache: dict = {}
         _odoo_name_cache: dict = {}
+
+        # ── Auto-registro en imedical (spec 008 RF-06..RF-11) ───────────────
+        imedical_known_nit_errors = lookups.get("imedical_known_nit_errors", set())
+        tiene_columna_base = "Base" in df.columns
+        if self.imedical_repo and not tiene_columna_base:
+            self.logger.warning(
+                "imedical: el libro de entrada no tiene columna 'Base'; se omite el auto-registro.",
+                user_msg="El libro no tiene columna 'Base': no se registrarán correcciones nuevas de i-medical.",
+            )
+        candidatos_imedical: dict[str, ImedicalCorrection] = {}
+        name_matcher = CompanyNameMatcher(self.fuzz, threshold=90) if self.imedical_repo else None
 
         matched_nits = []
         matched_empresas = []
@@ -340,15 +475,47 @@ class AssignRatesFromExcel:
                         try:
                             cid, cname, _ = self.odoo_repo.find_client_by_name(empresa)
                             nuevo_nit = self.odoo_repo.get_nit(cid) if cid else None
-                            _odoo_name_cache[empresa] = (cid, nuevo_nit)
+                            _odoo_name_cache[empresa] = (cid, cname, nuevo_nit)
                         except Exception as e:
                             self.logger.warning(f"Fallo consultando Odoo por nombre '{empresa}': {e}")
-                            _odoo_name_cache[empresa] = (None, None)
+                            _odoo_name_cache[empresa] = (None, None, None)
 
-                    odoo_id, odoo_nit = _odoo_name_cache.get(empresa, (None, None))
+                    odoo_id, odoo_name_match, odoo_nit = _odoo_name_cache.get(empresa, (None, None, None))
                     if odoo_id and odoo_nit:
+                        if nit in imedical_locked_nits and odoo_nit != nit:
+                            cambios.append(
+                                f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {odoo_nit} "
+                                f"sugerido por Odoo/nombre"
+                            )
+                            matched_nits.append(nit)
+                            matched_empresas.append(empresa)
+                            self.progress.advance()
+                            continue
                         if odoo_nit != nit:
                             cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{odoo_nit}' [Odoo/nombre]")
+
+                        # ── R2: auto-registro en imedical (RF-06..RF-11) ──
+                        raw_nit_error = row.get("_NIT_RAW") or nit
+                        if (
+                            self.imedical_repo
+                            and tiene_columna_base
+                            and _es_base_imedical(row.get("Base"))
+                            and raw_nit_error
+                            and raw_nit_error != odoo_nit
+                            and raw_nit_error[:9] != odoo_nit
+                            and raw_nit_error not in imedical_known_nit_errors
+                            and raw_nit_error not in candidatos_imedical
+                            and odoo_name_match
+                        ):
+                            match = name_matcher.best_match(empresa, [{"name": odoo_name_match}])
+                            if match:
+                                candidatos_imedical[raw_nit_error] = ImedicalCorrection(
+                                    nit_error=raw_nit_error,
+                                    nit_success=odoo_nit,
+                                    name=odoo_name_match,
+                                    name_error=empresa,
+                                )
+
                         matched_nits.append(odoo_nit)
                         matched_empresas.append(empresa)
                         odoo_resolved_nits.add(odoo_nit)
@@ -369,6 +536,15 @@ class AssignRatesFromExcel:
                 empresa_norm = normalize_name(empresa) if empresa else ""
                 if empresa_norm and empresa_norm in name_to_company:
                     comp = name_to_company[empresa_norm]
+                    if nit in imedical_locked_nits and comp["nit"] != nit:
+                        cambios.append(
+                            f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {comp['nit']} "
+                            f"sugerido por BD local/nombre"
+                        )
+                        matched_nits.append(nit)
+                        matched_empresas.append(comp["name"])
+                        self.progress.advance()
+                        continue
                     cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{comp['nit']}' [BD local/nombre]")
                     matched_nits.append(comp["nit"])
                     matched_empresas.append(comp["name"])
@@ -392,6 +568,15 @@ class AssignRatesFromExcel:
                 empresa_norm = normalize_name(empresa) if empresa else ""
                 if empresa_norm and empresa_norm in scraped_name_to_nit:
                     nuevo_nit = scraped_name_to_nit[empresa_norm]
+                    if nit in imedical_locked_nits and nuevo_nit and nuevo_nit != nit:
+                        cambios.append(
+                            f"[NOVEDAD] imedical bloqueó cambio de NIT {nit} → {nuevo_nit} "
+                            f"sugerido por RUES/nombre"
+                        )
+                        matched_nits.append(nit)
+                        matched_empresas.append(empresa)
+                        self.progress.advance()
+                        continue
                     if nuevo_nit and nuevo_nit != nit:
                         cambios.append(f"Empresa '{empresa}': NIT '{nit}' → '{nuevo_nit}' [RUES/nombre]")
                     matched_nits.append(nuevo_nit or nit)
@@ -422,6 +607,61 @@ class AssignRatesFromExcel:
 
         if not_found_by_nit and self.not_found_log_generator:
             self.not_found_log_generator.generate(list(not_found_by_nit.values()), self.logs_dir)
+
+        # ── R4: nombre canónico por NIT (spec 008 RF-21/RF-22) ──────────────
+        # Las ramas por NIT (1, 2, 3) ya resuelven el nombre desde una fuente
+        # autoritativa aplicada de forma idéntica a cada fila de ese NIT, así
+        # que por sí solas no producen divergencia. El hueco real está en las
+        # ramas por nombre (1.5, 3.5), que conservan el nombre crudo del
+        # Excel: si dos filas con NIT distinto en el Excel terminan en el
+        # mismo NIT final por esas ramas, cada una conserva SU propio nombre
+        # original y quedan divergentes para un mismo NIT.
+        #
+        # Se actúa solo cuando hay divergencia real dentro de este lote (no
+        # se toca un NIT con un único nombre ya consistente), para no
+        # adelantar aquí la corrección contra BD que _validate_empresa aplica
+        # deliberadamente después. Nunca por similitud (AC-27): la clave es
+        # siempre el NIT final, jamás el nombre.
+        name_variants_by_nit: dict[str, set] = {}
+        for resolved_nit, empresa_resuelta in zip(matched_nits, matched_empresas):
+            if resolved_nit:
+                name_variants_by_nit.setdefault(resolved_nit, set()).add(empresa_resuelta)
+        nits_con_divergencia = {nit for nit, names in name_variants_by_nit.items() if len(names) > 1}
+
+        if nits_con_divergencia:
+            canonical_name_by_nit: dict[str, str] = {}
+            for i, resolved_nit in enumerate(matched_nits):
+                if (
+                    resolved_nit in nits_con_divergencia
+                    and resolved_nit in odoo_resolved_nits
+                    and resolved_nit not in canonical_name_by_nit
+                ):
+                    canonical_name_by_nit[resolved_nit] = matched_empresas[i]
+            for i, resolved_nit in enumerate(matched_nits):
+                if (
+                    resolved_nit in nits_con_divergencia
+                    and resolved_nit in nit_to_company
+                    and resolved_nit not in canonical_name_by_nit
+                ):
+                    canonical_name_by_nit[resolved_nit] = nit_to_company[resolved_nit]["name"]
+            for i, resolved_nit in enumerate(matched_nits):
+                if resolved_nit in nits_con_divergencia and resolved_nit not in canonical_name_by_nit:
+                    canonical_name_by_nit[resolved_nit] = matched_empresas[i]
+            for i, resolved_nit in enumerate(matched_nits):
+                if resolved_nit in nits_con_divergencia:
+                    matched_empresas[i] = canonical_name_by_nit[resolved_nit]
+
+        if candidatos_imedical and self.imedical_repo:
+            n = self.imedical_repo.save_batch(list(candidatos_imedical.values()))
+            if n:
+                self.logger.info(
+                    f"imedical: {n} corrección(es) nueva(s) registrada(s) automáticamente:\n"
+                    + "\n".join(
+                        f"  {c.nit_error} → {c.nit_success} ('{c.name_error}' → '{c.name}')"
+                        for c in candidatos_imedical.values()
+                    ),
+                    user_msg=f"{n} corrección(es) nueva(s) registradas en i-medical.",
+                )
 
         return df.with_columns([
             pl.Series("NIT", matched_nits),
@@ -549,6 +789,105 @@ class AssignRatesFromExcel:
                     except ValueError:
                         return "", ""
         return "", ""
+
+    # ── TIAN: redirección de facturación (spec 008 RF-12..20) ──────────────
+
+    def _apply_tian(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
+        """Redirige a facturarse bajo TIAN_NIT las filas cuyo NIT está en la
+        tabla `tian`, ANTES de asignar facturador/paquete/tarifas (RF-13), de
+        modo que hereden los de TIAN.
+
+        Va después de _normalize_columns (RF-09 del plan): pl_normalize_name
+        borra los paréntesis, así que el sufijo "(TIAN)" solo puede aplicarse
+        una vez la razón social ya quedó normalizada."""
+        tian_nit = lookups.get("tian_nit", "")
+        if not tian_nit:
+            self.logger.error(
+                "TIAN: variable de entorno TIAN_NIT no está definida; se omite la redirección.",
+                user_msg="No se definió TIAN_NIT: las empresas de la tabla TIAN no se redirigieron.",
+            )
+            return df
+
+        nit_to_company = lookups["nit_to_company"]
+        tian_company = nit_to_company.get(tian_nit)
+        if not tian_company:
+            self.logger.error(
+                f"TIAN: el NIT {tian_nit} (TIAN_NIT) no existe en companies; se aborta la redirección.",
+                user_msg=f"El NIT de TIAN ({tian_nit}) no existe en la base de datos: no se redirigió ninguna empresa.",
+            )
+            return df
+
+        company_to_package = lookups["company_to_package"]
+        if tian_company["id"] not in company_to_package:
+            self.logger.error(
+                f"TIAN: la empresa {tian_nit} no tiene paquete asignado; se aborta la redirección.",
+                user_msg=f"TIAN (NIT {tian_nit}) no tiene paquete asignado: no se redirigió ninguna empresa.",
+            )
+            return df
+
+        tian_nits = lookups.get("tian_nits", set())
+        if not tian_nits:
+            return df
+
+        raw_source = "_NIT_RAW" if "_NIT_RAW" in df.columns else "NIT"
+        raw_nits = df[raw_source].cast(pl.Utf8).str.replace_all(r"[^\d]", "").to_list()
+        current_nits = df["NIT"].cast(pl.Utf8).to_list()
+        empresas = df["Empresa"].cast(pl.Utf8).to_list()
+
+        nuevos_nit = list(current_nits)
+        nuevas_empresas = list(empresas)
+        asignaciones: dict[str, TianAssignment] = {}
+
+        for i, nit_actual in enumerate(current_nits):
+            if nit_actual in tian_nits:
+                candidato = nit_actual
+            elif raw_nits[i] in tian_nits:
+                candidato = raw_nits[i]
+            else:
+                continue
+            if candidato == tian_nit:
+                continue
+
+            nit_original = nit_actual
+            empresa_original = empresas[i]
+            name_canonica = nit_to_company.get(nit_original, {}).get("name") or empresa_original
+            name_final = name_canonica if name_canonica.endswith("(TIAN)") else f"{name_canonica}(TIAN)"
+
+            nuevos_nit[i] = tian_nit
+            nuevas_empresas[i] = name_final
+
+            if nit_original in asignaciones:
+                previa = asignaciones[nit_original]
+                asignaciones[nit_original] = TianAssignment(
+                    nit_original=previa.nit_original,
+                    name_original=previa.name_original,
+                    nit_tian=tian_nit,
+                    name_final=name_final,
+                    rows=previa.rows + 1,
+                )
+            else:
+                asignaciones[nit_original] = TianAssignment(
+                    nit_original=nit_original,
+                    name_original=empresa_original,
+                    nit_tian=tian_nit,
+                    name_final=name_final,
+                    rows=1,
+                )
+
+        if not asignaciones:
+            return df
+
+        lookups["tian_rerouted_nits"] = {tian_nit}
+
+        df = df.with_columns([
+            pl.Series("NIT", nuevos_nit),
+            pl.Series("Empresa", nuevas_empresas),
+        ])
+
+        if self.tian_log_generator:
+            self.tian_log_generator.generate(list(asignaciones.values()), self.logs_dir)
+
+        return df
 
     # ── City normalization with pre-computed fuzzy ─────────────────────────
 
@@ -990,13 +1329,17 @@ class AssignRatesFromExcel:
     def _validate_empresa(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
         odoo_resolved_nits = lookups.get("odoo_resolved_nits", set())
+        tian_rerouted_nits = lookups.get("tian_rerouted_nits", set())
 
         # Odoo tiene prioridad sobre BD local (ver cascada en _match_companies);
         # los NIT ya resueltos vía Odoo no deben revertirse al nombre de BD local.
+        # Los NIT redirigidos a TIAN (spec 008 RF-13) tampoco: su Empresa lleva
+        # el sufijo "(TIAN)" con la razón social original, no la de TIAN.
+        excluidos = odoo_resolved_nits | tian_rerouted_nits
         db_nit_to_name = {
             nit: normalize_name(c["name"])
             for nit, c in nit_to_company.items()
-            if nit not in odoo_resolved_nits
+            if nit not in excluidos
         }
 
         # Check mismatches

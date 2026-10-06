@@ -1,8 +1,15 @@
+import re
 import time
 import xmlrpc.client
 
 from src.odooInjection.domain.repositories.odoo_connection_repository import (
     OdooConnectionRepository,
+)
+from src.shared.utils.text_normalizer import normalize_nit
+
+_CORPORATE_SUFFIX_RE = re.compile(
+    r"\s*(SAS|S\s*A\s*S|SA|S\s*A|LTDA|L\s*T\s*D\s*A|EU|ESP|BIC)\s*$",
+    flags=re.IGNORECASE,
 )
 
 
@@ -136,14 +143,13 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
                 )
         return found
 
+    @staticmethod
+    def _strip_suffix(name: str) -> str:
+        """Quita el sufijo societario para una búsqueda por nombre más flexible."""
+        return _CORPORATE_SUFFIX_RE.sub("", (name or "").strip()).strip()
+
     def find_client_by_name(self, name: str) -> tuple[int | None, str | None, str | None]:
-        import re
-        # Quitar sufijo societario para búsqueda flexible
-        base_name = re.sub(
-            r"\s*(SAS|S\s*A\s*S|SA|S\s*A|LTDA|L\s*T\s*D\s*A|EU|ESP|BIC)\s*$",
-            "", name.strip(), flags=re.IGNORECASE
-        ).strip()
-        search_term = base_name if base_name else name
+        search_term = self._strip_suffix(name) or name
         r = self._execute(
             "res.partner", "search_read",
             [[["name", "ilike", search_term]]],
@@ -152,6 +158,22 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         if r:
             return r[0]["id"], r[0]["name"], "nombre"
         return None, None, None
+
+    def find_clients_by_name(self, name: str, limit: int = 10) -> list[dict]:
+        search_term = self._strip_suffix(name) or name
+        rows = self._execute(
+            "res.partner", "search_read",
+            [[["name", "ilike", search_term]]],
+            {"fields": ["id", "name", "vat"], "limit": limit},
+        )
+        return [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "vat": normalize_nit(str(row.get("vat") or "")),
+            }
+            for row in rows or []
+        ]
 
     def get_nit(self, client_id: int) -> str | None:
         r = self._execute(

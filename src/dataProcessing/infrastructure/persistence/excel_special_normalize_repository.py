@@ -4,6 +4,10 @@ import polars as pl
 from unidecode import unidecode
 
 from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
+from src.dataProcessing.domain.entities.cup_novelty import CupNovelty
+from src.dataProcessing.infrastructure.persistence.cup_column_validator import (
+    CupColumnValidator,
+)
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
@@ -11,15 +15,22 @@ NON_ALPHABETIC = re.compile(r"[^A-Za-z]")
 
 
 class NormalizeSpecial:
+    SHEET_LABEL = "TarifasEspeciales"
+
     def __init__(
         self,
         logger: LoggerAdapter = None,
         progress: RichProgress = None,
         cup_repository: SaCupRepository = None,
+        fuzz=None,
     ):
         self.logger = logger or LoggerAdapter(__name__)
         self.progress = progress
         self.cup_repository = cup_repository
+        self.novelties: list[CupNovelty] = []
+        self._validator = (
+            CupColumnValidator(cup_repository, fuzz) if cup_repository else None
+        )
 
     def normalize(self, data) -> pl.DataFrame:
         try:
@@ -98,7 +109,8 @@ class NormalizeSpecial:
         if self.progress:
             self.progress.advance()
 
-        # Paso 6: Implementación Columna Verified
+        # Paso 6: Validar/corregir CUP contra la BD (columnas CUP_ORIGINAL,
+        # NOVEDAD, VERIFIED). Ver CupColumnValidator para la cascada F0-F4.
         df_specials = self._validate_cups_with_db(df_specials)
         if self.progress:
             self.progress.advance()
@@ -109,86 +121,9 @@ class NormalizeSpecial:
         ).drop("slug")
 
     def _validate_cups_with_db(self, df_specials):
-        def _is_success(x: str) -> pl.Int64:
-            if x is None:
-                return None
-
-            s = str(x)
-
-            # Limpieza básica
-            s = s.replace("\u00a0", "").replace(" ", "").replace("$", "")
-
-            try:
-                if len(s) >= 7:
-                    price = int(s.split(".")[0])
-                    return price
-                else:
-                    price = int(s.replace(".", ""))
-            except ValueError:
-                return None
-
-            try:
-                return int(float(s))
-            except ValueError:
-                return None
-
-        if not self.cup_repository:
+        if not self._validator:
             return df_specials
-
-        valid_cups = set(self.cup_repository.get_all_cups())
-
-        # Crear columnas auxiliares para validación
-        df_result = df_specials.with_columns(
-            [
-                pl.col("CUP").is_in(valid_cups).alias("cup_valid"),
-                pl.col("VALOR").is_in(valid_cups).alias("valor_valid"),
-            ]
+        df_specials, self.novelties = self._validator.validate(
+            df_specials, self.SHEET_LABEL
         )
-
-        # Identificar casos de intercambio
-        swap_condition = ~pl.col("cup_valid") & pl.col("valor_valid")
-
-        # Registrar errores en log
-        swap_rows = df_result.filter(swap_condition)
-        for row in swap_rows.select(["CUP", "VALOR", "CONTRATO"]).iter_rows():
-            self.logger.error(
-                f"CUP cruzado detectado. Intercambiando CUP: '{row[0]}' <-> VALOR: '{row[1]}' de contrato '{row[2]}'",
-                user_msg=f"Se detectó un cruce de datos en el contrato '{row[2]}'. Se corrigió automáticamente. '{row[0]}' <-> '{row[1]}'",
-            )
-
-        # Aplicar intercambios
-        df_result = df_result.with_columns(
-            [
-                pl.when(swap_condition)
-                .then(pl.col("VALOR"))
-                .otherwise(pl.col("CUP"))
-                .alias("CUP"),
-                pl.when(swap_condition)
-                .then(pl.col("CUP"))
-                .otherwise(pl.col("VALOR"))
-                .alias("VALOR"),
-            ]
-        )
-
-        invalid_rows = df_result.filter(~pl.col("cup_valid") & ~pl.col("valor_valid"))
-        for row in invalid_rows.select(["CUP", "CONTRATO"]).iter_rows():
-            self.logger.error(
-                f"CUP no existe en base de datos: '{row[0]}' para el contrato '{row[1]}'",
-                user_msg=f"El código CUP '{row[0]}' no existe en el sistema. '{row[1]}'",
-            )
-
-        df_result = df_result.with_columns(
-            pl.col("VALOR")
-            .cast(pl.Utf8)
-            .map_elements(_is_success, return_dtype=pl.Int64)
-            .cast(pl.Int64)
-            .alias("VALOR")
-        )
-
-        # Validacion Final
-        return df_result.with_columns(
-            pl.when(~pl.col("CUP").is_in(valid_cups))
-            .then(True)
-            .otherwise(False)
-            .alias("VERIFIED")
-        ).drop(["cup_valid", "valor_valid"])
+        return df_specials

@@ -21,3 +21,11 @@ class CompanyRepository(ABC):
     @abstractmethod
     def all(self):
         pass
+
+    @abstractmethod
+    def companies_packages_all(self):
+        pass
+
+    @abstractmethod
+    def companies_packages_batch(self, relations: list):
+        pass

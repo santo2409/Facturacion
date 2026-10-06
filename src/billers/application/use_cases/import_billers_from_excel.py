@@ -9,6 +9,7 @@ from src.billers.domain.repositories.import_biller_from_excel_repository import 
     ImportBillerFromExcelRepository,
 )
 from src.company.domain.entities.company import Company
+from src.shared.config import get_paths_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 
 
@@ -54,7 +55,7 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
             self.progress.advance()
 
     def _process_companies(self, df):
-        file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
+        file_path = os.path.join(get_paths_config()["directory"], "data.json")
 
         rows = df.select(["NIT", "GESTOR", "EMPRESA"]).drop_nulls()
         # Normalizar NIT: solo dígitos, max 9 chars

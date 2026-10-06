@@ -1,6 +1,7 @@
 import re
 
 import polars as pl
+from unidecode import unidecode
 
 _CLEAN_RE = re.compile(r"[^A-Z&Ñ0-9\s]")
 _CLEAN_HASH_RE = re.compile(r"[^A-Z&Ñ#0-9\s]")
@@ -28,6 +29,20 @@ def normalize_upper_spaces(text: str) -> str:
     if not text:
         return ""
     return _SPACES_RE.sub(" ", text.strip().upper())
+
+
+def normalize_text_key(text: str) -> str:
+    """Clave canónica para comparar nombres (razones sociales, exámenes, etc.).
+
+    Translitera los acentos antes de limpiar porque `normalize_name` elimina
+    las letras acentuadas en vez de convertirlas ("CLÍNICA" -> "CLNICA").
+    """
+    return normalize_name(unidecode(text or ""))
+
+
+def normalize_company_name(text: str) -> str:
+    """Normaliza una razón social para compararla. Alias de `normalize_text_key`."""
+    return normalize_text_key(text)
 
 
 def normalize_nit(text: str) -> str:
