@@ -117,6 +117,9 @@ class AssignRatesFromExcel:
         self.odoo_repo = odoo_repo
         self.not_found_log_generator = not_found_log_generator
         self.logs_dir = logs_dir
+        self.imedical_repo = imedical_repo
+        self.tian_repo = tian_repo
+        self.tian_log_generator = tian_log_generator
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
