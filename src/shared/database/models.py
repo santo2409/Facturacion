@@ -107,10 +107,11 @@ class SpecialModel(Base):
 class TianModel(Base):
     __tablename__ = "tian"
 
-    nit_error = Column(String(50), nullable=False, primary_key=True, unique=True)
+    nit_error = Column(String(50), nullable=False, primary_key=True)
     name = Column(String(255), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now())
+    deleted_at = Column(TIMESTAMP, nullable=True)
 
 
 class CompanyModel(Base):
