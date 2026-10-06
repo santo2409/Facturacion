@@ -1,7 +1,7 @@
 """Tests para get_paths_config() — fuente única del valor por defecto de
 DIRECTORY (spec 007, RF-05/RF-07)."""
 
-from src.shared.config import DEFAULT_DIRECTORY, get_paths_config
+from src.shared.config import DEFAULT_DIRECTORY, get_paths_config, get_tian_config
 
 
 def test_get_paths_config_usa_valor_por_defecto_cuando_directory_no_esta_definida(monkeypatch):
