@@ -33,6 +33,19 @@ class FakeOdooRepo:
                 return c["id"], c["name"], "nombre"
         return None, None, None
 
+    def find_clients_by_name(self, name, limit=10):
+        term = (name or "").strip().upper()
+        if not term:
+            return []
+        matches = []
+        for nit, c in self._clients.items():
+            candidate = c["name"].upper()
+            if term in candidate or candidate in term:
+                matches.append({"id": c["id"], "name": c["name"], "vat": nit})
+            if len(matches) >= limit:
+                break
+        return matches
+
     def get_nit(self, client_id):
         for nit, c in self._clients.items():
             if c["id"] == client_id:

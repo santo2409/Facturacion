@@ -16,7 +16,7 @@ python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # venv\Scripts\activate   # Windows
 
-pip install -r requirement.txt
+pip install -r requirements.txt
 playwright install firefox
 ```
 
@@ -55,27 +55,30 @@ python main.py
 
 | Opción | Función | Descripción |
 |--------|---------|-------------|
-| 1 | Web Scrapping | Valida NITs en el RUES (por NIT y por nombre) |
-| 2 | Facturadores | Importa facturadores desde Excel y vincula con empresas |
-| 3 | Tratamiento Información | Normaliza paquetes, proveedores y tarifas especiales |
-| 4 | Cargar Tarifas | Importa tarifas desde Excel a BD (fuzzy city, rename especiales) |
-| 5 | Registrar Empresas | Asocia empresas con paquetes y facturadores |
-| 6 | Asignar Tarifas | Cascada de resolución, normalización y generación de pre-facturas |
-| 7 | Inyectar Facturas | Inyecta facturas en Odoo/Avancys via XML-RPC |
+| 1 | Web Scrapping | Valida NITs/nombres: BD local → Odoo → RUES |
+| 2 | Facturadores | Importa facturadores y los vincula con empresas |
+| 3 | Tratamiento Información | Normaliza paquetes/proveedores/especiales y corrige CUPs |
+| 4 | Cargar Tarifas | Importa tarifas a BD (fuzzy de ciudades, rename de especiales) |
+| 5 | Registrar Empresas - Paquetes | Registra empresas y su paquete tarifario |
+| 6 | Asignar Tarifas | Cascada de 6 fases, i-medical, TIAN → `CONSOLIDADO.xlsx` |
+| 7 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
+| 8 | Cargar Pre Facturas | Inyección en Odoo — **deshabilitada** |
+| 9 | Generar Faltantes | Lista las tarifas no resueltas |
+| 10 | Detectar Empresas Duplicadas | Reporte de posibles duplicados (solo lectura) |
 
 ### Flujo típico de facturación
 
 ```
-1. Web Scrapping → 2. Facturadores → 3. Tratamiento → 4. Tarifas → 5. Empresas → 6. Asignar → 7. Inyectar
+1 → 2 → 3 → 4 → 5 → 6 → 9 (faltantes) → 7 (pre-facturas)
 ```
 
-La opción 6 genera automáticamente las pre-facturas (archivos Excel por NIT) si el día del mes es < 5 o > 29.
+La opción 6 pide además el libro de números de factura cuando el día del mes está fuera del rango `DAY_INITIAL`–`DAY_FINAL`.
 
-La opción 7 incluye lógica anti-duplicados: si se re-ejecuta, no duplica facturas ya inyectadas.
+Ver la [Guía de Usuario](docs/USER_GUIDE.md) para el detalle de cada opción.
 
 ## Características Principales
 
-- **Cascada de resolución de empresas**: BD local → RUES → Odoo (6 pasos)
+- **Cascada de resolución de empresas**: BD local → Odoo → RUES (por NIT y por nombre)
 - **Normalización inteligente**: NITs (9 dígitos), fechas (smart swap dd/mm), sufijos corporativos (S.A.S → SAS)
 - **Fuzzy matching**: resolución de nombres con RapidFuzz (ciudades, paquetes, empresas)
 - **Anti-duplicados**: dedup batch antes de INSERT y log de inyección previo
@@ -110,7 +113,7 @@ src/<módulo>/
 | Fuzzy matching | RapidFuzz, Unidecode |
 | CLI | Rich |
 | Logging | logging + ExcelAuditHandler (user_audit.xlsx) |
-| Testing | pytest + fakes manuales (194 tests) |
+| Testing | pytest + fakes manuales (643 tests) |
 
 ## Tests
 
@@ -121,6 +124,7 @@ pytest tests/assign/ -v   # Módulo específico
 
 ## Documentación
 
+- [Guía de Usuario](docs/USER_GUIDE.md)
 - [Documentación Técnica](docs/TECHNICAL_DOCUMENTATION.md)
 - [Diagramas C4](docs/c4-diagrams.md)
 - [ADRs (Decisiones Arquitectónicas)](docs/adr/README.md)

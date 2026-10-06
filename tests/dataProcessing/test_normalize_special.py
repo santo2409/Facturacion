@@ -51,3 +51,25 @@ def test_normalize_with_progress():
     normalizer = NormalizeSpecial(logger=FakeLogger(), progress=FakeProgress())
     result = normalizer.normalize(_sample_df())
     assert result.height == 2
+
+
+def test_normalize_special_exposes_novelties_after_normalize():
+    from src.dataProcessing.domain.entities.cup_novelty import ESTADO_CORREGIDO_NOMBRE
+
+    cup_repo = FakeCupRepo([{"id": 1, "code": "100042", "name": "PROTECCION AUDITIVA"}])
+    df = pl.DataFrame({
+        "CONTRATO": ["ESPECIAL"],
+        "CIUDAD": ["BOG"],
+        "CUP": ["10042"],
+        "EXAMEN": ["PROTECCION AUDITIVA"],
+        "INTRA O EXTRA": ["Intra"],
+        "VALOR": ["1000"],
+    })
+    normalizer = NormalizeSpecial(logger=FakeLogger(), cup_repository=cup_repo)
+
+    result = normalizer.normalize(df)
+
+    assert result["CUP"][0] == "100042"
+    assert len(normalizer.novelties) == 1
+    assert normalizer.novelties[0].estado == ESTADO_CORREGIDO_NOMBRE
+    assert normalizer.novelties[0].hoja == "TarifasEspeciales"

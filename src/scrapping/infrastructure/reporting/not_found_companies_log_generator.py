@@ -11,9 +11,19 @@ _BORDER = Border(left=_THIN, right=_THIN, top=_THIN, bottom=_THIN)
 _HEADERS = ["#", "NIT", "Empresa", "Estado", "Base Consultada", "Fecha/Hora"]
 _FILL_NO_ENCONTRADO = PatternFill("solid", fgColor="FFEB9C")
 _FILL_FALTA_ODOO = PatternFill("solid", fgColor="FFD966")
+_FILL_CORRECCION = PatternFill("solid", fgColor="C6E0B4")
 
 ESTADO_NO_ENCONTRADO = "No encontrado (ni Odoo ni RUES)"
 ESTADO_FALTA_ODOO = "Existe en RUES, falta en Odoo"
+ESTADO_NIT_CORREGIDO = "NIT corregido"
+ESTADO_NOMBRE_CORREGIDO = "Nombre corregido"
+ESTADO_CONFLICTO_BD_LOCAL = "Nombre duplicado en BD local con otro NIT"
+
+_SEPARADOR_ESTADO = " | "
+
+
+def _partes(estado: str) -> list[str]:
+    return estado.split(_SEPARADOR_ESTADO)
 
 
 class NotFoundCompaniesLogGenerator:
@@ -84,6 +94,30 @@ class NotFoundCompaniesLogGenerator:
             )
         return previos
 
+    @staticmethod
+    def _estado_partes(r: NitResult) -> list[str]:
+        """Compone el Estado como partes atómicas.
+
+        Con una sola parte el texto resultante es idéntico al de las versiones
+        anteriores, de modo que los consumidores que no producen campos de
+        novedad conservan su comportamiento.
+        """
+        partes = []
+        if not r.is_company:
+            partes.append(ESTADO_NO_ENCONTRADO)
+        elif r.checked_bases == "Odoo, RUES":
+            partes.append(ESTADO_FALTA_ODOO)
+
+        if getattr(r, "nit_original", None):
+            partes.append(f"{ESTADO_NIT_CORREGIDO} ({r.nit_original} → {r.nit})")
+        if getattr(r, "name_original", None):
+            partes.append(
+                f"{ESTADO_NOMBRE_CORREGIDO} ('{r.name_original}' → '{r.name}')"
+            )
+        if getattr(r, "conflict", ""):
+            partes.append(ESTADO_CONFLICTO_BD_LOCAL)
+        return partes
+
     def generate(self, resultados: list[NitResult], output_dir: Path) -> Path:
         output_dir.mkdir(parents=True, exist_ok=True)
         log_path = output_dir / self.FILENAME
@@ -93,17 +127,11 @@ class NotFoundCompaniesLogGenerator:
 
         for r in resultados:
             nit = str(r.nit)
-            if r.is_company and r.checked_bases == "Odoo, RUES":
+            partes = self._estado_partes(r)
+            if partes:
                 historial[nit] = {
                     "empresa": r.name or "",
-                    "estado": ESTADO_FALTA_ODOO,
-                    "bases": r.checked_bases,
-                    "fecha": hora,
-                }
-            elif not r.is_company:
-                historial[nit] = {
-                    "empresa": r.name or "",
-                    "estado": ESTADO_NO_ENCONTRADO,
+                    "estado": _SEPARADOR_ESTADO.join(partes),
                     "bases": r.checked_bases,
                     "fecha": hora,
                 }
@@ -124,19 +152,41 @@ class NotFoundCompaniesLogGenerator:
         ws.column_dimensions["A"].width = 5
         ws.column_dimensions["B"].width = 18
         ws.column_dimensions["C"].width = 48
-        ws.column_dimensions["D"].width = 30
+        ws.column_dimensions["D"].width = 60
         ws.column_dimensions["E"].width = 18
         ws.column_dimensions["F"].width = 20
         ws.freeze_panes = "A2"
 
         falta_odoo_count = 0
+        correcciones_count = 0
         for i, (nit, data) in enumerate(sorted(historial.items()), 1):
             fila = i + 1
             estado = data.get("estado", ESTADO_NO_ENCONTRADO)
-            if estado == ESTADO_FALTA_ODOO:
+            partes = _partes(estado)
+            es_falta_odoo = any(p.startswith(ESTADO_FALTA_ODOO) for p in partes)
+            es_no_encontrado = any(p.startswith(ESTADO_NO_ENCONTRADO) for p in partes)
+            tiene_novedad = any(
+                p.startswith(
+                    (
+                        ESTADO_NIT_CORREGIDO,
+                        ESTADO_NOMBRE_CORREGIDO,
+                        ESTADO_CONFLICTO_BD_LOCAL,
+                    )
+                )
+                for p in partes
+            )
+            if es_falta_odoo:
                 falta_odoo_count += 1
+            if tiene_novedad:
+                correcciones_count += 1
+
             ws.append([i, nit, data["empresa"], estado, data["bases"], data["fecha"]])
-            fill = _FILL_FALTA_ODOO if estado == ESTADO_FALTA_ODOO else _FILL_NO_ENCONTRADO
+            if es_falta_odoo:
+                fill = _FILL_FALTA_ODOO
+            elif es_no_encontrado:
+                fill = _FILL_NO_ENCONTRADO
+            else:
+                fill = _FILL_CORRECCION
             for col in range(1, 7):
                 cell = ws.cell(fila, col)
                 cell.fill = fill
@@ -155,10 +205,12 @@ class NotFoundCompaniesLogGenerator:
         wb.save(log_path)
         self._logger.info(
             f"Log de empresas no encontradas guardado: {log_path} "
-            f"({len(historial)} pendientes, {falta_odoo_count} solo faltan en Odoo)",
+            f"({len(historial)} pendientes, {falta_odoo_count} solo faltan en Odoo, "
+            f"{correcciones_count} con novedad de corrección)",
             user_msg=(
                 f"{len(historial)} empresa(s) pendientes de verificación manual "
-                f"({falta_odoo_count} existen en RUES pero faltan en Odoo); "
+                f"({falta_odoo_count} existen en RUES pero faltan en Odoo, "
+                f"{correcciones_count} con datos corregidos que debes ajustar en el libro); "
                 f"revisa {log_path.name}."
             ),
         )

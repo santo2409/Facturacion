@@ -6,15 +6,20 @@ import polars as pl
 
 from src.company.domain.entities.company import Company
 from src.company.domain.entities.company_package import CompanyPackage
+from src.company.domain.entities.unlinked_row import UnlinkedRow
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.shared.config import get_paths_config
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.utils.document_normalizer import normalize_document
 from src.special.domain.entities.special import Special
 
 
 class ImportCompaniesFromExcel:
+    _CATALOG_SCHEMA = {"id": pl.Int64, "name": pl.Utf8, "model": pl.Utf8}
+
     def __init__(
         self,
         company_repo,
@@ -27,6 +32,7 @@ class ImportCompaniesFromExcel:
         logger: LoggerAdapter,
         not_found_log_generator=None,
         logs_dir: Path = Path("logs"),
+        not_linked_log_generator=None,
     ):
         self.company_repo = company_repo
         self.package_repo = package_repo
@@ -38,22 +44,58 @@ class ImportCompaniesFromExcel:
         self.logger = logger or LoggerAdapter(__name__)
         self.not_found_log_generator = not_found_log_generator
         self.logs_dir = logs_dir
+        self.not_linked_log_generator = not_linked_log_generator
+        self._dv_warning_count = 0
+        self._companies_created = 0
+        self._links_persisted = 0
+        self._unlinked_count = 0
+        self._empty_catalogs: list[str] = []
 
     def execute(self, df: pl.DataFrame):
         self._progress_companies(df)
         self._progress_companies_to_packages(df)
+        self._emit_summary()
+
+    def _emit_summary(self):
+        self.logger.info(
+            (
+                f"Resumen importación empresas: {self._companies_created} creada(s), "
+                f"{self._links_persisted} vinculación(es) persistida(s), "
+                f"{self._unlinked_count} fila(s) sin vincular, "
+                f"{self._dv_warning_count} documento(s) acotado(s) con DV inválido."
+            ),
+            user_msg=(
+                f"Empresas creadas: {self._companies_created}. "
+                f"Vinculaciones persistidas: {self._links_persisted}. "
+                f"Filas sin vincular: {self._unlinked_count}."
+            ),
+        )
 
     def _progress_companies(self, df: pl.DataFrame):
-        file_path = os.path.join(os.getenv("DIRECTORY"), "data.json")
-        df_nits = df.select(pl.col("NIT")).to_series().to_list()
+        self._dv_warning_count = 0
+        self._companies_created = 0
+
+        file_path = os.path.join(get_paths_config()["directory"], "data.json")
+        raw_nits = df.select(pl.col("NIT")).to_series().to_list()
+        normalized_by_raw = {raw: normalize_document(raw) for raw in raw_nits}
+
+        for raw, doc in normalized_by_raw.items():
+            if doc.truncated and doc.dv_valid is False:
+                self._dv_warning_count += 1
+                self.logger.warning(
+                    f"Posible error de digitación: '{raw}' se acotó a '{doc.value}' (DV no coincide)",
+                    user_msg=f"El documento '{raw}' fue acotado a '{doc.value}'; verifica si tiene un error de digitación.",
+                )
+
+        doc_values = [doc.value for doc in normalized_by_raw.values()]
 
         df_companies = pl.DataFrame(self.company_repo.all())
-        pending_nits = df_nits
+        pending_docs = doc_values
         if df_companies.height > 0:
-            known = {str(n) for n in df_companies["nit"].to_list()}
-            pending_nits = [n for n in df_nits if str(n) not in known]
+            known = {normalize_document(n).value for n in df_companies["nit"].to_list()}
+            pending_docs = [d for d in doc_values if d not in known]
 
-        if not pending_nits:
+        if not pending_docs:
             return
 
         cached: dict[str, NitResult] = {}
@@ -62,7 +104,7 @@ class ImportCompaniesFromExcel:
                 with open(file_path, "r", encoding="utf-8") as file:
                     data = json.load(file)
                 for d in data:
-                    nit = str(d.get("nit"))
+                    nit = normalize_document(d.get("nit")).value
                     cached[nit] = NitResult(
                         nit=nit,
                         is_company=d.get("is_company", bool(d.get("name"))),
@@ -71,21 +113,21 @@ class ImportCompaniesFromExcel:
                     )
                 self.progress.advance()
 
-        still_pending = [n for n in pending_nits if str(n) not in cached]
+        still_pending = [d for d in pending_docs if d not in cached]
         if still_pending:
             with self.progress("Validando NITs (Odoo/RUES)", total=len(still_pending)):
                 new_results = self.nit_service.search(still_pending) or []
                 self.progress.advance()
             for result in new_results:
-                cached[str(result.nit)] = result
+                cached[normalize_document(result.nit).value] = result
             self.nit_service.writer(list(cached.values()), file_path)
 
         result_scrapping = [
-            cached[str(n)] for n in pending_nits if str(n) in cached
+            cached[d] for d in pending_docs if d in cached
         ]
 
         razon_social_by_nit = {
-            str(row["NIT"]).strip(): row["RAZON SOCIAL"]
+            normalize_document(row["NIT"]).value: row["RAZON SOCIAL"]
             for row in df.iter_rows(named=True)
         }
 
@@ -96,7 +138,7 @@ class ImportCompaniesFromExcel:
             NitResult(
                 nit=str(result.nit),
                 is_company=False,
-                name=result.name or razon_social_by_nit.get(str(result.nit)),
+                name=result.name or razon_social_by_nit.get(normalize_document(result.nit).value),
                 checked_bases=getattr(result, "checked_bases", ""),
             )
             for result in result_scrapping
@@ -105,35 +147,97 @@ class ImportCompaniesFromExcel:
         if not_found and self.not_found_log_generator:
             self.not_found_log_generator.generate(not_found, self.logs_dir)
 
-        # Batch: collect unique companies by NIT (solo NITs nuevos y verificados), then insert
+        # Batch: collect unique companies by documento normalizado (solo nuevos y verificados)
         companies_map = {}
         for result in result_scrapping:
             if _is_found(result):
-                nit = str(result.nit).strip()[:9]
-                companies_map[nit] = Company(nit, result.name.strip().upper())
+                doc = normalize_document(result.nit)
+                companies_map[doc.value] = Company(doc.value, result.name.strip().upper())
 
         if companies_map:
             with self.progress("Importando empresas", total=1):
                 self.company_repo.save_batch(list(companies_map.values()))
+                self._companies_created = len(companies_map)
                 self.progress.advance()
 
-    def _progress_companies_to_packages(self, df: pl.DataFrame):
-        pkg = pl.DataFrame(self.package_repo.all())
-        pkg = pkg.with_columns(pl.lit(Package.__name__).alias("model"))
-        prov = pl.DataFrame(self.provider_repo.all())
-        prov = prov.with_columns(pl.lit(Provider.__name__).alias("model"))
-        spec = pl.DataFrame(self.special_repo.all())
-        spec = spec.with_columns(pl.lit(Special.__name__).alias("model"))
+    def _catalog_frame(self, rows, model_name: str, label: str) -> pl.DataFrame:
+        """Construye el frame de un origen del catálogo (packages/providers/
+        specials) con esquema explícito. Un origen vacío o en error (`all()`
+        devuelve `None`) no aporta ninguna fila y se advierte, señalando el
+        paso previo del flujo que pudo no ejecutarse (RF-01, RF-03)."""
+        if not rows:
+            self._empty_catalogs.append(label)
+            self.logger.warning(
+                (
+                    f"Catálogo de {label} vacío al vincular empresas a paquetes: "
+                    "verifica que se hayan ejecutado la opción 3 (Tratamiento "
+                    "Información) y la opción 4 (Cargar Tarifas)."
+                ),
+                user_msg=(
+                    f"El catálogo de {label} está vacío; verifica que se hayan "
+                    "ejecutado la opción 3 (Tratamiento Información) y la "
+                    "opción 4 (Cargar Tarifas) antes de continuar."
+                ),
+            )
+            return pl.DataFrame(schema=self._CATALOG_SCHEMA)
+        return (
+            pl.DataFrame(rows)
+            .with_columns(pl.lit(model_name).alias("model"))
+            .select(["id", "name", "model"])
+        )
 
-        todo = pl.concat([pkg, prov, spec], how="vertical")
+    def _build_package_catalog(self) -> pl.DataFrame:
+        """Catálogo unificado paquetes+proveedores+especiales, robusto ante
+        orígenes vacíos (RF-01). Cada llamada reinicia el registro de
+        orígenes vacíos de la corrida."""
+        self._empty_catalogs = []
+        pkg = self._catalog_frame(self.package_repo.all(), Package.__name__, "paquetes")
+        prov = self._catalog_frame(self.provider_repo.all(), Provider.__name__, "proveedores")
+        spec = self._catalog_frame(self.special_repo.all(), Special.__name__, "tarifas especiales")
+        return pl.concat([pkg, prov, spec], how="vertical")
+
+    def _report_no_catalog(self, df: pl.DataFrame):
+        """RF-04: los tres orígenes están vacíos. No se vincula nada; se
+        informa al usuario, se reportan todas las filas y no se propaga
+        ninguna excepción."""
+        reason = "No hay catálogo de paquetes cargado"
+        unlinked_rows = [
+            UnlinkedRow(
+                document=row["NIT"],
+                company_name=row["RAZON SOCIAL"],
+                package=row["PAQUETE"],
+                reason=reason,
+            )
+            for row in df.iter_rows(named=True)
+        ]
+        self._unlinked_count = len(unlinked_rows)
+        self.logger.warning(
+            "No hay catálogo de paquetes cargado (packages/providers/specials "
+            "vacíos); no se ejecuta la vinculación.",
+            user_msg=(
+                "No hay catálogo de paquetes cargado. Ejecuta la opción 3 "
+                "(Tratamiento Información) y la opción 4 (Cargar Tarifas) "
+                "antes de registrar empresas."
+            ),
+        )
+        if unlinked_rows and self.not_linked_log_generator:
+            self.not_linked_log_generator.generate(unlinked_rows, self.logs_dir)
+
+    def _progress_companies_to_packages(self, df: pl.DataFrame):
+        self._links_persisted = 0
+        self._unlinked_count = 0
 
         df = df.with_columns(
             pl.col("NIT")
-            .cast(pl.Utf8)
-            .str.replace_all(r"\D", "")
-            .str.slice(0, 9)
+            .map_elements(lambda x: normalize_document(x).value)
             .alias("NIT")
         )
+
+        todo = self._build_package_catalog()
+
+        if todo.height == 0:
+            self._report_no_catalog(df)
+            return
 
         catalog = [{"name": n} for n in todo["name"].to_list()]
         catalog_local = catalog
@@ -146,24 +250,57 @@ class ImportCompaniesFromExcel:
             .alias("PAQUETE")
         )
 
-        # Build lookup maps
-        all_companies = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        # Build lookup maps (claves normalizadas en ambos lados, RF-05)
+        all_companies = {
+            normalize_document(c["nit"]).value: (c["id"], c["nit"], c["name"])
+            for c in self.company_repo.all()
+        }
         pkg_name_map = {row["name"]: (row["id"], row["model"]) for row in todo.to_dicts()}
 
-        # Collect batch
-        batch = []
+        # Deduplicar por company_id: última fila gana (RF-08)
+        batch_by_company: dict[int, CompanyPackage] = {}
+        conflict_info: dict[int, tuple[str, str]] = {}
+        unlinked_rows: list[UnlinkedRow] = []
+
         with self.progress("Vinculando empresas a paquetes", total=df.height):
             for row in df.iter_rows(named=True):
-                nit = row["NIT"][:9].strip()
-                company_id = all_companies.get(nit)
-                if not company_id:
+                nit = row["NIT"]
+                found = all_companies.get(nit)
+                if not found:
+                    self.logger.warning(
+                        f"Empresa no encontrada para documento '{nit}'",
+                        user_msg=f"No se encontró la empresa con documento '{nit}'.",
+                    )
+                    unlinked_rows.append(
+                        UnlinkedRow(
+                            document=nit,
+                            company_name=row["RAZON SOCIAL"],
+                            package=row["PAQUETE"],
+                            reason="Empresa no encontrada en la base de datos",
+                        )
+                    )
                     self.progress.advance()
                     continue
 
+                company_id, _, _ = found
                 pkg_info = pkg_name_map.get(row["PAQUETE"])
                 if pkg_info:
                     package_id, model = pkg_info
-                    batch.append(CompanyPackage(company_id, package_id, model))
+                    existing = batch_by_company.get(company_id)
+                    if existing is not None:
+                        previous_pkg_name, _ = conflict_info.get(
+                            company_id, (None, None)
+                        )
+                        self.logger.warning(
+                            f"Vinculación duplicada para documento '{nit}': "
+                            f"se descarta '{previous_pkg_name}' y prevalece '{row['PAQUETE']}'",
+                            user_msg=(
+                                f"El documento '{nit}' tiene paquetes en conflicto: "
+                                f"se descartó '{previous_pkg_name}' y quedó '{row['PAQUETE']}'."
+                            ),
+                        )
+                    batch_by_company[company_id] = CompanyPackage(company_id, package_id, model)
+                    conflict_info[company_id] = (row["PAQUETE"], model)
                 else:
                     self.logger.warning(
                         f"Package not found: {row['PAQUETE']}",
@@ -171,5 +308,11 @@ class ImportCompaniesFromExcel:
                     )
                 self.progress.advance()
 
+        batch = list(batch_by_company.values())
         if batch:
             self.company_repo.companies_packages_batch(batch)
+            self._links_persisted = len(batch)
+
+        self._unlinked_count = len(unlinked_rows)
+        if unlinked_rows and self.not_linked_log_generator:
+            self.not_linked_log_generator.generate(unlinked_rows, self.logs_dir)

@@ -226,3 +226,10 @@ odoo-output/
 datos_supabase.dump
 CLAUDE.md
 .mcp.json
+specs/
+graphify-out/
+.eon-data/
+.eon/
+.eonignore
+.env.start
+data/

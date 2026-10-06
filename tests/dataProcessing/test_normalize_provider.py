@@ -52,3 +52,25 @@ def test_normalize_groups_contrato_by_slug():
     # Both rows have same slug, so CONTRATO should be unified
     contratos = result["CONTRATO"].unique().to_list()
     assert len(contratos) == 1
+
+
+def test_normalize_provider_exposes_novelties_after_normalize():
+    from src.dataProcessing.domain.entities.cup_novelty import ESTADO_CORREGIDO_NOMBRE
+
+    cup_repo = FakeCupRepo([{"id": 1, "code": "903868", "name": "TRIGLICERIDOS"}])
+    df = pl.DataFrame({
+        "CONTRATO": ["PROV"],
+        "CIUDAD": ["BOG"],
+        "CUP": ["903717"],
+        "EXAMEN": ["TRIGLICERIDOS"],
+        "INTRA O EXTRA": ["Intra"],
+        "VALOR": ["1000"],
+    })
+    normalizer = NormalizeProvider(logger=FakeLogger(), cup_repository=cup_repo)
+
+    result = normalizer.normalize(df)
+
+    assert result["CUP"][0] == "903868"
+    assert len(normalizer.novelties) == 1
+    assert normalizer.novelties[0].estado == ESTADO_CORREGIDO_NOMBRE
+    assert normalizer.novelties[0].hoja == "Proveedores"
