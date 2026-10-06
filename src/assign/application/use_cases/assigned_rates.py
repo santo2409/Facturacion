@@ -1329,13 +1329,17 @@ class AssignRatesFromExcel:
     def _validate_empresa(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
         nit_to_company = lookups["nit_to_company"]
         odoo_resolved_nits = lookups.get("odoo_resolved_nits", set())
+        tian_rerouted_nits = lookups.get("tian_rerouted_nits", set())
 
         # Odoo tiene prioridad sobre BD local (ver cascada en _match_companies);
         # los NIT ya resueltos vía Odoo no deben revertirse al nombre de BD local.
+        # Los NIT redirigidos a TIAN (spec 008 RF-13) tampoco: su Empresa lleva
+        # el sufijo "(TIAN)" con la razón social original, no la de TIAN.
+        excluidos = odoo_resolved_nits | tian_rerouted_nits
         db_nit_to_name = {
             nit: normalize_name(c["name"])
             for nit, c in nit_to_company.items()
-            if nit not in odoo_resolved_nits
+            if nit not in excluidos
         }
 
         # Check mismatches
