@@ -148,7 +148,7 @@ def test_fecha_ingreso_se_conserva_en_general_sin_factura(consolidado_general_si
     carpeta = output_dir / "General sin factura"
     assert carpeta.exists(), "No se creó la carpeta 'General sin factura'"
 
-    # Abrir el archivo generado y verificar que 'Fecha Ingreso' es None
+    # Abrir el archivo generado y verificar que 'Fecha Ingreso' se conserva
     archivo = next(carpeta.glob("*900333333*"))
     wb = openpyxl.load_workbook(archivo, read_only=True)
     ws = wb.active
