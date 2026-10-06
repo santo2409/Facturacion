@@ -139,8 +139,8 @@ def consolidado_general_sin_factura(tmp_path):
     return path, tmp_path
 
 
-def test_fecha_ingreso_null_en_general_sin_factura(consolidado_general_sin_factura, logger, cup_repo):
-    """Archivos en 'General sin factura' deben tener 'Fecha Ingreso' en null."""
+def test_fecha_ingreso_se_conserva_en_general_sin_factura(consolidado_general_sin_factura, logger, cup_repo):
+    """Archivos en 'General sin factura' conservan 'Fecha Ingreso' (spec 009)."""
     path, output_dir = consolidado_general_sin_factura
     SplitByNit(logger, cup_repo).execute(path, output_dir)
 
