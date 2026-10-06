@@ -424,8 +424,20 @@ class AssignRatesFromExcel:
         nit_to_company = lookups["nit_to_company"]
         name_to_company = lookups["name_to_company"]
         odoo_resolved_nits = lookups.setdefault("odoo_resolved_nits", set())
+        imedical_locked_nits = lookups.get("imedical_locked_nits", set())
         _odoo_nit_cache: dict = {}
         _odoo_name_cache: dict = {}
+
+        # ── Auto-registro en imedical (spec 008 RF-06..RF-11) ───────────────
+        imedical_known_nit_errors = lookups.get("imedical_known_nit_errors", set())
+        tiene_columna_base = "Base" in df.columns
+        if self.imedical_repo and not tiene_columna_base:
+            self.logger.warning(
+                "imedical: el libro de entrada no tiene columna 'Base'; se omite el auto-registro.",
+                user_msg="El libro no tiene columna 'Base': no se registrarán correcciones nuevas de i-medical.",
+            )
+        candidatos_imedical: dict[str, ImedicalCorrection] = {}
+        name_matcher = CompanyNameMatcher(self.fuzz, threshold=90) if self.imedical_repo else None
 
         matched_nits = []
         matched_empresas = []
