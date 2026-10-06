@@ -124,6 +124,7 @@ pytest tests/assign/ -v   # Módulo específico
 
 ## Documentación
 
+- [Guía de Usuario](docs/USER_GUIDE.md)
 - [Documentación Técnica](docs/TECHNICAL_DOCUMENTATION.md)
 - [Diagramas C4](docs/c4-diagrams.md)
 - [ADRs (Decisiones Arquitectónicas)](docs/adr/README.md)
