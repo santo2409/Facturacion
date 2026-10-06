@@ -240,6 +240,14 @@ class AssignRatesFromExcel:
         "Total",
     ]
 
+    # Columnas auxiliares usadas internamente por el pipeline (spec 008
+    # RF-23): nunca deben llegar al CONSOLIDADO.xlsx.
+    _INTERNAL_COLUMNS = ("_NIT_RAW",)
+
+    def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:
+        presentes = [c for c in self._INTERNAL_COLUMNS if c in df.columns]
+        return df.drop(presentes) if presentes else df
+
     def _order_columns(self, df: pl.DataFrame) -> pl.DataFrame:
         fixed = [c for c in self._FIXED_COLUMNS_ORDER if c in df.columns]
         others = sorted(
