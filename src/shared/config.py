@@ -18,3 +18,14 @@ DEFAULT_DIRECTORY = "."
 
 def get_paths_config() -> dict:
     return {"directory": os.getenv("DIRECTORY") or DEFAULT_DIRECTORY}
+
+
+def get_tian_config() -> dict:
+    """Config de facturación TIAN (spec 008).
+
+    Sin valor por defecto deliberadamente (RF-19): un NIT de facturación
+    asumido en silencio es justo el riesgo que se busca evitar. Si la
+    variable falta, se devuelve cadena vacía y es responsabilidad de quien
+    consuma esta config decidir abortar el tratamiento.
+    """
+    return {"nit": os.getenv("TIAN_NIT") or ""}
