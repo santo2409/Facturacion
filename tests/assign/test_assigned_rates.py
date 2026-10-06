@@ -2,6 +2,7 @@
 import json
 import os
 
+import openpyxl
 import polars as pl
 import pytest
 
