@@ -164,7 +164,9 @@ class ImportCompaniesFromExcel:
         for result in result_scrapping:
             if _is_found(result):
                 doc = normalize_document(result.nit)
-                companies_map[doc.value] = Company(doc.value, result.name.strip().upper())
+                # Los ya conocidos los sincroniza el buscador con los datos de Odoo
+                if doc.value not in known:
+                    companies_map[doc.value] = Company(doc.value, result.name.strip().upper())
 
         if companies_map:
             with self.progress("Importando empresas", total=1):
