@@ -906,7 +906,6 @@ class AssignRatesFromExcel:
         if tian_company["id"] not in company_to_package:
             self.logger.error(
                 f"TIAN: la empresa {tian_nit} no tiene paquete asignado; se aborta la redirección.",
-                user_msg=f"TIAN (NIT {tian_nit}) no tiene paquete asignado: no se redirigió ninguna empresa.",
             )
             return df
 
