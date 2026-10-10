@@ -273,21 +273,12 @@ class AssignRatesFromExcel:
                         ws.write(row_idx + 1, col_index[col_name],
                                  df[col_name][row_idx], fmt_cache[color])
 
-                # Add legend sheet
-                legend_ws = workbook.add_worksheet("Leyenda")
-                legend_ws.set_column(0, 0, 6)
-                legend_ws.set_column(1, 1, 55)
-                legend_ws.write(0, 0, "Color", workbook.add_format({"bold": True}))
-                legend_ws.write(0, 1, "Significado", workbook.add_format({"bold": True}))
-                white_fmt = workbook.add_format({"bg_color": "#FFFFFF"})
-                legend_ws.write(1, 0, "", white_fmt)
-                legend_ws.write(1, 1, "Fase 1 — Paquete propio (sin fallback)")
-                for row, (color, label) in enumerate(_PHASE_LEGEND, start=2):
-                    fmt = workbook.add_format({"bg_color": f"#{color}"})
-                    legend_ws.write(row, 0, "", fmt)
-                    legend_ws.write(row, 1, label)
+            if cell_colors or self._odoo_cells:
+                self._write_legend(workbook)
             workbook.close()
             self.progress.advance()
+
+        return self._publish_findings()
 
     # ── Column ordering ───────────────────────────────────────────────────
 
