@@ -35,6 +35,8 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         progress,
         fuzz,
         logger=None,
+        findings_writer: FindingsWriter | None = None,
+        rues_cache_loader=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
