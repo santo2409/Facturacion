@@ -43,6 +43,15 @@ def _build_use_case(session, logger, loader):
         mega=MegaDataFrames(),
         rates_repo=SaRatesRepository(session, logger),
         logger=logger,
+        findings_writer=XlsxFindingsWriter(Path("logs/cargar_tarifas")),
     )
 
+
+def import_rates(logger):
+    path = ask_excel_path()
+    loader = ExcelLoader()
+    excel = loader.load(path)
+    session = get_session()
+
+    use_case = _build_use_case(session, logger, loader)
     use_case.execute(excel)
