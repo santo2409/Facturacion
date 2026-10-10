@@ -133,6 +133,8 @@ pytest
 pytest tests/assign/ -v   # Módulo específico
 ```
 
+La suite incluye guardianes: `tests/test_no_duplicate_test_names.py` (nombres de test duplicados), `tests/test_dead_code_removed.py` (código eliminado) y `tests/docs/` (contenido de la documentación).
+
 ## Documentación
 
 - [Guía de Usuario](docs/USER_GUIDE.md)
