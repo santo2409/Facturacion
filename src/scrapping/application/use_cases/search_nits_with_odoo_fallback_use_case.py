@@ -5,13 +5,24 @@ from src.shared.utils.text_normalizer import normalize_company_name, normalize_n
 
 CONFLICT_DUPLICATE_NAME = "Nombre ya registrado en BD local con otro NIT"
 DEFAULT_RUES_NAME_LIMIT = 200
+ODOO_UNAVAILABLE_MSG = "Odoo no disponible: se validó con la BD local y RUES."
+
+# Libro `bd_local_actualizada`: empresas que se agregaron o corrigieron en la BD
+# local con los datos de Odoo (spec 016). Lo comparten las opciones 1, 2 y 5.
+LOCAL_UPDATE_BOOK = "bd_local_actualizada"
+LOCAL_UPDATE_COLUMNS = {
+    LOCAL_UPDATE_BOOK: ["NIT", "Nombre en BD local", "Nombre en Odoo", "Acción"]
+}
+ACTION_ADDED = "Agregada"
+ACTION_UPDATED = "Actualizada"
+ACTION_NOT_UPDATED = "No actualizada: nombre duplicado en BD local"
 
 
 class SearchNitsWithOdooFallbackUseCase:
-    """Resuelve NITs en cascada: BD local (NIT y nombre), Odoo (NIT y nombre) y
-    RUES (NIT y nombre). Cada paso recibe solo lo que los anteriores no
-    resolvieron, y toda coincidencia por nombre se valida contra un umbral
-    difuso antes de aceptarse."""
+    """Resuelve NITs en cascada con Odoo como fuente de verdad: Odoo (NIT y
+    nombre), BD local como respaldo (NIT y nombre) y RUES (NIT y nombre). Cada
+    paso recibe solo lo que los anteriores no resolvieron, y toda coincidencia
+    por nombre se valida contra un umbral difuso antes de aceptarse."""
 
     def __init__(
         self,
