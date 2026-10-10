@@ -29,13 +29,8 @@ from src.special.infrastructure.persistence.sa_special_repository import (
 )
 
 
-def import_rates(logger):
-    path = ask_excel_path()
-    loader = ExcelLoader()
-    excel = loader.load(path)
-    session = get_session()
-
-    use_case = ImportRatesFromExcel(
+def _build_use_case(session, logger, loader):
+    return ImportRatesFromExcel(
         package_repo=SaPackageRepository(session, logger),
         provider_repo=SaProviderRepository(session, logger),
         special_repo=SaSpecialRepository(session, logger),
