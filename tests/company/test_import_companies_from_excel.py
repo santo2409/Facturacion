@@ -67,22 +67,24 @@ def test_progress_companies_uses_scrapped_name(sample_df, deps):
     assert "EMPRESA A SCRAPPED" in names
 
 
-def test_progress_companies_uses_data_json_if_exists(sample_df, deps, tmp_path):
+def test_progress_companies_uses_data_json_only_as_rues_cache(sample_df, deps, tmp_path):
+    # spec 016: Odoo es la fuente de verdad; data.json solo aporta resultados de RUES
+    from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+
     data = [
-        {"nit": "900111111", "name": "DESDE JSON A"},
-        {"nit": "900222222", "name": "DESDE JSON B"},
+        {"nit": "900111111", "name": "DESDE RUES A", "is_company": True, "source": "RUES/NIT"},
+        {"nit": "900222222", "name": "DESDE ODOO B", "is_company": True, "source": "Odoo/NIT"},
     ]
     with open(tmp_path / "data.json", "w") as f:
         json.dump(data, f)
 
-    uc = _build(deps)
+    uc = ImportCompaniesFromExcel(**deps, rues_cache_loader=load_rues_cache)
     uc._progress_companies(sample_df)
-    companies = deps["company_repo"].all()
-    names = [c["name"] for c in companies]
-    assert "DESDE JSON A" in names
+
+    assert list(deps["nit_service"].rues_cache) == ["900111111"]
 
 
-def test_progress_companies_skips_scraping_for_nits_already_in_db(sample_df, deps):
+def test_progress_companies_validates_nits_already_in_db_against_odoo(sample_df, deps):
     deps["company_repo"] = FakeCompanyRepo(initial=[
         {"id": 1, "nit": "900111111", "name": "EMPRESA A YA CONOCIDA"},
     ])
