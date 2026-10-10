@@ -41,6 +41,7 @@ _FIXED_UPPER = {c.strip().upper() for c in FIXED_COLUMNS}
 
 # Colores de fase usados en assigned_rates (sin prefijo alpha "00")
 _PHASE_COLORS_6 = {
+    "E2EFDA",  # Fase 1 — Paquete propio local (spec 010: el blanco es tarifa Odoo)
     "FFF2CC",  # Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)
     "F4B183",  # Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)
     "BDD7EE",  # Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)
