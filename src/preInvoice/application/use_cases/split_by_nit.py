@@ -54,6 +54,7 @@ _PHASE_COLORS_6 = {
 _PHASE_COLORS_ARGB = {f"00{c}" for c in _PHASE_COLORS_6}
 
 _PHASE_LEGEND = [
+    ("E2EFDA", "Fase 1 — Paquete propio local"),
     ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
     ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
     ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
