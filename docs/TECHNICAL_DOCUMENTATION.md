@@ -526,63 +526,91 @@ Detalles:
 | `CompanyNameNormalizer` | `company_name_normalizer.py` | Quita sufijos SAS/SA/BIC/LTDA/ESP/EU y agrupa por fuzzy (85) |
 | `RapidFuzzBiller` | `rapidfuzz_biller.py` | `fuzz_property(name, catalog, threshold=90)`: `token_sort_ratio`, luego `partial_ratio`. `similarity(a, b)` |
 | `get_paths_config` / `get_tian_config` | `src/shared/config.py` | `DIRECTORY` (por defecto `.`), `TIAN_NIT` (sin defecto) |
-| Consola | `src/shared/console/` | `file_input` (valida `.xlsx`/`.xls` existente), `sheet_input`, `file_output` (valida directorio), `RichProgress` |
+| Consola | `src/shared/console/` | `file_input` (valida `.xlsx`/`.xls` existente), `sheet_input`, `file_output` (valida directorio), `RichProgress` (usa `USER_CONSOLE`), `user_console.py` (`USER_CONSOLE`, `build_user_console_handler`) |
+| `FindingsWriter` / `summarize_findings` | `src/shared/reporting/findings_writer.py` | Puerto `write(books, columns) -> Path \| None`; resumen *Sin hallazgos.* o *Hallazgos en <carpeta>: tipo=n, …* |
+| `XlsxFindingsWriter` | `src/shared/reporting/xlsx_findings_writer.py` | Un libro por tipo en `<base>/<AAAA-MM-DD_HHMM>/`; no crea carpeta si no hay filas |
+| `TechOnlyLogger` | `src/shared/logging/infrastructure/logging/tech_only_logger.py` | Decorador de `LoggerAdapter` que descarta `user_msg` |
+| `OdooRateIndex` | `src/assign/domain/odoo_rate_index.py` | Índice de precios de Odoo (ver §7.6) |
 
 > **NIT vs cédula.** El NIT se acota a 9 dígitos sin DV y la cédula se conserva entera. El DV no clasifica el documento. Usar `normalize_document` donde pueda llegar una cédula y `normalize_nit` donde el dato es NIT con certeza.
 
 ## 9. Logging y auditoría
 
-**Logging dual (ADR-008 / ADR-011):**
+**Salida al usuario (ADR-014, reemplaza a ADR-008 y ADR-011):**
 
-| Logger | Destino | Formato |
+| Canal | Destino | Formato |
 |---|---|---|
 | `tech_logger` | `<DIRECTORY>/logs.log` | `RotatingFileHandler`, DEBUG, 10 MB × 5 |
-| `user_logger` | `logs/user_audit.xlsx` | `ExcelAuditHandler`, INFO; se escribe al salir del programa (`atexit`). Hoja `Audit Log` (Fecha/Hora, Nivel, Mensaje) con colores por nivel |
+| `user_logger` | Consola Rich (`USER_CONSOLE`) | `RichHandler`, INFO; color por nivel. La misma consola la usa `RichProgress`, así los mensajes salen por encima de la barra sin romperla |
+| Hallazgos por fila | `logs/<opcion>/<AAAA-MM-DD_HHMM>/<tipo>.xlsx` | `FindingsWriter` / `XlsxFindingsWriter` (Polars + xlsxwriter); un libro por tipo, sin libros vacíos. La opción 6 usa `PhaseFindingsReporter` / `XlsxPhaseFindingsReporter`, que envuelve `XlsxFindingsWriter` (`logs/asignar_tarifas`) |
 
-- `setup_logging()` (`src/shared/logging/config/logging_config.py`) carga `spec/user_logger.yaml`, lo valida (si falla, usa una configuración de respaldo solo con consola) e instala `root_logger_guard`. Ese guard bloquea `addHandler`/`setLevel` sobre el logger raíz y es el origen de los ~684 warnings de pytest.
-- `LoggerAdapter` (`infrastructure/logging/logger_adapter.py`) acepta `user_msg=` en todos los niveles: el mensaje técnico va al logger propio y `user_msg` se reenvía a `user_logger`.
+- `setup_logging()` (`src/shared/logging/config/logging_config.py`) carga `spec/user_logger.yaml`, lo valida (si falla, usa una configuración de respaldo solo con consola) e instala `root_logger_guard`; el handler de consola del usuario se construye con una factory (`src/shared/console/user_console.py`). Ese guard bloquea `addHandler`/`setLevel` sobre el logger raíz y es el origen de los ~882 warnings de pytest (2026-10-10).
+- `LoggerAdapter` (`infrastructure/logging/logger_adapter.py`) acepta `user_msg=` en todos los niveles: el mensaje técnico va al logger propio y `user_msg` se reenvía a `user_logger`, que lo muestra en la consola. `user_msg` es solo para resúmenes y errores puntuales; el detalle por fila de un hallazgo va a su libro. `TechOnlyLogger` descarta `user_msg` en los flujos con salida propia (opción 6): por eso los avisos de i-medical, TIAN, empresas no encontradas y fechas quedan solo en `logs.log` o en sus libros, y la consola muestra solo la tabla de `render_summary`.
 
 ```python
 logger.error(f"Fallo leyendo {path}: {e}", exc_info=True,
              user_msg="No se pudo procesar el archivo.")
+
+# Hallazgos por fila: el use case los acumula y los publica al terminar
+folder = self.findings_writer.write(self._findings, COLUMNS)   # None si no hay filas
+self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 ```
 
 **Logs de negocio** (los consume el usuario):
 
 | Archivo | Opción | Política |
 |---|---|---|
-| `logs/empresas_no_encontradas.xlsx` | 1, 5, 6 | Acumulativo; un NIT resuelto sale del archivo |
+| `logs/empresas_no_encontradas.xlsx` | 1, 5, 6 | Acumulativo. Solo la opción 1 retira un NIT resuelto; las opciones 5 y 6 solo agregan los no encontrados |
 | `logs/novedades_cups.xlsx` | 3 | Se reemplaza |
 | `logs/empresas_no_vinculadas.xlsx` | 5 | Se reemplaza |
 | `logs/empresas_tian.xlsx` | 6 | Se reemplaza |
 | `logs/empresas_duplicadas.xlsx` | 10 | Se reemplaza |
 | `odoo-output/log_inyeccion.xlsx` | 8 | Acumulativo (anti-duplicados) |
+| `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 4, 5, 6 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
+
+**Hallazgos por opción:**
+
+| Opción | Carpeta | Libros (columnas) |
+|---|---|---|
+| 1 | `logs/web_scrapping/` | `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
+| 2 | `logs/facturadores/` | `empresa_no_encontrada`, `facturador_no_encontrado` (NIT, Facturador); `vinculacion_duplicada` (NIT, Empresa, Facturador descartado, Facturador vigente); `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
+| 4 | `logs/cargar_tarifas/` | `contrato_no_existe`, `ciudad_no_existe`, `cup_no_existe`, `actividad_invalida`, `tarifa_vacia` (Hoja, Fila, CONTRATO, CIUDAD, CUP, INTRA O EXTRA, VALOR) |
+| 5 | `logs/registrar_empresas/` | `documento_acotado` (Documento original, Documento acotado); `paquetes_en_conflicto` (Documento, Paquete descartado, Paquete vigente); `paquete_no_encontrado` (Documento, Razón social, Paquete); `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
+| 6 | `logs/asignar_tarifas/` | `fase_01`…`fase_06`, `sin_resolver` (NIT, Empresa, Paciente, N° Identificación, Ciudad, TIPO DE ACTIVIDAD, CUP, Precio asignado, Origen); `empresas_odoo` (NIT, Empresa, Motivo) |
 
 ## 10. Testing
 
 ```bash
-pytest                                   # 643 passed (2026-10-06)
+pytest                                   # 834 passed (2026-10-10)
 pytest tests/assign/ -v                  # un módulo
 pytest tests/assign/test_assigned_rates.py::TestX::test_y -v
 ```
 
 - `pytest.ini`: `testpaths = tests`. `tests/conftest.py` agrega la raíz del proyecto a `sys.path` y define fixtures con los fakes.
-- **Fakes manuales** (`tests/fakes/`, 26 archivos): repos (`fake_*_repo`), `fake_logger`, `fake_progress`, `fake_fuzz`, `fake_nit_scraper`, `fake_nit_service`, `fake_odoo_repo` y generadores de logs (`fake_*_log_generator`).
+- **Fakes manuales** (`tests/fakes/`, 28 archivos): repos (`fake_*_repo`), `fake_logger`, `fake_progress`, `fake_fuzz`, `fake_nit_scraper`, `fake_nit_service`, `fake_odoo_repo` (con `partner_rates`, `rate_lines`, `calls` y `write_attempts`), generadores de logs (`fake_*_log_generator`), `fake_findings_writer` y `fake_phase_findings_reporter`.
 - Matiz: los tests de adaptadores `Sa*` usan `unittest.mock` para la `Session`. La regla de "sin mocks" aplica a los use cases.
-- `FakeLogger` **no captura `user_msg`**. Un AC sobre "el mensaje al usuario" necesita un doble local que lo registre; si no, pasa en verde sin verificarse nada.
+- `FakeLogger` **no captura `user_msg`**. Un AC sobre "el mensaje al usuario" necesita un doble local que lo registre; si no, pasa en verde sin verificarse nada. Para hallazgos, se aserta sobre `FakeFindingsWriter.books` / `FakePhaseFindingsReporter`.
+- Los tests de `XmlRpcOdooRepository` sobrescriben `_execute`: `tests/odooInjection/test_find_clients_by_ref_num.py` trae un simulador de Odoo en memoria que evalúa dominios (`in`, `=`, `=like`, `ilike`, OR) y falla ante cualquier método que no sea de lectura.
+- **Guardianes de la suite:**
+  - `tests/test_no_duplicate_test_names.py` (spec 013): falla si un módulo o una clase define dos `test_*` con el mismo nombre.
+  - `tests/test_dead_code_removed.py` (spec 014): el código eliminado no vuelve ni se referencia.
+  - `tests/docs/`: verifica el contenido de README, `docs/` y las reglas del proyecto (p. ej. que no se describa como vigente el antiguo registro Excel de usuario).
 
-| Carpeta | Tests (aprox.) |
+| Carpeta | Tests (2026-10-10) |
 |---|---|
-| scrapping | 149 |
-| assign | 122 |
-| company | 102 |
-| shared | 86 |
+| assign | 172 |
+| scrapping | 151 |
+| shared | 121 |
+| company | 109 |
+| odooInjection | 75 |
 | dataProcessing | 65 |
-| odooInjection | 28 |
-| rates | 26 |
-| billers | 23 |
-| preInvoice | 20 |
-| catálogos y `test_main_dispatch.py` | ~25 |
+| rates | 39 |
+| billers | 37 |
+| preInvoice | 22 |
+| catálogos y `test_main_dispatch.py` | 25 |
+| `tests/docs` | 6 |
+| `test_dead_code_removed.py` | 7 |
+| `test_no_duplicate_test_names.py` | 5 |
 
 ## 11. Proceso de desarrollo (SDD + TDD)
 
