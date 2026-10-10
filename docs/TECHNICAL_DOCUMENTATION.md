@@ -489,7 +489,7 @@ Detalles:
 - **Flujo:**
   1. **Lectura:** los `.xlsx` de `pre-facturas/General sin factura` (fila 2 = encabezado; 14 columnas fijas; CUP desde la columna 15).
   2. **Anti-duplicados (ADR-009):** excluye los NIT con estado `OK` en `odoo-output/log_inyeccion.xlsx`.
-  3. **Cliente (ADR-010):** busca `vat =` NIT, luego `vat =like 'NIT%'` y luego `name ilike` sin sufijo societario. Si no aparece → **VERIFICAR**. `create_client` existe en el repositorio pero **no se invoca**.
+  3. **Cliente (ADR-010):** `find_client` delega en `find_clients_batch([nit])`: `ref_num` exacto → `ref_num =like 'NIT%'` → `vat` exacto → `vat =like 'NIT%'` (spec 012). Si no aparece, el use case llama `find_client_by_name` (`name ilike` sin sufijo societario). Si tampoco → **VERIFICAR**. `create_client` existe en el repositorio (solo llena `vat`) pero **no se invoca**.
   4. **Líneas:**
      - Cuenta los exámenes por (CUP, cuenta analítica). La cuenta analítica sale de la ciudad: exacta o WRatio ≥ 80; si no hay, `AA8638`.
      - Producto por `default_code`.
