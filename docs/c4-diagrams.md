@@ -49,12 +49,12 @@ C4Container
     System_Boundary(sistema, "Sistema de Facturación (proceso Python único)") {
         Container(cli, "Aplicación CLI", "Python 3.12 / Rich", "main.py: menú, dispatch_option y safe_dispatch (contiene excepciones por opción)")
         Container(core, "Casos de uso", "Python / Polars", "application/use_cases por módulo: importación, normalización, asignación, split, inyección")
-        Container(domain, "Dominio", "dataclasses + ABC", "Entidades, puertos (repositorios ABC) y servicios puros: CupResolver, DuplicateCompanyDetector")
+        Container(domain, "Dominio", "dataclasses + ABC", "Entidades, puertos (repositorios ABC) y servicios puros: CupResolver, DuplicateCompanyDetector, OdooRateIndex")
         Container(persistence, "Adaptadores de persistencia", "SQLAlchemy 2.0 / Alembic", "Repositorios Sa* que devuelven list[dict]")
         Container(scraper, "Scraper RUES", "Playwright (Firefox headless)", "RuesPlaywrightScraper: búsqueda por NIT y por nombre")
-        Container(odoo_client, "Cliente Odoo", "xmlrpc.client", "XmlRpcOdooRepository: clientes, productos, impuestos, account.move")
+        Container(odoo_client, "Cliente Odoo", "xmlrpc.client", "XmlRpcOdooRepository: clientes (búsqueda por documento en 4 etapas), tarifas especial/base (account.base.rate.line), productos, impuestos, account.move")
         Container(excel_io, "E/S Excel", "fastexcel / xlsxwriter / openpyxl", "ExcelLoader, ExcelExporter y generadores de reportes")
-        Container(logging_sys, "Logging dual", "logging + ExcelAuditHandler", "tech_logger → logs.log · user_logger → user_audit.xlsx")
+        Container(logging_sys, "Logging y salida al usuario", "logging + RichHandler", "tech_logger → logs.log · user_logger → consola Rich · hallazgos → libros por ejecución")
     }
 
     ContainerDb(db, "PostgreSQL", "Supabase", "companies, billers, packages, providers, specials, rates, cups, cities, type_activities, imedical, tian")
