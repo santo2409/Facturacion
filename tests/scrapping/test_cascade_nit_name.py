@@ -462,11 +462,12 @@ def test_local_name_lookup_failure_does_not_break_cascade():
         def get_by_names(self, names):
             raise ConnectionError("BD no disponible")
 
-    odoo = FakeOdooRepo(clients={"111": {"id": 1, "name": "EMPRESA ODOO"}})
+    # Odoo no tiene el NIT: la búsqueda local por nombre falla y la cascada sigue a RUES
+    scraper = FakeNitScraper(by_nit={"111": NitResult("111", True, "EMPRESA RUES")})
     logger = FakeLogger()
-    uc = build(odoo=odoo, cache=FailingCache(cached={}), logger=logger)
+    uc = build(scraper=scraper, odoo=FakeOdooRepo(clients={}), cache=FailingCache(cached={}), logger=logger)
 
     result = uc.execute(["111"], book_names={"111": "EMPRESA A"})
 
-    assert result[0].name == "EMPRESA ODOO"
+    assert result[0].name == "EMPRESA RUES"
     assert logger.warnings
