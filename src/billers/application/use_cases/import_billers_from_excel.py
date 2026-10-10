@@ -182,7 +182,9 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
             unique_links = {}
             duplicados_log = []
             for company_id, biller_id in link_pairs:
-                if company_id in unique_links:
+                previous_biller_id = unique_links.get(company_id)
+                # Repetir la empresa con el mismo facturador no reemplaza nada (spec 015, RF-04)
+                if previous_biller_id is not None and previous_biller_id != biller_id:
                     nit = id_to_nit.get(company_id, "?")
                     empresa = next(
                         (
