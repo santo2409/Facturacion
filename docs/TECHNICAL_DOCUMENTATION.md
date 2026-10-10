@@ -332,87 +332,112 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
   - Las ciudades usan alias fuzzy ≥ **90** (`BOGOTA` → `BOGOTA D.C`).
 - **Persistencia:** lotes de 1000.
   - `_save_deduped` deduplica por la PK compuesta (gana la última fila). PostgreSQL rechaza `ON CONFLICT DO UPDATE` si hay claves repetidas en el mismo batch.
-  - Upsert en `SaRatesRepository.save_batch` (`sa_rates_repository.py:127-147`).
-- **Errores por fila:** contrato, ciudad, CUP o actividad inexistentes, o valor vacío → se loguea y se salta la fila.
+  - Upsert en `SaRatesRepository.save_batch` (`sa_rates_repository.py:128`).
+- **Errores por fila:** contrato, ciudad, CUP o actividad inexistentes, o valor vacío → se registra en el log técnico, se salta la fila y queda en `logs/cargar_tarifas/<AAAA-MM-DD_HHMM>/` (spec 011):
+  - Libros: `contrato_no_existe`, `ciudad_no_existe`, `cup_no_existe`, `actividad_invalida`, `tarifa_vacia`.
+  - Columnas: Hoja, Fila, CONTRATO, CIUDAD, CUP, INTRA O EXTRA, VALOR (el VALOR original, antes de limpiarlo). Deduplicado por (tipo, hoja, fila).
+  - La consola muestra un único resumen. Como la opción crea antes los contratos y ciudades del Excel, en la práctica aparecen sobre todo `cup_no_existe`, `actividad_invalida` y `tarifa_vacia`.
 
 ### 7.5 Opción 5 — Registrar Empresas - Paquetes (`src/company`)
 
-- **Cadena:** `import_companies` (`infrastructure/console/import_companies_rates_controller.py:79-93`; sesión cerrada en `finally`) → `ImportCompaniesFromExcel.execute` (`application/use_cases/import_companies_from_excel.py:53`).
+- **Cadena:** `import_companies` (`infrastructure/console/import_companies_rates_controller.py:81-95`; sesión cerrada en `finally`) → `ImportCompaniesFromExcel.execute` (`application/use_cases/import_companies_from_excel.py:67`).
 - **Entrada:** columnas `NIT`, `RAZON SOCIAL`, `PAQUETE`.
 - **Fase 1 `_progress_companies`:**
-  - Normaliza con `normalize_document`: NIT o cédula, validación de DV (ver §8).
-  - Excluye las empresas que ya existen.
-  - Consulta `data.json` y, para el resto, `RUESNitService`.
-  - Hace `save_batch`. Los no encontrados van a `empresas_no_encontradas.xlsx`.
+  - Normaliza con `normalize_document`: NIT o cédula, validación de DV (ver §8). Un documento acotado con DV inválido va a `documento_acotado` (Documento original, Documento acotado).
+  - Envía **todos** los documentos del Excel, también los que ya existen en `companies`, a `RUESNitService.search(docs, rues_cache=…)`: Odoo primero (spec 016). `data.json` solo aporta la caché de RUES y se reescribe con los resultados de la corrida. La razón social de las empresas conocidas la corrige el buscador (libro `bd_local_actualizada`).
+  - Hace `save_batch` solo de las empresas **nuevas** (*Empresas creadas* cuenta solo esas). Los no encontrados se **agregan** a `empresas_no_encontradas.xlsx` (esta opción no retira los resueltos).
 - **Fase 2 `_progress_companies_to_packages`:**
   - Arma un catálogo unificado de packages, providers y specials (esquema `id/name/model`). Si un origen está vacío lo advierte; si están los tres vacíos, envía todo a no vinculadas.
   - Resuelve `PAQUETE` por fuzzy ≥ **95**.
-  - Deduplica por `company_id` (gana la última fila).
+  - Deduplica por `company_id` (gana la última fila). Cada repetición va a `paquetes_en_conflicto` (Documento, Paquete descartado, Paquete vigente); un paquete no resuelto va a `paquete_no_encontrado` (Documento, Razón social, Paquete).
   - Hace upsert `ON CONFLICT(company_id)`.
-- **Salidas:** `logs/empresas_no_vinculadas.xlsx` (se reemplaza) y `logs/empresas_no_encontradas.xlsx` (acumulativo).
+- **Salidas:** `logs/empresas_no_vinculadas.xlsx` (se reemplaza), `logs/empresas_no_encontradas.xlsx` (acumulativo; solo la opción 1 retira NITs resueltos) y `logs/registrar_empresas/<AAAA-MM-DD_HHMM>/`. El resumen final en consola es *Empresas creadas … Filas sin vincular … Hallazgos en …* (o *Sin hallazgos.*).
 
 ### 7.6 Opción 6 — Asignar Tarifas (`src/assign`)
 
-- **Cadena:** `assign_rates(logger, with_invoices)` (`infrastructure/console/assigned_rates_controller.py`) → `AssignRatesFromExcel.execute` (`application/use_cases/assigned_rates.py:136-213`).
+- **Cadena:** `assign_rates(logger, with_invoices)` (`infrastructure/console/assigned_rates_controller.py:95`) → `AssignRatesFromExcel.execute` (`application/use_cases/assigned_rates.py:219-313`).
 - **Dependencias:**
   - Repositorios: `SaBillerRepository`, `SaCompanyRepository`, `SaBillerCompanyRepository`, `SaPackageRepository`, `SaProviderRepository`, `SaSpecialRepository`, `SaCityRepository`, `SaActivityRepository`, `SaRatesRepository`, `SaCupRepository`, `XmlRpcOdooRepository`, `SaImedicalRepository`, `SaTianRepository`.
-  - Generadores de logs: `NotFoundCompaniesLogGenerator`, `TianCompaniesLogGenerator`.
+  - Generadores de logs: `NotFoundCompaniesLogGenerator`, `TianCompaniesLogGenerator`; hallazgos por fase: `XlsxPhaseFindingsReporter` (`findings_reporter`).
+  - Logger: el controller envuelve el `tech_logger` en `TechOnlyLogger` (l.120), así que ninguna dependencia escribe en la consola.
+  - Al terminar, el controller imprime `render_summary(AssignRatesResult)` (l.79): una tabla Rich con las celdas por origen del precio.
 
 #### Pipeline
 
 | # | Paso | Notas |
 |---|---|---|
-| 1 | `_connect_odoo` | Si falla, sigue solo con BD local y RUES |
+| 1 | `_connect_odoo` | Si falla, sigue solo con BD local y RUES, y sin tarifas Odoo (todo por cascada local; aviso en el resumen) |
 | 2 | `_build_lookups` | |
 | 3 | `_capture_raw_nit` | `_NIT_RAW` = dígitos sin truncar |
-| 4 | **`_apply_imedical`** | Corrige NIT erróneos conocidos usando el NIT crudo (l.371-407) |
+| 4 | **`_apply_imedical`** | Corrige NIT erróneos conocidos usando el NIT crudo (l.463-500) |
 | 5 | `_normalize_nit` | 9 dígitos |
-| 6 | `_match_companies` | Cascada Odoo NIT → Odoo nombre → BD NIT → BD nombre → RUES NIT → RUES nombre → `[NOVEDAD]`. Incluye el bloqueo y el auto-registro i-medical y la unificación del nombre canónico por NIT (l.611-652) |
-| 7 | `_normalize_nit`, `_normalize_columns` | Fechas dd/mm/yyyy con *smart swap* (l.743-791); sufijos societarios; actividad `INTRAMURAL`→`INTRA` (l.699-709) |
-| 8 | **`_apply_tian`** | Va después de normalizar porque `pl_normalize_name` borra los paréntesis (l.795-890) |
+| 6 | `_match_companies` | Cascada Odoo NIT → Odoo nombre → BD NIT → BD nombre → RUES NIT → RUES nombre → `[NOVEDAD]`. Incluye el bloqueo y el auto-registro i-medical y la unificación del nombre canónico por NIT (l.700-741) |
+| 7 | `_normalize_nit`, `_normalize_columns` | Fechas dd/mm/yyyy con *smart swap* (`_parse_fecha`, l.830); sufijos societarios; actividad `INTRAMURAL`→`INTRA` (l.792) |
+| 8 | **`_apply_tian`** | Va después de normalizar porque `pl_normalize_name` borra los paréntesis (l.882-976) |
 | 9 | `_normalize_city` | Fuzzy ≥ 90 contra `cities` |
-| 10 | `_assign_facturador` | Left join por NIT; sin facturador → `GENERAL` |
-| 11 | `_assign_paquete` | Left join por NIT; sin paquete → `PAQUETE C 2025` |
-| 12 | `_assign_rates` | Cascada de tarifas (abajo) |
-| 13 | `_validate_empresa` | Corrige nombres según BD; excluye los NIT TIAN y los resueltos por Odoo |
-| 14 | `_drop_internal_columns`, `_enrich_with_invoices`, `_order_columns`, export | |
+| 10 | **`_load_odoo_rates`** (l.172) | `find_partner_rates_batch(nits)` → `find_rate_lines(ids, CUPs)` → `OdooRateIndex`. Arma los hallazgos `empresas_odoo`. Ante un error, aviso en `logs.log` e índice vacío |
+| 11 | `_assign_facturador` | Left join por NIT; sin facturador → `GENERAL` |
+| 12 | `_assign_paquete` (l.1035) | Copia el paquete local a `_PAQUETE_LOCAL` (sin paquete → `PAQUETE C 2025`); `PAQUETE` = tarifa especial Odoo › tarifa base Odoo › paquete local |
+| 13 | `_assign_rates` | Primero `_resolve_odoo_cells` (l.1094), luego cascada local (abajo) |
+| 14 | `_validate_empresa` | Corrige nombres según BD; excluye los NIT TIAN y los resueltos por Odoo |
+| 15 | `_drop_internal_columns` (quita `_NIT_RAW` y `_PAQUETE_LOCAL`), `_enrich_with_invoices`, `_order_columns`, export, `_write_legend` (l.315), `_publish_findings` (l.329) → `AssignRatesResult` | |
 
-#### Cascada de tarifas (`_assign_rates`, l.991-1325)
+#### Tarifas de Odoo (spec 010)
+
+- **Orden:** Tarifa especial → Tarifa base → las 6 fases locales → `1`.
+- **Índice:** `OdooRateIndex` (`src/assign/domain/odoo_rate_index.py`). Clave `(tarifa, normalize_text_key(ciudad), CUP, intra)`; INTRA ↔ `intra=True`, EXTRA ↔ `intra=False`. Los precios ≤ 0 se ignoran y, ante claves repetidas, gana la primera línea.
+- **Ciudad:** solo por nombre normalizado exacto (sin fuzzy). No se valida el estado ni la vigencia de la tarifa (RF-06).
+- **Consulta:** `find_rate_lines` lee las líneas en lotes de 50 tarifas, filtradas por los CUP del Excel, y lee `default_code` en un solo `read`.
+- **Color:** una celda resuelta por Odoo **no lleva color**.
+- **PAQUETE:** nombre de la tarifa especial, si no la base, si no el paquete local. La cascada local sigue leyendo `_PAQUETE_LOCAL`.
+- **Odoo no disponible** o falla la consulta: todo va por la cascada local, no se genera `empresas_odoo` y el resumen muestra el aviso en amarillo.
+
+#### Cascada de tarifas local (`_assign_rates`, l.1117-1480)
 
 - **Clave:** `(rateable_id, city_id, cup_id, activity_id, rateable_type)`.
-- **Columnas CUP:** las que tienen encabezado de dígitos y guiones (l.1007). Una celda con valor `1` significa "examen realizado, tarifar".
-- **Recolección de claves** (l.1013-1057): por celda se agregan la clave propia, la de `PAQUETE C 2025` y, si el CUP tiene sufijo `-N`, la del CUP base en `PAQUETE C 2025`.
+- **Columnas CUP:** las que tienen encabezado de dígitos y guiones (l.1133). Una celda con valor `1` significa "examen realizado, tarifar".
+- **Recolección de claves** (l.1139-1206): solo para las celdas que Odoo no resolvió. Por celda se agregan la clave propia, la de `PAQUETE C 2025` y, si el CUP tiene sufijo `-N`, la del CUP base en `PAQUETE C 2025`. El paquete local se lee de `_PAQUETE_LOCAL`.
 - **Consulta:** una sola `find_batch` (`sa_rates_repository.py:31-63`, `tuple_ IN` por bloques).
 
-> **El código implementa 6 fases, no 7.** Los comentarios del código numeran "Phase 3…7" porque las fases 1 y 2 internas son recolección y consulta. Aquí se usa la numeración de la hoja `Leyenda`.
+> **El código implementa 6 fases locales, no 7.** Los comentarios del código numeran "Phase 3…7" porque las fases 1 y 2 internas son recolección y consulta. Aquí se usa la numeración de la hoja `Leyenda`. Antes de las 6 fases locales van las 2 etapas de Odoo (especial y base), sin color.
 
 | Fase | Busca | Fuente | Color | Código |
 |---|---|---|---|---|
-| 1 | Paquete propio + ciudad + CUP + actividad | `rates_cache` | sin color | l.1109-1112 |
-| 2 | `PAQUETE C 2025` + ciudad + CUP + actividad | `rates_cache` | `#FFF2CC` dorado suave | l.1113-1123 |
-| 3 | Cualquier rateable + ciudad + CUP + actividad | `find_any_rate` | `#F4B183` naranja | l.1129-1167 |
-| 4 | CUP base en `PAQUETE C 2025` + ciudad + actividad | `rates_cache` | `#BDD7EE` azul acero claro | l.1169-1204 |
-| 5 | Cualquier rateable + ciudad + CUP base + actividad | `find_any_rate` | `#9DC3E6` azul medio | l.1206-1262 |
-| 6 | Cualquier rateable + cualquier ciudad + CUP + actividad | `find_rate_by_cup_activity` | `#D5A6E6` púrpura | l.1264-1299 |
-| — | Sin resolver | — | sin color, valor `1` | |
+| Odoo especial | `rate_base_special_id` + ciudad + CUP + intra | `OdooRateIndex` | sin color | l.1094-1113 |
+| Odoo base | `rate_base_id` + ciudad + CUP + intra | `OdooRateIndex` | sin color | l.1094-1113 |
+| 1 | Paquete propio + ciudad + CUP + actividad | `rates_cache` | `#E2EFDA` verde claro (`_COLOR_LOCAL_OWN`, l.91) | l.1257-1262 |
+| 2 | `PAQUETE C 2025` + ciudad + CUP + actividad | `rates_cache` | `#FFF2CC` dorado suave | l.1263-1274 |
+| 3 | Cualquier rateable + ciudad + CUP + actividad | `find_any_rate` | `#F4B183` naranja | l.1280-1318 |
+| 4 | CUP base en `PAQUETE C 2025` + ciudad + actividad | `rates_cache` | `#BDD7EE` azul acero claro | l.1320-1355 |
+| 5 | Cualquier rateable + ciudad + CUP base + actividad | `find_any_rate` | `#9DC3E6` azul medio | l.1357-1413 |
+| 6 | Cualquier rateable + cualquier ciudad + CUP + actividad | `find_rate_by_cup_activity` | `#D5A6E6` púrpura | l.1415-1450 |
+| — | Sin resolver | — | sin color, valor `1` → `sin_resolver.xlsx` | l.1452 |
 
 Detalles:
 
-- `_COLOR_PHASE7 = FFB6C1` (l.1079) está definido pero no se usa.
+- `_COLOR_PHASE7` (`FFB6C1`) se eliminó de `assigned_rates.py` (spec 010); persiste en `split_by_nit.py:50,63` (lista blanca y Leyenda de las pre-facturas).
 - La homologación (fases 4 y 5) solo aplica a CUP con guion cuyo código base existe en `cups`.
 - Si no existe `PAQUETE C 2025`, las fases 2 y 4 se omiten.
-- Si el paquete, la ciudad o la actividad de una fila no existen en BD, toda la fila queda en `1`.
+- Si el paquete, la ciudad o la actividad de una fila no existen en BD, la cascada local no procesa la fila: solo quedan con precio las celdas que haya resuelto Odoo y el resto en `1`.
 - Las fases 3, 5 y 6 **no son deterministas**: la consulta no tiene `ORDER BY` y gana la primera fila que devuelva la BD.
 - `Total` = `sum_horizontal` de las columnas CUP.
-- La hoja `Leyenda` solo se crea si se coloreó al menos una celda.
+- La hoja `Leyenda` se crea si hubo al menos una celda coloreada o resuelta por Odoo. Filas: *Sin color — Tarifa Odoo (especial/base)* y las 6 fases (`_PHASE_LEGEND`, l.93).
+
+#### Hallazgos y resumen (spec 010)
+
+- `PHASE_FINDING_KEYS` (l.82) → `logs/asignar_tarifas/<AAAA-MM-DD_HHMM>/`: `fase_01_paquete_propio_local`, `fase_02_paquete_c_2025`, `fase_03_cualquier_paquete`, `fase_04_cup_base_paquete_c`, `fase_05_cup_base_cualquier_paquete`, `fase_06_cualquier_ciudad` y `sin_resolver`.
+  - Columnas: NIT, Empresa, Paciente, N° Identificación, Ciudad, TIPO DE ACTIVIDAD, CUP, Precio asignado, Origen. Una fila por (paciente, CUP).
+- `empresas_odoo`: NIT, Empresa, Motivo (*No encontrada en Odoo* / *Sin tarifa especial ni base*).
+- Las celdas resueltas por Odoo no generan libro y no se escriben libros vacíos.
+- `execute` devuelve `AssignRatesResult(counts, findings_dir, odoo_available)`; el controller lo muestra con `render_summary`: filas *Tarifa Odoo (especial/base)*, *Fase 1…6*, *Sin resolver (valor 1)*, y como pie la carpeta de hallazgos o *Sin hallazgos*, más el aviso amarillo si Odoo no estuvo disponible.
 
 #### Tratamientos especiales (spec 008)
 
 **i-medical** (tabla `imedical`):
 
-1. **Corrección:** si el NIT crudo de la fila está en `imedical.nit_error`, se reemplaza por `nit_success`. Solo se cargan las correcciones reales: se ignoran las idénticas y las que ya se resuelven al truncar a 9 dígitos (l.311-325).
+1. **Corrección:** si el NIT crudo de la fila está en `imedical.nit_error`, se reemplaza por `nit_success`. Solo se cargan las correcciones reales: se ignoran las idénticas y las que ya se resuelven al truncar a 9 dígitos (l.398-417).
 2. **Bloqueo:** un NIT corregido por i-medical no se vuelve a cambiar por coincidencia de nombre en Odoo, BD o RUES. Queda el log `[NOVEDAD] imedical bloqueó cambio de NIT`.
-3. **Auto-registro:** se guarda una corrección nueva cuando se cumplen todas estas condiciones (l.497-517):
+3. **Auto-registro:** se guarda una corrección nueva cuando se cumplen todas estas condiciones (detección l.597-602; guardado l.743):
    - La columna `Base` contiene `IMEDICAL`.
    - Odoo, buscando por nombre, devuelve otro NIT.
    - La similitud del nombre es ≥ 90.
