@@ -1,8 +1,8 @@
 # Documentación Técnica — Sistema de Facturación SOANDES
 
-> **Última actualización:** 2026-10-06 · **Rama de referencia:** `refactor/app` · **Specs cubiertos:** 001–009
+> **Última actualización:** 2026-10-10 · **Rama de referencia:** `refactor/rates` · **Specs cubiertos:** 001–015
 > Documento para desarrolladores. Para la operación diaria ver la [Guía de Usuario](USER_GUIDE.md).
-> Las referencias `archivo:línea` apuntan al código vigente en esa fecha (incluye cambios aún no commiteados de specs 008/009).
+> Las referencias `archivo:línea` apuntan al código vigente en esa fecha (incluye cambios aún no commiteados de specs 010–015).
 
 ## Índice
 
