@@ -820,7 +820,6 @@ class AssignRatesFromExcel:
         if advertencias:
             self.logger.warning(
                 f"{len(advertencias)} fecha(s) fuera del periodo de 3 meses:\n" + "\n".join(f"  {a}" for a in advertencias),
-                user_msg=f"{len(advertencias)} fecha(s) con antigüedad mayor a 3 meses.",
             )
 
         return df.with_columns(
