@@ -57,10 +57,39 @@ from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
 from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.logging.infrastructure.logging.tech_only_logger import TechOnlyLogger
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
     SaSpecialRepository,
 )
+
+
+_SUMMARY_LABELS = {
+    "odoo": "Tarifa Odoo (especial/base)",
+    "fase_01_paquete_propio_local": "Fase 1 — Paquete propio local",
+    "fase_02_paquete_c_2025": "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)",
+    "fase_03_cualquier_paquete": "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)",
+    "fase_04_cup_base_paquete_c": "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)",
+    "fase_05_cup_base_cualquier_paquete": "Fase 5 — Cualquier paquete (CUP base, misma ciudad)",
+    "fase_06_cualquier_ciudad": "Fase 6 — Cualquier paquete/ciudad (cup + actividad)",
+    "sin_resolver": "Sin resolver (valor 1)",
+}
+
+
+def render_summary(result: AssignRatesResult) -> Table:
+    caption = (
+        f"Hallazgos por fase en: {result.findings_dir}"
+        if result.findings_dir
+        else "Sin hallazgos: no se generaron libros por fase."
+    )
+    if not result.odoo_available:
+        caption += "\n[yellow]Odoo no disponible: todas las tarifas salieron de la cascada local.[/yellow]"
+    table = Table(title="Asignación de tarifas", caption=caption)
+    table.add_column("Origen del precio")
+    table.add_column("Celdas", justify="right")
+    for key, label in _SUMMARY_LABELS.items():
+        table.add_row(label, str(result.counts.get(key, 0)))
+    return table
 
 
 def assign_rates(logger, with_invoices=False):
