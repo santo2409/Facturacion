@@ -145,9 +145,11 @@ def test_progress_companies_does_not_update_existing_company_name(sample_df, dep
 
     companies = deps["company_repo"].all()
     names_by_nit = {c["nit"]: c["name"] for c in companies}
+    # spec 016: el documento conocido se valida contra Odoo; la actualización de su nombre
+    # la hace el buscador (que sincroniza la BD local), no esta opción por su cuenta
     assert names_by_nit["900111111"] == "NOMBRE ORIGINAL"
     assert names_by_nit["900222222"] == "NOMBRE ORIGINAL B"
-    assert tracking.called_with is None
+    assert tracking.called_with == ["900111111", "900222222"]
 
 
 def test_progress_companies_not_found_is_omitted_and_logged(sample_df, deps):
