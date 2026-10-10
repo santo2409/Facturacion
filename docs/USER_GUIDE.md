@@ -277,25 +277,35 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 
 **Columnas del libro de facturas:** `N° Identificación` y `# FACTURA`. Si un paciente tiene varias facturas, se unen con coma.
 
-**Resultado:** `CONSOLIDADO.xlsx` en la carpeta del proyecto. Se sobrescribe en cada ejecución. Ver §6 para leerlo.
+**Resultado:**
+
+- `CONSOLIDADO.xlsx` en la carpeta del proyecto. Se sobrescribe en cada ejecución. Ver §6 para leerlo.
+- Una tabla resumen en la consola con cuántas celdas salieron de cada origen (ver *Resumen al terminar*).
+- La carpeta `logs/asignar_tarifas/<fecha>/` con los libros de hallazgos (ver §7).
 
 **Tratamientos especiales automáticos:**
 
-- **i-medical.** Corrige NITs que se sabe que llegan mal desde i-medical: *"N NIT corregido(s) según la tabla i-medical."* Además aprende correcciones nuevas cuando la columna `Base` dice IMEDICAL y Odoo confirma el NIT correcto: *"N corrección(es) nueva(s) registradas en i-medical."*
-- **TIAN.** Las empresas de la lista TIAN se facturan al NIT de TIAN, con el nombre terminado en `(TIAN)`: *"N empresa(s) se facturarán a TIAN en esta corrida; revisa empresas_tian.xlsx."*
+- **i-medical.** Corrige NITs que se sabe que llegan mal desde i-medical. Además aprende correcciones nuevas cuando la columna `Base` dice IMEDICAL y Odoo confirma el NIT correcto. El detalle queda en el log técnico (`logs.log`).
+- **TIAN.** Las empresas de la lista TIAN se facturan al NIT de TIAN, con el nombre terminado en `(TIAN)`. Revisa `empresas_tian.xlsx`; si falta configurar `TIAN_NIT`, no se redirigen y el aviso queda solo en `logs.log`.
 - **Nombres unificados.** Si un mismo NIT llega con varios nombres, se usa uno solo: primero el de Odoo, luego el de la base de datos.
-- **Fechas.** `Fecha Ingreso` queda en formato dd/mm/aaaa. Si el día y el mes vienen invertidos, se corrigen. Se avisa de fechas futuras o de más de 3 meses de antigüedad.
-- **Valores por defecto.** Empresa sin facturador → `GENERAL`. Empresa sin paquete → `PAQUETE C 2025`.
+- **Fechas.** `Fecha Ingreso` queda en formato dd/mm/aaaa. Si el día y el mes vienen invertidos, se corrigen. Las fechas futuras o de más de 3 meses de antigüedad se registran en el log técnico (`logs.log`).
+- **Valores por defecto.** Empresa sin facturador → `GENERAL`. La columna `PAQUETE` muestra la tarifa especial de Odoo; si no tiene, la tarifa base de Odoo; si tampoco, el paquete de la base de datos (por defecto `PAQUETE C 2025`).
 
-**Mensajes frecuentes:**
+**Resumen al terminar.** La opción 6 no muestra avisos durante el proceso (solo las barras de progreso); al final imprime una tabla *Asignación de tarifas*:
 
-| Mensaje | Qué significa |
+| Fila de la tabla | Qué cuenta |
 |---|---|
-| *No se pudo conectar a Odoo; se validarán empresas contra BD local y RUES únicamente.* | Sigue funcionando, pero valida menos |
-| *No se encontró registro para NIT X (Empresa).* | La empresa no está en ninguna fuente; queda en `empresas_no_encontradas.xlsx` |
-| *N tarifas tomadas del paquete 'PAQUETE C 2025'…* | Fase 2 (ver §6) |
-| *…tomadas de otros paquetes / homologadas al CUP base / tomadas de otra ciudad* | Fases 3 a 6 (ver §6) |
-| *No se definió TIAN_NIT…* | Falta configurar `TIAN_NIT`; las empresas TIAN **no** se redirigieron |
+| *Tarifa Odoo (especial/base)* | Celdas con el precio oficial de Odoo |
+| *Fase 1* … *Fase 6* | Celdas resueltas con las tarifas de la base de datos (ver §6) |
+| *Sin resolver (valor 1)* | Exámenes sin tarifa |
+
+Debajo de la tabla verás:
+
+- *Hallazgos por fase en: logs/asignar_tarifas/<fecha>* → revisa esa carpeta (ver §7).
+- *Sin hallazgos: no se generaron libros por fase.* → todo salió de Odoo.
+- En amarillo, *Odoo no disponible: todas las tarifas salieron de la cascada local.* → revisa la conexión o las credenciales de Odoo y vuelve a ejecutar.
+
+Las empresas que no se encontraron se **agregan** a `empresas_no_encontradas.xlsx`, pero esta opción nunca las retira de allí; para limpiar las ya resueltas, ejecuta la opción 1.
 
 ### Opción 7 — Generar Pre Facturas
 
