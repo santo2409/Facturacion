@@ -77,7 +77,7 @@ def test_progress_companies_conserva_cedula_integra(deps_t05):
     assert companies[0]["nit"] == "1000017310"
 
 
-def test_progress_companies_no_reconsulta_documento_ya_normalizado_en_bd(deps_t05):
+def test_progress_companies_documento_normalizado_ya_en_bd_no_duplica_la_empresa(deps_t05):
     deps_t05["company_repo"] = FakeCompanyRepo(
         initial=[{"id": 1, "nit": "900111111", "name": "EMPRESA A"}]
     )
