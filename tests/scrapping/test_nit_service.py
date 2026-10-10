@@ -77,3 +77,59 @@ def test_search_retries_on_transient_scraper_error(monkeypatch):
 
     assert result == expected
     assert calls["count"] == 2
+
+
+# ── spec 016 (T05): rues_cache, local_updates y odoo_available ────────────
+
+def test_search_passes_rues_cache_to_use_case():
+    scraper = FakeNitScraper()
+    cached = {"333": NitResult("333", True, "EMPRESA RUES CACHEADA", "RUES", "RUES/NIT")}
+    service = RUESNitService(logger=FakeLogger(), odoo_repo=FakeOdooRepo(), scraper=scraper)
+
+    result = service.search(["333"], rues_cache=cached)
+
+    assert result[0].name == "EMPRESA RUES CACHEADA"
+    assert scraper.search_nits_calls == []
+
+
+def test_search_signature_stays_compatible_without_rues_cache():
+    scraper = FakeNitScraper(by_nit={"111": NitResult("111", True, "EMPRESA RUES")})
+    service = RUESNitService(logger=FakeLogger(), scraper=scraper)
+
+    assert service.search(["111"])[0].name == "EMPRESA RUES"
+
+
+def test_local_updates_delegates_to_use_case():
+    odoo = FakeOdooRepo(clients={"111": {"id": 1, "name": "EMPRESA NUEVA"}})
+    cache = FakeNitCacheRepo(cached={"111": NitResult("111", True, "EMPRESA VIEJA", "BD local")})
+    service = RUESNitService(
+        logger=FakeLogger(), odoo_repo=odoo, nit_cache_repo=cache, scraper=FakeNitScraper()
+    )
+
+    service.search(["111"])
+
+    assert service.local_updates == [{
+        "NIT": "111", "Nombre en BD local": "EMPRESA VIEJA",
+        "Nombre en Odoo": "EMPRESA NUEVA", "Acción": "Actualizada",
+    }]
+
+
+def test_odoo_available_delegates_to_use_case():
+    class FailingConnect(FakeOdooRepo):
+        def connect(self):
+            raise ConnectionError("sin red")
+
+    ok = RUESNitService(logger=FakeLogger(), odoo_repo=FakeOdooRepo(), scraper=FakeNitScraper())
+    ok.search(["111"])
+    down = RUESNitService(logger=FakeLogger(), odoo_repo=FailingConnect(), scraper=FakeNitScraper())
+    down.search(["111"])
+
+    assert ok.odoo_available is True
+    assert down.odoo_available is False
+
+
+def test_properties_are_safe_before_the_first_search():
+    service = RUESNitService(logger=FakeLogger(), scraper=FakeNitScraper())
+
+    assert service.local_updates == []
+    assert service.odoo_available is False
