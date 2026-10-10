@@ -412,10 +412,24 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 
 > Los archivos que **no acumulan** se reemplazan en cada ejecución. Si necesitas conservar uno, cópialo antes de volver a ejecutar la opción.
 
+### Hallazgos por ejecución
+
+Las opciones 1, 2, 4, 5 y 6 crean, en cada ejecución, una carpeta con **un libro por tipo de hallazgo**, para entregar cada libro al área que debe corregirlo. Solo se crean los libros que tienen filas: si no hubo hallazgos, no se crea carpeta y la consola dice *Sin hallazgos*.
+
+| Carpeta (`logs/…/AAAA-MM-DD_HHMM/`) | Opción | Libros |
+|---|---|---|
+| `logs/web_scrapping/` | 1 | `bd_local_actualizada` (empresas agregadas o corregidas en la base local con los datos de Odoo; columnas NIT, Nombre en BD local, Nombre en Odoo, Acción) |
+| `logs/facturadores/` | 2 | `bd_local_actualizada`, `empresa_no_encontrada`, `facturador_no_encontrado`, `vinculacion_duplicada` (empresa que aparece con dos facturadores: prevalece el **último** del Excel; el libro indica el facturador **descartado** y el **vigente**) |
+| `logs/cargar_tarifas/` | 4 | `contrato_no_existe`, `ciudad_no_existe`, `cup_no_existe`, `actividad_invalida`, `tarifa_vacia`; cada fila indica la **Hoja** y la **Fila** del Excel de origen |
+| `logs/registrar_empresas/` | 5 | `bd_local_actualizada`, `documento_acotado`, `paquetes_en_conflicto`, `paquete_no_encontrado` |
+| `logs/asignar_tarifas/` | 6 | `fase_01_paquete_propio_local` … `fase_06_cualquier_ciudad` y `sin_resolver` (una fila por paciente y examen, con el precio y su origen); `empresas_odoo` (Motivo: *No encontrada en Odoo* / *Sin tarifa especial ni base*). Las celdas con tarifa de Odoo no generan libro |
+
+> Si ejecutas la misma opción dos veces en el mismo minuto, la segunda reemplaza los libros con el mismo nombre. Si necesitas conservarlos, copia la carpeta antes.
+
 ## 8. Preguntas frecuentes y problemas comunes
 
 **"Ocurrió un error ejecutando la opción. Revisa los logs."**
-La opción falló, pero el programa sigue abierto. Sal con la opción 0 y revisa `logs/user_audit.xlsx`; si no es claro, pásale al equipo técnico el archivo `logs.log`. Las causas más comunes son:
+La opción falló, pero el programa sigue abierto. Lee el mensaje de error que quedó en la consola; si no es claro, pásale al equipo técnico el archivo `logs.log`. Las causas más comunes son:
 
 - Un nombre de hoja mal escrito.
 - Falta una columna obligatoria.
