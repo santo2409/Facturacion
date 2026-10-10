@@ -86,6 +86,7 @@ class FakeOdooRepo:
         return 5
 
     def create_invoice(self, vals):
+        self.write_attempts.append("create_invoice")
         fid = self._next_invoice_id
         self._next_invoice_id += 1
         self._created_invoices.append(vals)
