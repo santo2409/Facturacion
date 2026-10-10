@@ -1336,6 +1336,7 @@ class AssignRatesFromExcel:
                 if homolog_price:
                     result_cols[str(h)][idx] = int(homolog_price)
                     cell_colors[(str(h), idx)] = _COLOR_PHASE4
+                    record(PHASE_FINDING_KEYS[3], idx, h, homolog_price, f"{default_package} (CUP {base_code})")
                     homolog_logs.append(
                         f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                         f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
