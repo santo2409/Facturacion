@@ -274,21 +274,55 @@ class SearchNitsWithOdooFallbackUseCase:
                 )
             results.append(result)
 
-        # ── Persistencia en BD local y reporte de conflictos ─────────────
+        # ── 8. BD local ← Odoo, y persistencia de lo nuevo de RUES ───────
+        # Odoo es la fuente de verdad: lo que resolvió se agrega o corrige en la BD
+        # local (una sola escritura en lote). Lo que resolvió RUES se guarda si es
+        # nuevo, como antes. Nada se escribe en Odoo.
         if self.nit_cache_repo:
-            nuevos = [
-                r for r in results
-                if r.is_company and normalize_nit(str(r.nit)) not in known_nits
-            ]
-            if nuevos:
+            positives = [r for r in results if r.is_company]
+            stored = self._safe(
+                lambda: self.nit_cache_repo.get_many([str(r.nit) for r in positives]),
+                {},
+                "consultando caché local de NITs",
+            )
+            local_by_norm = {normalize_nit(str(h.nit)): h for h in stored.values()}
+            known_nits.update(local_by_norm)
+
+            to_save: list[NitResult] = []
+            odoo_changes: dict[str, dict] = {}
+            for r in positives:
+                norm = normalize_nit(str(r.nit))
+                if str(r.source).startswith("Odoo"):
+                    previous = local_by_norm.get(norm)
+                    if previous is None:
+                        action, local_name = ACTION_ADDED, ""
+                    elif normalize_company_name(previous.name) != normalize_company_name(r.name):
+                        action, local_name = ACTION_UPDATED, previous.name
+                    else:
+                        continue
+                    to_save.append(r)
+                    odoo_changes[norm] = {
+                        "NIT": norm,
+                        "Nombre en BD local": local_name,
+                        "Nombre en Odoo": r.name,
+                        "Acción": action,
+                    }
+                elif norm not in known_nits:
+                    to_save.append(r)
+
+            if to_save:
                 omitted = self._safe(
-                    lambda: self.nit_cache_repo.save_many(nuevos),
+                    lambda: self.nit_cache_repo.save_many(to_save),
                     [],
                     "guardando caché local de NITs",
                 ) or []
                 omitted_nits = {normalize_nit(str(o)) for o in omitted}
-                for result in nuevos:
-                    if normalize_nit(str(result.nit)) in omitted_nits:
+                for result in to_save:
+                    norm = normalize_nit(str(result.nit))
+                    if norm in omitted_nits:
                         result.conflict = CONFLICT_DUPLICATE_NAME
+                        if norm in odoo_changes:
+                            odoo_changes[norm]["Acción"] = ACTION_NOT_UPDATED
+            self.local_updates = list(odoo_changes.values())
 
         return results
