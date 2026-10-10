@@ -255,13 +255,6 @@ class AssignRatesFromExcel:
             )
             # Apply cell colors from cascade fallback phases
             if cell_colors:
-                _PHASE_LEGEND = [
-                    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
-                    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
-                    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
-                    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
-                    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
-                ]
                 ws = workbook.get_worksheet_by_name("Consolidado")
                 if ws is not None:
                     # Build column index map: col_name → xlsxwriter col index
