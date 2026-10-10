@@ -899,7 +899,6 @@ class AssignRatesFromExcel:
         if not tian_company:
             self.logger.error(
                 f"TIAN: el NIT {tian_nit} (TIAN_NIT) no existe en companies; se aborta la redirección.",
-                user_msg=f"El NIT de TIAN ({tian_nit}) no existe en la base de datos: no se redirigió ninguna empresa.",
             )
             return df
 
