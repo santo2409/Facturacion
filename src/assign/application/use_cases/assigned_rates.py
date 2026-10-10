@@ -1225,7 +1225,6 @@ class AssignRatesFromExcel:
         _COLOR_PHASE4 = "BDD7EE"   # Azul acero claro — PAQUETE C 2025, CUP base
         _COLOR_PHASE5 = "9DC3E6"   # Azul medio — cualquier paquete, CUP base, misma ciudad
         _COLOR_PHASE6 = "D5A6E6"   # Púrpura medio — cualquier paquete, otra ciudad (cup+actividad)
-        _COLOR_PHASE7 = "FFB6C1"   # Rosa     — cualquier paquete, otra ciudad (cup+actividad)
         fallback_logs = []
         unresolved = []  # list of (idx, h, city_id, cup_id, activity_id, pkg_name, city, activity)
 
