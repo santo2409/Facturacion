@@ -68,13 +68,13 @@ C4Container
     Rel(persistence, domain, "Implementa puertos")
     Rel(core, excel_io, "Lee/escribe DataFrames")
     Rel(core, scraper, "Valida empresas")
-    Rel(core, odoo_client, "Valida clientes / inyecta")
+    Rel(core, odoo_client, "Valida clientes, lee tarifas / inyecta")
     Rel(core, logging_sys, "logger.x(..., user_msg=...)")
     Rel(persistence, db, "SQL", "psycopg2, sslmode=require")
     Rel(scraper, rues, "HTTPS")
-    Rel(odoo_client, odoo, "XML-RPC", "HTTPS")
+    Rel(odoo_client, odoo, "XML-RPC: search_read / read; escritura solo en op. 8 (deshabilitada)", "HTTPS")
     Rel(excel_io, fs, ".xlsx")
-    Rel(logging_sys, fs, "logs.log, user_audit.xlsx")
+    Rel(logging_sys, fs, "logs.log, logs/<opcion>/<fecha>/*.xlsx")
 ```
 
 ---
