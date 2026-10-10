@@ -45,6 +45,8 @@ class ImportCompaniesFromExcel:
         not_found_log_generator=None,
         logs_dir: Path = Path("logs"),
         not_linked_log_generator=None,
+        findings_writer: FindingsWriter | None = None,
+        rues_cache_loader=None,
     ):
         self.company_repo = company_repo
         self.package_repo = package_repo
