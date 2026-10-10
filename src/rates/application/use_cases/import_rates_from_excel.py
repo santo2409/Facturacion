@@ -38,6 +38,7 @@ class ImportRatesFromExcel:
         mega: MegaDataFrames = None,
         rates_repo=None,
         logger=None,
+        findings_writer: FindingsWriter | None = None,
     ):
         self.package_repo = package_repo
         self.provider_repo = provider_repo
