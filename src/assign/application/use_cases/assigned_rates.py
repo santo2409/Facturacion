@@ -236,6 +236,7 @@ class AssignRatesFromExcel:
         # herede los de TIAN.
         df = self._apply_tian(df, lookups)
         df = self._normalize_city(df, lookups)
+        self._load_odoo_rates(df)
         df = self._assign_facturador(df, lookups)
         df = self._assign_paquete(df, lookups)
         df, cell_colors = self._assign_rates(df, lookups)
