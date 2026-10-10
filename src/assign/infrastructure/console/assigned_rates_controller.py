@@ -115,6 +115,9 @@ def assign_rates(logger, with_invoices=False):
     else:
         df_facture = pl.DataFrame({"N° Identificación": [], "# FACTURA": []})
 
+    # Esta opción tiene su propia salida (resumen en consola y libros por fase,
+    # spec 010): sus dependencias reciben un logger que descarta user_msg.
+    logger = TechOnlyLogger(logger)
     session = get_session()
     config = get_odoo_config()
     odoo_repo = XmlRpcOdooRepository(
