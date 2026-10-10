@@ -516,7 +516,8 @@ Detalles:
 
 | Utilidad | Ubicación | Comportamiento |
 |---|---|---|
-| `ExcelLoader` | `src/shared/excel/excel_loader.py` | `load`, `load_sheet`, `load_sheets_by_prefix`. Calamine, todo `Utf8`, encabezados con `strip` |
+| `ExcelLoader` | `src/shared/excel/excel_loader.py` | `load`, `load_sheet`, `load_sheets_by_prefix`. Calamine, todo `Utf8`, encabezados con `strip`. Descarta las filas totalmente vacías |
+| `MegaDataFrames` | `src/shared/utils/mega_dataframes.py` | Reclasifica `CONTRATO` (opción 4) y etiqueta cada fila con `_HOJA`/`_FILA` de origen (`_load_tagged`) |
 | `ExcelExporter` | `src/shared/excel/excel_exporter.py` | Exporta varias hojas, parte las de más de 1.048.575 filas, `sanitize_sheet_name` (31 caracteres) |
 | `normalize_nit` | `src/shared/utils/text_normalizer.py:48` | Solo dígitos, **primeros 9** |
 | `normalize_document` | `src/shared/utils/document_normalizer.py` | NIT si tiene 9–10 dígitos y empieza por 8/9 (el de 10 se acota y se valida su DV DIAN); en otro caso **CEDULA íntegra**. Devuelve `DocumentResult(value, kind, original, truncated, dv_valid)` |
