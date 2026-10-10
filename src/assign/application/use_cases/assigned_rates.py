@@ -1350,7 +1350,6 @@ class AssignRatesFromExcel:
                 self.logger.warning(
                     f"{len(homolog_logs)} tarifas homologadas al CUP base en '{default_package}':\n"
                     + "\n".join(f"  {l}" for l in unique_hlogs[:50]),
-                    user_msg=f"{len(homolog_logs)} tarifas homologadas al CUP base del paquete '{default_package}'.",
                 )
         else:
             still_unresolved_2 = list(still_unresolved)
