@@ -174,6 +174,8 @@ classDiagram
         -_assign_rates(df) tuple~df, cell_colors~
         -_validate_empresa(df)
         -_enrich_with_invoices(df, df_facture)
+        -_write_legend(workbook)
+        -_publish_findings() AssignRatesResult
     }
 
     class OdooConnectionRepository {
