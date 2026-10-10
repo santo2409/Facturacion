@@ -60,7 +60,8 @@ src/<módulo>/
 ├── domain/
 │   ├── entities/        # dataclasses puras
 │   ├── repositories/    # puertos (ABC)
-│   └── services/        # lógica de dominio pura (p.ej. CupResolver, DuplicateCompanyDetector)
+│   ├── services/        # lógica de dominio pura (p.ej. CupResolver, DuplicateCompanyDetector)
+│   └── *.py             # objetos de dominio sueltos (p.ej. assign/domain/odoo_rate_index.py: OdooRateIndex)
 ├── application/
 │   └── use_cases/       # orquestación; método execute()
 └── infrastructure/
