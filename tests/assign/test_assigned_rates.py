@@ -906,7 +906,7 @@ def test_cell_colors_phase1_local_own_package(deps):
         "890201": [1],
     })
     _, colors = uc._assign_rates(df, lookups)
-    assert ("890201", 0) not in colors
+    assert colors.get(("890201", 0)) == "E2EFDA"
 
 
 def test_build_lookups_sin_directory_resuelve_al_valor_unico_por_defecto(deps, monkeypatch):
