@@ -333,3 +333,46 @@ def test_hoja_leyenda_existe_en_consolidado_nits(consolidado_con_colores, logger
         f"No se encontró hoja 'Leyenda'. Hojas: {wb.sheetnames}"
     )
     wb.close()
+
+
+# ── spec 010 (T13): color de la fase 1 local y Leyenda ────────────────────
+
+def _split_con_fase1_local(consolidado_con_colores, logger, cup_repo):
+    """Pinta E2EFDA (fase 1 local) en 890301 de la fila 2 y separa por NIT."""
+    from openpyxl.styles import PatternFill
+
+    path, output_dir = consolidado_con_colores
+    wb = openpyxl.load_workbook(path)
+    wb["Consolidado"].cell(row=2, column=25).fill = PatternFill("solid", fgColor="E2EFDA")
+    wb.save(path)
+    SplitByNit(logger, cup_repo).execute(path, output_dir)
+    return next((output_dir / "ALFA").glob("*900111111*"))
+
+
+def test_color_fase1_local_se_preserva_al_separar_por_nit(consolidado_con_colores, logger, cup_repo):
+    archivo = _split_con_fase1_local(consolidado_con_colores, logger, cup_repo)
+
+    wb = openpyxl.load_workbook(archivo)
+    ws = wb.worksheets[0]
+    headers = [c.value for c in next(ws.iter_rows(min_row=2, max_row=2))]
+    col = headers.index("890301")
+    fills = {
+        row[col].value: row[col].fill.fgColor.rgb
+        for row in ws.iter_rows(min_row=3, max_row=ws.max_row)
+        if row[col].value in (2000, 1000)
+    }
+    assert fills[2000] == "00E2EFDA"          # fase 1 local: conserva el color
+    assert fills[1000] == "009DC3E6"          # fase 5: sigue igual
+    wb.close()
+
+
+def test_leyenda_distingue_tarifa_odoo_y_fase1_local(consolidado_con_colores, logger, cup_repo):
+    archivo = _split_con_fase1_local(consolidado_con_colores, logger, cup_repo)
+
+    wb = openpyxl.load_workbook(archivo)
+    ws = wb["Leyenda"]
+    filas = [(ws.cell(r, 1).fill.fgColor.rgb, ws.cell(r, 2).value) for r in range(2, ws.max_row + 1)]
+    assert filas[0][1] == "Sin color — Tarifa Odoo (especial/base)"
+    assert ("00E2EFDA", "Fase 1 — Paquete propio local") in filas
+    assert not any("sin fallback" in (label or "") for _, label in filas)
+    wb.close()
