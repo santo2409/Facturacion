@@ -630,6 +630,13 @@ pytest tests/assign/test_assigned_rates.py::TestX::test_y -v
 | 007 | Robustez de la opción 5, `safe_dispatch`, `DIRECTORY` único |
 | 008 | i-medical, TIAN y unificación de nombres (opción 6) |
 | 009 | Conservar Fecha Ingreso en "General sin factura" |
+| 010 | Tarifas de Odoo (especial → base) en la opción 6, libros por fase y resumen en consola |
+| 011 | Salida al usuario por consola Rich y libros de hallazgos por ejecución (ADR-014) |
+| 012 | Búsqueda de clientes en Odoo por `ref_num` con respaldo en `vat` |
+| 013 | Tests con nombre duplicado + guardián |
+| 014 | Eliminación de código muerto (repositorios MySQL/PG de paquetes, `update_package`, scraper de datos.gov.co, `iLogger`) |
+| 015 | Vinculación duplicada en la opción 2: prevalece la última, libro con descartado y vigente |
+| 016 | Odoo como fuente de verdad en la validación de empresas (opciones 1, 2 y 5): Odoo primero, BD local como respaldo sincronizada con Odoo, `data.json` solo caché de RUES |
 
 Decisiones arquitectónicas: [docs/adr/](adr/README.md) · Diagramas: [docs/c4-diagrams.md](c4-diagrams.md).
 
