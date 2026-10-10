@@ -166,9 +166,55 @@ class AssignRatesFromExcel:
         except Exception as e:
             self.logger.warning(
                 f"No se pudo conectar a Odoo: {e}",
-                user_msg="No se pudo conectar a Odoo; se validarán empresas contra BD local y RUES únicamente.",
             )
             self.odoo_repo = None
+
+    def _load_odoo_rates(self, df: pl.DataFrame) -> None:
+        """Consulta en batch las tarifas (especial/base) de las empresas en Odoo.
+
+        Si Odoo no está disponible o falla la consulta, queda sin tarifas y la
+        cascada local resuelve todo (spec 010, RF-14).
+        """
+        self.odoo_available = False
+        self._odoo_by_nit = {}
+        self._odoo_index = OdooRateIndex([])
+        self._company_findings = []
+        if not self.odoo_repo:
+            return
+
+        nits = list(dict.fromkeys(n for n in df["NIT"].to_list() if n))
+        cups = [str(h) for h in df.columns if str(h).replace("-", "").isdigit()]
+        try:
+            partners = self.odoo_repo.find_partner_rates_batch(nits)
+            rate_ids = list(dict.fromkeys(
+                i for p in partners for i in (p["special_id"], p["base_id"]) if i
+            ))
+            lines = self.odoo_repo.find_rate_lines(rate_ids, cups) if rate_ids and cups else []
+        except Exception as e:
+            self.logger.warning(
+                f"No se pudieron consultar las tarifas en Odoo; se usará la cascada local: {e}"
+            )
+            return
+
+        self._odoo_by_nit = {p["nit"]: p for p in partners}
+        self._odoo_index = OdooRateIndex(lines)
+        self.odoo_available = True
+
+        names: dict[str, str] = {}
+        if "Empresa" in df.columns:
+            for nit, name in zip(df["NIT"].to_list(), df["Empresa"].to_list()):
+                names.setdefault(nit, name)
+        for nit in nits:
+            partner = self._odoo_by_nit.get(nit)
+            if partner is None:
+                reason = "No encontrada en Odoo"
+            elif not partner["special_id"] and not partner["base_id"]:
+                reason = "Sin tarifa especial ni base"
+            else:
+                continue
+            self._company_findings.append(
+                {"NIT": nit, "Empresa": names.get(nit) or "", "Motivo": reason}
+            )
 
     def execute(self, excel: pl.DataFrame, df_facture: pl.DataFrame):
         self._connect_odoo()
