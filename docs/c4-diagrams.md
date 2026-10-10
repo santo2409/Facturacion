@@ -364,30 +364,34 @@ classDiagram
     OdooConnectionRepository <|.. XmlRpcOdooRepository
 ```
 
-> `create_client` existe en el puerto, pero el caso de uso nunca lo invoca (ADR-010, "verificar, nunca crear"). La opción 8 está deshabilitada en `main.py`.
+> `create_client` existe en el puerto, pero el caso de uso nunca lo invoca (ADR-010, "verificar, nunca crear"). Solo llena `vat`, mientras Odoo guarda el NIT en `ref_num`: la spec 012 encontró 54 clientes duplicados creados así. `find_client` delega en `find_clients_batch([nit])`. La opción 8 está deshabilitada en `main.py`.
 
 ---
 
 ## Flujo: Cascada de validación de empresas (opción 1)
 
-Cada paso recibe solo lo que el anterior dejó pendiente.
+**Odoo es la fuente de verdad** (spec 016): se consulta primero y siempre, también para las empresas que ya están en la BD local. La BD local es el respaldo y se corrige con lo que dice Odoo. `data.json` solo aporta resultados de RUES. Cada paso recibe solo lo que el anterior dejó pendiente. Las opciones 2 y 5 usan la misma cascada (`RUESNitService`); la opción 6 valida sus empresas en el mismo orden con su propia lógica.
 
 ```mermaid
 flowchart TD
-    START[NIT + nombre del libro 'nits'] --> A{BD local por NIT}
+    START[NIT + nombre del libro 'nits'] --> CON{Odoo disponible?}
+    CON -->|No| NA["Aviso en consola: Odoo no disponible<br/>sigue con BD local y RUES, sin sincronizar"]
+    CON -->|Sí| A{Odoo por NIT<br/>ref_num in → ref_num =like → vat in → vat =like}
+    NA --> C
     A -->|Sí| OK[✓ Resuelta]
-    A -->|No| B{BD local por nombre exacto}
+    A -->|No| B{Odoo por nombre<br/>ilike + fuzzy ≥ 90}
     B -->|Sí| OK
-    B -->|No| C{Odoo por NIT<br/>batch vat in / =like}
+    B -->|No| C{BD local por NIT<br/>respaldo}
     C -->|Sí| OK
-    C -->|No| D{Odoo por nombre<br/>ilike + fuzzy ≥ 90}
+    C -->|No| D{BD local por nombre exacto}
     D -->|Sí| OK
-    D -->|No| E{RUES por NIT}
+    D -->|No| E{RUES por NIT<br/>antes: caché RUES de data.json}
     E -->|Sí| OK
     E -->|No| F{RUES por nombre<br/>≤ RUES_NAME_LOOKUP_LIMIT + fuzzy ≥ 90}
     F -->|Sí| OK
-    F -->|No| G["⚠️ is_company=False → empresas_no_encontradas.xlsx"]
-    OK --> H[Positivos nuevos → companies · data.json]
+    F -->|No| G["⚠️ is_company=False → empresas_no_encontradas.xlsx<br/>la opción 1 retira los NIT ya resueltos"]
+    OK --> SYNC["BD local ← Odoo: agrega o corrige la razón social<br/>conflicto de nombre → no actualiza<br/>→ bd_local_actualizada.xlsx"]
+    SYNC --> H[Positivos nuevos de RUES → companies · data.json]
 ```
 
 ## Flujo: Pipeline de Asignar Tarifas (opción 6)
