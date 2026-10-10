@@ -1,6 +1,6 @@
 # Guía de Usuario — Facturación SOANDES
 
-> **Para:** facturadores y coordinadores de SOANDES · **Actualizada:** 2026-10-06
+> **Para:** facturadores y coordinadores de SOANDES · **Actualizada:** 2026-10-10
 > Detalle técnico en la [Documentación Técnica](TECHNICAL_DOCUMENTATION.md).
 
 ## Índice
