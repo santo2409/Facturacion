@@ -151,13 +151,18 @@ classDiagram
         -cup_repo
         -fuzz: RapidFuzzBiller
         -progress: RichProgress
-        -logger: LoggerAdapter
+        -logger: TechOnlyLogger
         -odoo_repo: OdooConnectionRepository
         -not_found_log_generator
         -imedical_repo: ImedicalRepository
         -tian_repo: TianRepository
         -tian_log_generator: TianCompaniesLogGenerator
-        +execute(excel, df_facture)
+        -findings_reporter: PhaseFindingsReporter
+        -_odoo_by_nit: dict
+        -_odoo_index: OdooRateIndex
+        +execute(excel, df_facture) AssignRatesResult
+        -_load_odoo_rates(df)
+        -_resolve_odoo_cells(rows, headers) dict
         -_capture_raw_nit(df)
         -_apply_imedical(df)
         -_match_companies(df)
