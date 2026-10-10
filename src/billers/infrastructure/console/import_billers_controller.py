@@ -26,18 +26,11 @@ from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
 from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 
 
-def import_billers(logger):
-    path = ask_excel_path()
-    loader = ExcelLoader()
-    excel = loader.load(path)
-
-    sheet = ask_sheet_name(excel.sheet_names)
-    df = loader.load_sheet(excel, sheet)
-
-    session = get_session()
+def _build_use_case(session, logger):
     company_repo = SaCompanyRepository(session, logger)
 
     config = get_odoo_config()
