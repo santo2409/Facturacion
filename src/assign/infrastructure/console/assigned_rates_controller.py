@@ -149,6 +149,8 @@ def assign_rates(logger, with_invoices=False):
         imedical_repo=SaImedicalRepository(session, logger),
         tian_repo=SaTianRepository(session, logger),
         tian_log_generator=TianCompaniesLogGenerator(logger),
+        findings_reporter=XlsxPhaseFindingsReporter(),
     )
 
-    use_case.execute(df, df_facture)
+    result = use_case.execute(df, df_facture)
+    Console().print(render_summary(result))
