@@ -200,6 +200,7 @@ class ImportRatesFromExcel:
                 if slug:
                     city_alias[upper] = city_map[slug]
 
+        df = df.with_columns(pl.col("VALOR").cast(pl.Utf8).alias("_VALOR_ORIG"))
         df = df.with_columns(
             pl.col("VALOR").cast(pl.Utf8).str.replace_all(r"\D", "").alias("VALOR")
         )
