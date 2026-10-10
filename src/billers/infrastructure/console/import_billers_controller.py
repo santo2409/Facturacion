@@ -46,13 +46,27 @@ def _build_use_case(session, logger):
         )
     nit_cache_repo = SaCompanyNitCacheRepository(company_repo, logger=logger)
 
-    use_case = ImportBillersFromExcel(
+    return ImportBillersFromExcel(
         biller_repo=SaBillerRepository(session, logger),
         company_repo=company_repo,
         biller_company_repo=SaBillerCompanyRepository(session, logger),
         nit_service=RUESNitService(logger, odoo_repo=odoo_repo, nit_cache_repo=nit_cache_repo),
         progress=RichProgress(),
         fuzz=RapidFuzzBiller(logger),
+        logger=logger,
+        findings_writer=XlsxFindingsWriter(Path("logs/facturadores")),
+        rues_cache_loader=load_rues_cache,
     )
 
+
+def import_billers(logger):
+    path = ask_excel_path()
+    loader = ExcelLoader()
+    excel = loader.load(path)
+
+    sheet = ask_sheet_name(excel.sheet_names)
+    df = loader.load_sheet(excel, sheet)
+
+    session = get_session()
+    use_case = _build_use_case(session, logger)
     use_case.execute(df)
