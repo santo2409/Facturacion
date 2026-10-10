@@ -136,46 +136,23 @@ class SearchNitsWithOdooFallbackUseCase:
                     groups.setdefault(name, []).append(key)
             return groups
 
-        # ── 1. BD local por NIT ──────────────────────────────────────────
-        if self.nit_cache_repo:
-            cached = self._safe(
-                lambda: self.nit_cache_repo.get_many(keys), {}, "consultando caché local de NITs"
-            )
-            for key, hit in cached.items():
-                known_nits.add(normalize_nit(str(hit.nit)))
-                resolved[key] = self._resolve(
-                    key, book_names.get(key), hit.name, None, "BD local", "BD local/NIT"
-                )
-
-            # ── 2. BD local por nombre ───────────────────────────────────
-            if self.local_name_lookup:
-                groups = pending_names()
-                if groups:
-                    by_name = self._safe(
-                        lambda: self.nit_cache_repo.get_by_names(list(groups)),
-                        {},
-                        "consultando caché local por nombre",
-                    )
-                    for name, hit in by_name.items():
-                        known_nits.add(normalize_nit(str(hit.nit)))
-                        for key in groups.get(name, []):
-                            resolved[key] = self._resolve(
-                                key, name, hit.name, str(hit.nit), "BD local", "BD local/nombre"
-                            )
-
         self._connect_odoo()
+        self.odoo_available = self.odoo_repo is not None
         default_bases = "Odoo, RUES" if self.odoo_repo else "RUES"
 
         # ── 3. Odoo por NIT (una sola llamada) ───────────────────────────
         if self.odoo_repo and pending():
             normalized = {key: normalize_nit(key) for key in pending()}
-            batch = self._safe(
-                lambda: self.odoo_repo.find_clients_batch(
+            try:
+                batch = self.odoo_repo.find_clients_batch(
                     list(dict.fromkeys(normalized.values()))
-                ),
-                {},
-                "consultando Odoo en batch",
-            )
+                )
+            except Exception as e:
+                batch = {}
+                self.odoo_available = False
+                self.logger.warning(
+                    f"Fallo consultando Odoo en batch: {e}", user_msg=ODOO_UNAVAILABLE_MSG
+                )
             for key, norm in normalized.items():
                 match = batch.get(norm)
                 if match:
