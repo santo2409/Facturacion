@@ -1208,16 +1208,16 @@ class AssignRatesFromExcel:
         # Phase 2: Batch query all needed rates
         self.logger.info(
             f"Consultando {len(rate_keys_set)} combinaciones únicas de tarifas",
-            user_msg=f"Consultando {len(rate_keys_set)} tarifas en lote...",
         )
         rates_cache = self.rates_repo.find_batch(list(rate_keys_set))
         self.logger.info(
             f"Encontradas {len(rates_cache)} tarifas de {len(rate_keys_set)} consultadas",
-            user_msg=f"{len(rates_cache)} tarifas encontradas.",
         )
 
         # Phase 3: Build result columns with fallback, collect unresolved for wildcard
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
+        for (col, idx), price in odoo_resolved.items():
+            result_cols[col][idx] = price
         # cell_colors[(col, row_idx)] = hex color — populated per fallback phase
         cell_colors: dict[tuple[str, int], str] = {}
         _COLOR_PHASE2 = "FFF2CC"   # Dorado suave — PAQUETE C 2025, mismo CUP
