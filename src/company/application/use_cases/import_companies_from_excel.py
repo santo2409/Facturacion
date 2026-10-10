@@ -307,18 +307,23 @@ class ImportCompaniesFromExcel:
                         self.logger.warning(
                             f"Vinculación duplicada para documento '{nit}': "
                             f"se descarta '{previous_pkg_name}' y prevalece '{row['PAQUETE']}'",
-                            user_msg=(
-                                f"El documento '{nit}' tiene paquetes en conflicto: "
-                                f"se descartó '{previous_pkg_name}' y quedó '{row['PAQUETE']}'."
-                            ),
                         )
+                        self._findings["paquetes_en_conflicto"].append({
+                            "Documento": nit,
+                            "Paquete descartado": previous_pkg_name,
+                            "Paquete vigente": row["PAQUETE"],
+                        })
                     batch_by_company[company_id] = CompanyPackage(company_id, package_id, model)
                     conflict_info[company_id] = (row["PAQUETE"], model)
                 else:
                     self.logger.warning(
                         f"Package not found: {row['PAQUETE']}",
-                        user_msg=f"No se encontró el paquete '{row['PAQUETE']}'.",
                     )
+                    self._findings["paquete_no_encontrado"].append({
+                        "Documento": nit,
+                        "Razón social": row["RAZON SOCIAL"],
+                        "Paquete": row["PAQUETE"],
+                    })
                 self.progress.advance()
 
         batch = list(batch_by_company.values())
