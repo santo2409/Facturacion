@@ -241,18 +241,19 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 - **NIT y cédula se tratan distinto:**
   - Un NIT (9 o 10 dígitos, empieza por 8 o 9) se guarda sin el dígito de verificación.
   - Una cédula se guarda completa.
-  - Si el NIT trae un dígito de verificación incorrecto verás *"El documento '…' fue acotado a '…'; verifica si tiene un error de digitación."*
-- Las empresas nuevas se verifican en Odoo y el RUES antes de registrarlas.
-- Cada empresa tiene **un solo** paquete. Si aparece dos veces con paquetes distintos, gana la última fila y se avisa *"…tiene paquetes en conflicto…"*.
+  - Si el NIT trae un dígito de verificación incorrecto, queda en `documento_acotado.xlsx` (Documento original, Documento acotado) para que revises si hay un error de digitación.
+- Todas las empresas del Excel se verifican primero en **Odoo**, también las que ya existen en la base local; si su razón social cambió en Odoo, se corrige en la base local y queda en `bd_local_actualizada.xlsx`. Las nuevas se verifican en Odoo y el RUES antes de registrarlas.
+- Cada empresa tiene **un solo** paquete. Si aparece dos veces, gana la última fila y queda en `paquetes_en_conflicto.xlsx` (paquete descartado y vigente).
+- Un paquete que no se reconoce queda en `paquete_no_encontrado.xlsx` (Documento, Razón social, Paquete).
 - El nombre del paquete admite pequeñas diferencias de escritura.
 
 **Requisito:** haber ejecutado antes las opciones 3 y 4. Si no, verás *"No hay catálogo de paquetes cargado. Ejecuta la opción 3 … y la opción 4 …"*.
 
-**Al terminar verás un resumen:** *"Empresas creadas: N. Vinculaciones persistidas: N. Filas sin vincular: N."* Revisa `logs/empresas_no_vinculadas.xlsx` y `logs/empresas_no_encontradas.xlsx`.
+**Al terminar verás un resumen:** *"Empresas creadas: N. Vinculaciones persistidas: N. Filas sin vincular: N. Hallazgos en logs/registrar_empresas/<fecha>: …"* (o *"Sin hallazgos."*). Revisa `logs/empresas_no_vinculadas.xlsx` y `logs/empresas_no_encontradas.xlsx`. Esta opción solo **agrega** empresas a `empresas_no_encontradas.xlsx`; para retirar las que ya se resolvieron, ejecuta la opción 1.
 
 ### Opción 6 — Asignar Tarifas ⭐
 
-**Para qué:** es el paso central del mes. Toma el consolidado de atenciones y le pone a cada examen la tarifa correcta.
+**Para qué:** es el paso central del mes. Toma el consolidado de atenciones y le pone a cada examen la tarifa correcta: primero la de Odoo (tarifa especial y, si no, tarifa base) y, si Odoo no tiene precio, la de la base de datos.
 
 **Te pedirá:**
 
