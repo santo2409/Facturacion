@@ -320,9 +320,9 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
 
 ### 7.4 Opción 4 — Cargar Tarifas (`src/rates`)
 
-- **Cadena:** `import_rates` (`infrastructure/console/import_rates_controller.py:29-50`) → `ImportRatesFromExcel.execute` (`application/use_cases/import_rates_from_excel.py:42`).
+- **Cadena:** `import_rates` (`infrastructure/console/import_rates_controller.py:50-57`; dependencias en `_build_use_case` l.32-47) → `ImportRatesFromExcel.execute` (`application/use_cases/import_rates_from_excel.py:86`).
 - **Entrada:** hojas `Paquetes`, `Proveedores`, `TarifasEspeciales*` y `Ciudades`. Columnas `CIUDAD`, `CONTRATO`, `CUP`, `VALOR`, `INTRA O EXTRA`.
-- **Reclasificación de `CONTRATO`** (`src/shared/utils/mega_dataframes.py:16-114`):
+- **Reclasificación de `CONTRATO`** (`src/shared/utils/mega_dataframes.py`, `total_dataframe` l.55+). Antes, `_load_tagged` (l.34) agrega a cada fila `_HOJA` y `_FILA` (número de fila real en Excel, leído con openpyxl; en secuencia si no se puede leer, p. ej. `.xls`). Esas columnas no se persisten:
   - Lo que empieza por TARIFA o PAQUETE → paquete.
   - Lo que contiene PROVEEDOR → proveedor.
   - El resto → especial.
