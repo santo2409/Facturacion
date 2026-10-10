@@ -413,12 +413,13 @@ flowchart TD
     TIAN -->|Sí| TR[Factura a TIAN_NIT · nombre '...TIAN' · empresas_tian.xlsx]
     TIAN -->|No| CITY
     TR --> CITY[_normalize_city fuzzy ≥ 90]
-    CITY --> FB[Facturador / Paquete<br/>defaults GENERAL / PAQUETE C 2025]
-    FB --> RATES[Cascada de tarifas 6 fases]
+    CITY --> OD["_load_odoo_rates<br/>find_partner_rates_batch + find_rate_lines → OdooRateIndex<br/>Odoo no disponible → índice vacío"]
+    OD --> FB["Facturador desde BD, default GENERAL<br/>PAQUETE = tarifa especial Odoo › base › paquete local, default PAQUETE C 2025"]
+    FB --> RATES["Tarifa Odoo especial → base<br/>luego cascada local de 6 fases"]
     RATES --> INV{¿día fuera de<br/>DAY_INITIAL–DAY_FINAL?}
     INV -->|Sí| FAC[Cruce con libro de facturas → FACTURAS]
     INV -->|No| OUT
-    FAC --> OUT[CONSOLIDADO.xlsx + hoja Leyenda]
+    FAC --> OUT["CONSOLIDADO.xlsx + hoja Leyenda<br/>+ logs/asignar_tarifas/fecha/ + tabla resumen Rich"]
 ```
 
 ## Flujo: Cascada de tarifas (`_assign_rates`)
