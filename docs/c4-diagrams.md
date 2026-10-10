@@ -240,7 +240,9 @@ classDiagram
     }
 
     class RUESNitService {
-        +search(nits) list~NitResult~
+        +search(nits, rues_cache) list~NitResult~
+        +local_updates list~dict~
+        +odoo_available bool
         +writer(data, file_path)
     }
 
