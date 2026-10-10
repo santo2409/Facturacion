@@ -1,7 +1,9 @@
 # ADR-011: ExcelAuditHandler para Auditoría de Usuario
 
 ## Estado
-Aceptado (reemplaza parcialmente ADR-008 en formato de salida)
+Reemplazado por [ADR-014](ADR-014-salida-consola-y-libros-por-ejecucion.md) (2026-10-10)
+
+> **Nota histórica:** `ExcelAuditHandler` y `logs/user_audit.xlsx` se eliminaron en la spec 011. El texto de abajo se conserva sin cambios como registro de la decisión.
 
 ## Fecha
 2026-06-05
