@@ -493,7 +493,6 @@ class AssignRatesFromExcel:
             self.logger.info(
                 f"imedical: {len(corregidos)} NIT corregido(s):\n"
                 + "\n".join(f"  {origen} → {destino}" for origen, destino in unique),
-                user_msg=f"{len(corregidos)} NIT corregido(s) según la tabla i-medical.",
             )
 
         return df.with_columns(pl.Series("NIT", nuevos_nit))
