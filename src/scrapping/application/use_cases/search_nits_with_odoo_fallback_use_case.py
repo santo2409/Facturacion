@@ -41,6 +41,8 @@ class SearchNitsWithOdooFallbackUseCase:
         self.name_matcher = name_matcher
         self.local_name_lookup = local_name_lookup
         self.rues_name_limit = rues_name_limit
+        self.odoo_available = False
+        self.local_updates: list[dict] = []
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
