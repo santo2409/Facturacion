@@ -255,6 +255,12 @@ classDiagram
     OdooConnectionRepository <|.. XmlRpcOdooRepository
     ImedicalRepository <|.. SaImedicalRepository
     TianRepository <|.. SaTianRepository
+    AssignRatesFromExcel --> PhaseFindingsReporter
+    AssignRatesFromExcel ..> OdooRateIndex : crea
+    AssignRatesFromExcel ..> AssignRatesResult : devuelve
+    PhaseFindingsReporter <|.. XlsxPhaseFindingsReporter
+    XlsxPhaseFindingsReporter --> XlsxFindingsWriter
+    FindingsWriter <|.. XlsxFindingsWriter
 ```
 
 ---
