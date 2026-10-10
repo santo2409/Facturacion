@@ -147,7 +147,7 @@ La URL es `postgresql+psycopg2://…?sslmode=require` con `pool_pre_ping=True`. 
 | `RUES_RESULT_TIMEOUT_MS` | 10000 |
 | `RUES_REQUEST_DELAY_MS` | 1000 |
 
-**Odoo** (`src/odooInjection/config.py:65-93`):
+**Odoo** (`src/odooInjection/config.py:13-41`, `get_odoo_config`):
 
 | Variable | Defecto |
 |---|---|
