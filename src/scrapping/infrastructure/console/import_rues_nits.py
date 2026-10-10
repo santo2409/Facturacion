@@ -28,6 +28,8 @@ from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
 )
 from src.shared.config import get_paths_config
 from src.shared.database.database import get_session
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.console import console
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
