@@ -247,7 +247,7 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
  [10] Detectar duplicados: lectura de companies en cualquier momento
 ```
 
-**Contrato crítico:** el formato del `CONSOLIDADO.xlsx` (nombres de columna, hoja `Consolidado` y colores de relleno) lo consume `preInvoice`. Cambiarlo rompe la opción 7.
+**Contrato crítico:** el formato del `CONSOLIDADO.xlsx` (nombres de columna, hoja `Consolidado` y colores de relleno) lo consume `preInvoice`. Cambiarlo rompe la opción 7. `split_by_nit` solo copia los rellenos de su lista blanca `_PHASE_COLORS_6`: un color nuevo en la opción 6 debe agregarse allí (la spec 010, RF-16, agregó `E2EFDA`).
 
 ## 7. Detalle por opción del menú
 
