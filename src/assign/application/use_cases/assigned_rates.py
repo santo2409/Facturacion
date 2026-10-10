@@ -1436,6 +1436,7 @@ class AssignRatesFromExcel:
                             source = prov_id_to_name.get(w_id, str(w_id))
                         else:
                             source = spec_id_to_name.get(w_id, str(w_id))
+                        record(PHASE_FINDING_KEYS[5], idx, h, w_rate, source)
                         phase7_logs.append(
                             f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}', "
                             f"se asignó tarifa del paquete '{source}' (ciudad diferente)"
