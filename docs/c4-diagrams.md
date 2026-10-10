@@ -559,7 +559,7 @@ C4Deployment
     }
 
     Deployment_Node(cloud_odoo, "Avancys Cloud") {
-        Container(odoo, "Odoo 14 (soandesv14)", "XML-RPC", "Clientes y facturas")
+        Container(odoo, "Odoo 14 (soandesv14)", "XML-RPC", "Clientes, tarifas (lectura) y facturas")
     }
 
     Deployment_Node(internet, "Internet") {
