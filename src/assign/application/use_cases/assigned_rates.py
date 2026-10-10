@@ -1068,7 +1068,49 @@ class AssignRatesFromExcel:
 
         df = df.with_columns(pl.col("PAQUETE").fill_null(default_package))
 
+        # PAQUETE muestra la tarifa de Odoo (especial, si no base); la cascada
+        # local sigue leyendo el paquete local desde _PAQUETE_LOCAL (spec 010, RF-08).
+        df = df.with_columns(pl.col("PAQUETE").alias("_PAQUETE_LOCAL"))
+        odoo_names = {
+            nit: p["special_name"] or p["base_name"]
+            for nit, p in self._odoo_by_nit.items()
+            if p["special_name"] or p["base_name"]
+        }
+        if odoo_names:
+            df_odoo = pl.DataFrame({
+                "NIT": list(odoo_names.keys()),
+                "_PAQUETE_ODOO": list(odoo_names.values()),
+            })
+            df = (
+                df.join(df_odoo, on="NIT", how="left")
+                .with_columns(pl.coalesce("_PAQUETE_ODOO", "_PAQUETE_LOCAL").alias("PAQUETE"))
+                .drop("_PAQUETE_ODOO")
+            )
+
         return df
+
+    # ── Tarifas de Odoo (especial → base) ─────────────────────────────────
+
+    def _resolve_odoo_cells(self, rows_data: list[dict], headers: list) -> dict[tuple[str, int], int]:
+        """Precio de Odoo por celda (columna CUP, fila): tarifa especial y luego base."""
+        resolved: dict[tuple[str, int], int] = {}
+        if not self.odoo_available:
+            return resolved
+        for idx, row in enumerate(rows_data):
+            partner = self._odoo_by_nit.get(row["NIT"])
+            if not partner:
+                continue
+            for h in headers:
+                if row.get(str(h)) != 1:
+                    continue
+                for rate_id in (partner["special_id"], partner["base_id"]):
+                    price = self._odoo_index.price(
+                        rate_id, row["Ciudad"], str(h).strip(), row["TIPO DE ACTIVIDAD"]
+                    )
+                    if price:
+                        resolved[(str(h), idx)] = price
+                        break
+        return resolved
 
     # ── Assign rates with batch query ─────────────────────────────────────
 
