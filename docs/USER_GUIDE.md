@@ -80,7 +80,7 @@ La configura normalmente el equipo técnico una sola vez. Lo que te conviene sab
 
 Escribe el número y presiona Enter. Si presionas Enter sin escribir nada, se elige **0 (Salir)**.
 
-> **Importante:** el registro de auditoría `logs/user_audit.xlsx` se guarda **al salir del programa**. Sal siempre con la opción **0** y no cerrando la ventana.
+> **Importante:** al terminar cada opción, el programa muestra en la consola un resumen y, si hubo hallazgos por corregir, la carpeta donde quedaron sus libros de Excel. Copia ese resumen si lo necesitas: la consola no se guarda.
 
 ## 4. El ciclo mensual paso a paso
 
