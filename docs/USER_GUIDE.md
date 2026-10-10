@@ -144,13 +144,22 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 
 **Ten en cuenta:**
 
-- Cada empresa tiene **un solo** facturador. Si aparece dos veces, gana la última fila y el sistema avisa *"N vinculación(es) duplicada(s) omitida(s)"*.
+- Cada empresa tiene **un solo** facturador. Si aparece dos veces con facturadores distintos, gana la **última** fila y el conflicto queda en `vinculacion_duplicada.xlsx` con el facturador **descartado** y el **vigente**. Si se repite con el **mismo** facturador, no es conflicto.
 - El nombre del gestor se compara de forma aproximada con los facturadores ya registrados, así que pequeñas diferencias de escritura no crean un facturador nuevo.
+- Todas las empresas del Excel se verifican en Odoo, también las que ya están en la base local: el nombre de la empresa sale de Odoo. Si cambió, se corrige en la base local y queda en `bd_local_actualizada.xlsx`.
 - Conviene ejecutar antes la opción 1.
+
+**Al terminar** verás *"Hallazgos en logs/facturadores/<fecha>: …"* o *"Sin hallazgos."*. Los libros de esa carpeta:
+
+| Libro | Qué significa |
+|---|---|
+| `empresa_no_encontrada` (NIT, Facturador) | La empresa no existe ni se pudo verificar; revísala |
+| `facturador_no_encontrado` (NIT, Facturador) | El gestor no corresponde a ningún facturador registrado |
+| `vinculacion_duplicada` (NIT, Empresa, Facturador descartado, Facturador vigente) | La empresa venía con dos facturadores; confirma cuál es el correcto |
+| `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) | Empresas agregadas o corregidas en la base local con datos de Odoo |
 
 | Mensaje | Qué significa |
 |---|---|
-| *Empresa NIT X no encontrada para vincular con 'Y'.* | La empresa no existe ni se pudo verificar; revísala |
 | *Ya existe una empresa con el nombre '…' (NIT …). Se omite.* | Posible empresa duplicada con otro NIT; revísala con la opción 10 |
 
 ### Opción 3 — Tratamiento Información
