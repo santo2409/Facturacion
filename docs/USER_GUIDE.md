@@ -437,10 +437,22 @@ La opción falló, pero el programa sigue abierto. Lee el mensaje de error que q
 - El archivo está abierto en Excel.
 
 **Muchas celdas quedaron en 1 en el CONSOLIDADO.**
-Faltan tarifas, o el paquete, la ciudad o la actividad de esa fila no existen en la base de datos. Ejecuta la opción 9, completa el libro de tarifas y repite 3 → 4 → 6.
+Faltan tarifas, o el paquete, la ciudad o la actividad de esa fila no existen en la base de datos. Revisa `sin_resolver.xlsx` y `empresas_odoo.xlsx` en `logs/asignar_tarifas/<fecha>/`; si la empresa no tiene tarifa en Odoo, pídele al administrador de Odoo que se la asigne. Para las tarifas de la base de datos, ejecuta la opción 9, completa el libro de tarifas y repite 3 → 4 → 6.
+
+**Una celda tiene valor y no tiene color.**
+Es el precio oficial de la empresa en Odoo (tarifa especial o tarifa base).
+
+**La columna PAQUETE muestra un nombre distinto al de la base de datos.**
+Es el nombre de la tarifa de la empresa en Odoo, que tiene prioridad.
+
+**La consola dijo *Odoo no disponible*.**
+Todas las tarifas salieron de la base de datos. Revisa la conexión o las credenciales de Odoo y vuelve a ejecutar la opción 6.
+
+**Una empresa sigue en `empresas_no_encontradas.xlsx` aunque ya la encuentra.**
+Las opciones 5 y 6 solo agregan empresas a ese reporte. Ejecuta la opción 1 con ese NIT para retirarla, o bórrala a mano.
 
 **Una empresa aparece con un NIT distinto al que escribí.**
-El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. La corrección queda registrada en `empresas_no_encontradas.xlsx` (como *NIT corregido*) o en el log de auditoría.
+El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. La corrección queda registrada en `empresas_no_encontradas.xlsx` (como *NIT corregido*); la opción 1 además lo muestra en la consola.
 
 **Una empresa sale con "(TIAN)" en el nombre.**
 Está en la lista TIAN y se factura al NIT de TIAN. Revisa `empresas_tian.xlsx`.
