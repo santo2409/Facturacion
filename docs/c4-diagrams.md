@@ -428,8 +428,12 @@ Por cada celda CUP con valor `1`:
 
 ```mermaid
 flowchart TD
-    S[Celda CUP = 1] --> P1{Paquete propio<br/>+ ciudad + CUP + actividad}
-    P1 -->|Sí| C1[Fase 1 · sin color]
+    S[Celda CUP = 1] --> OE{Tarifa especial Odoo<br/>+ ciudad + CUP + intra}
+    OE -->|Sí| CO[Tarifa Odoo · sin color]
+    OE -->|No| OB{Tarifa base Odoo<br/>+ ciudad + CUP + intra}
+    OB -->|Sí| CO
+    OB -->|No| P1{Paquete propio<br/>+ ciudad + CUP + actividad}
+    P1 -->|Sí| C1[Fase 1 · #E2EFDA]
     P1 -->|No| P2{PAQUETE C 2025<br/>+ ciudad + CUP}
     P2 -->|Sí| C2[Fase 2 · #FFF2CC]
     P2 -->|No| P3{Cualquier rateable<br/>+ ciudad + CUP}
