@@ -212,19 +212,31 @@ imedical / tian: tablas de corrección indexadas por nit_error (sin FK)
 
 > Los comentarios `Revises:` de `6f0ab654aacd` y `bc1d152a1ddb` no coinciden con su `down_revision` real. Vale el `down_revision`.
 
+### 5.4 Modelos de Odoo que se leen (solo lectura)
+
+Todo acceso a Odoo desde las opciones 1, 2, 5 y 6 usa `search_read` o `read`; ningún flujo activo escribe en Odoo.
+
+| Modelo | Campos usados | Nota |
+|---|---|---|
+| `res.partner` | `ref_num` (*Número de identificación*: el **NIT**), `verification_code` (DV), `vat` (casi siempre vacío), `name`, `rate_base_special_id` (*Tarifa especial*), `rate_base_id` (*Tarifa base*) | La búsqueda por NIT usa `ref_num` y cae a `vat` (spec 012) |
+| `account.base.rate` | `name`, `state`, `start_date`, `finish_date` | Tarifa. El estado y la vigencia **no** se validan (spec 010, RF-06) |
+| `account.base.rate.line` | `base_rate_id`, `city_id` (→ `res.city`), `product_id` (`default_code` = CUP), `price_unit`, `intra` (bool) | Línea de precio por ciudad, CUP y actividad |
+| `product.product` | `default_code` | Se lee en un solo `read` para obtener el CUP de cada línea |
+
 ## 6. Flujo de negocio
 
 Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no hay orquestador:
 
 ```
- Libro NITs ──► [1] Web Scrapping ──► data.json + companies (caché) + empresas_no_encontradas.xlsx
- Libro gestores ─► [2] Facturadores ──► billers, companies_billers
+ Libro NITs ──► [1] Web Scrapping ──► data.json + companies (caché) + empresas_no_encontradas.xlsx + logs/web_scrapping/<fecha>/
+ Libro gestores ─► [2] Facturadores ──► billers, companies_billers + logs/facturadores/<fecha>/
  Libro tarifas ─► [3] Tratamiento ──► facturacion_normalizada.xlsx + novedades_cups.xlsx
                        │
                        ▼
-                  [4] Cargar Tarifas ──► cities, packages, providers, specials, rates
- Libro empresas ─► [5] Registrar Empresas ──► companies, companies_packages (+ no_vinculadas)
- Consolidado de atenciones ─► [6] Asignar Tarifas ──► CONSOLIDADO.xlsx (colores por fase)
+                  [4] Cargar Tarifas ──► cities, packages, providers, specials, rates + logs/cargar_tarifas/<fecha>/
+ Libro empresas ─► [5] Registrar Empresas ──► companies, companies_packages (+ no_vinculadas) + logs/registrar_empresas/<fecha>/
+ Odoo (tarifas especial/base) ──┐
+ Consolidado de atenciones ─► [6] Asignar Tarifas ──► CONSOLIDADO.xlsx (colores por fase) + logs/asignar_tarifas/<fecha>/
                                                            │
                        ┌───────────────────────────────────┼───────────────────┐
                        ▼                                   ▼                   ▼
