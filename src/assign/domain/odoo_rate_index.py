@@ -1,0 +1,31 @@
+from src.shared.utils.text_normalizer import normalize_text_key
+
+_ACTIVITY_TO_INTRA = {"INTRA": True, "EXTRA": False}
+
+
+class OdooRateIndex:
+    """Índice de precios de líneas `account.base.rate.line` de Odoo.
+
+    Clave: (tarifa, ciudad normalizada, CUP, intra). Los precios <= 0 se ignoran
+    y, ante claves duplicadas, gana la primera línea.
+    """
+
+    def __init__(self, lines: list[dict]):
+        self._prices: dict[tuple[int, str, str, bool], int] = {}
+        for line in lines:
+            price = line.get("price") or 0
+            if price <= 0:
+                continue
+            key = (
+                line["rate_id"],
+                normalize_text_key(line["city"]),
+                str(line["cup"]).strip(),
+                bool(line["intra"]),
+            )
+            self._prices.setdefault(key, int(price))
+
+    def price(self, rate_id: int | None, city: str, cup: str, activity: str) -> int | None:
+        intra = _ACTIVITY_TO_INTRA.get(activity)
+        if rate_id is None or intra is None:
+            return None
+        return self._prices.get((rate_id, normalize_text_key(city), str(cup).strip(), intra))
