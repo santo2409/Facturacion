@@ -162,7 +162,7 @@ class SearchNitsWithOdooFallbackUseCase:
                     )
 
         # ── 4. Odoo por nombre ───────────────────────────────────────────
-        if self.odoo_repo and self.name_matcher and pending():
+        if self.odoo_available and self.name_matcher and pending():
             for name, group in pending_names().items():
                 candidates = self._safe(
                     lambda n=name: self.odoo_repo.find_clients_by_name(n),
