@@ -42,12 +42,12 @@ El sistema automatiza la facturación mensual de exámenes médicos ocupacionale
 |---|---|---|
 | Datos | **Polars** (nunca pandas) | ETL de todos los libros Excel |
 | Lectura Excel | **fastexcel / calamine** vía `ExcelLoader` | Lee todo como texto (`Utf8`) |
-| Escritura Excel | **xlsxwriter** (CONSOLIDADO, normalizados) · **openpyxl** (pre-facturas, logs con formato) | |
+| Escritura Excel | **xlsxwriter** (CONSOLIDADO, normalizados) · Polars `write_excel` sobre xlsxwriter (libros de hallazgos) · **openpyxl** (pre-facturas, logs con formato) | openpyxl también se usa para **leer** el número de fila real de cada hoja en `MegaDataFrames` |
 | BD | PostgreSQL, SQLAlchemy 2.0, psycopg2-binary, Alembic | |
 | Scraping | **Playwright** (Firefox headless) contra `rues.org.co` | Opciones 1, 2, 5, 6 |
-| ERP | `xmlrpc.client` → Odoo 14 | `res.partner`, `account.move`, `product.product`… |
+| ERP | `xmlrpc.client` → Odoo 14 | `res.partner`, `account.move`, `product.product`…; `account.base.rate`, `account.base.rate.line`, `res.city` (tarifas, solo lectura, opción 6) |
 | Fuzzy | **RapidFuzz** + Unidecode | Ciudades, paquetes, facturadores, empresas |
-| CLI | **Rich** | Menú, prompts, barras de progreso |
+| CLI | **Rich** | Menú, prompts, barras de progreso, mensajes al usuario (`USER_CONSOLE`), tabla resumen de la opción 6 |
 | Tests | pytest 8.2.2 | Fakes manuales en `tests/fakes/` |
 | Calidad | cspell, `.editorconfig` | No hay ruff/mypy/black/pre-commit |
 
