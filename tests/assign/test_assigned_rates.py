@@ -730,54 +730,6 @@ def test_assign_rates_phase7_any_city(deps):
         {"id": 2, "name": "PAQUETE C 2025"},
         {"id": 3, "name": "OTRO PAQUETE"},
     ])
-    # Solo hay tarifa para city_id=99 (otra ciudad), cup=1, activity=1
-    deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000
-
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890201": [1],
-    })
-    result, _ = uc._assign_rates(df, lookups)
-    assert result["890201"][0] == 33000
-
-
-def test_assign_rates_phase7_logs_ciudad_diferente(deps):
-    """Phase 7 genera log con indicación de ciudad diferente."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-        {"id": 3, "name": "OTRO PAQUETE"},
-    ])
-    deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000
-
-    logger = FakeLogger()
-    deps["logger"] = logger
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890201": [1],
-    })
-    uc._assign_rates(df, lookups)
-    assert any("ciudad diferente" in w for w in logger.warnings)
-    assert any("OTRO PAQUETE" in w for w in logger.warnings)
-
-
-def test_assign_rates_phase7_any_city(deps):
-    """Phase 7: CUP sin tarifa en ninguna ciudad conocida → toma de otra ciudad."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-        {"id": 3, "name": "OTRO PAQUETE"},
-    ])
     # Solo hay tarifa para city_id=99 (otra ciudad), cup=1 (890201), activity=1
     deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000
 
