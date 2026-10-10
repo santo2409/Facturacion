@@ -59,6 +59,15 @@ def build_book_names(book_df, logger) -> dict[str, str]:
     }
 
 
+def publish_local_updates(use_case, writer: FindingsWriter, logger) -> Path | None:
+    """Escribe el libro de empresas agregadas o corregidas en la BD local con datos
+    de Odoo y muestra un único resumen en consola (spec 016)."""
+    books = {LOCAL_UPDATE_BOOK: use_case.local_updates}
+    folder = writer.write(books, LOCAL_UPDATE_COLUMNS)
+    logger.info("Resumen BD local ← Odoo", user_msg=summarize_findings(books, folder))
+    return folder
+
+
 def execute_web_scrapping(logger):
     scraper = RuesPlaywrightScraper(logger=logger)
 
