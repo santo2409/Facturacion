@@ -402,8 +402,7 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 
 | Archivo | Lo genera | ¿Acumula? | Qué revisar |
 |---|---|---|---|
-| `user_audit.xlsx` | Todas | Sí | Historial de lo que pasó en cada ejecución; colores por nivel: info, advertencia, error |
-| `empresas_no_encontradas.xlsx` | 1, 5, 6 | Sí; una empresa resuelta sale sola del archivo | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar) · *NIT corregido* · *Nombre corregido* |
+| `empresas_no_encontradas.xlsx` | 1, 5, 6 | Sí. Solo la opción 1 retira las empresas ya resueltas; las opciones 5 y 6 solo agregan las que no encuentran | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar) · *NIT corregido* · *Nombre corregido* |
 | `novedades_cups.xlsx` | 3 | No | 🟩 corregido · 🟨 sugerencia o CUP/VALOR cruzados · 🟥 no se pudo corregir |
 | `empresas_no_vinculadas.xlsx` | 5 | No | Empresas que quedaron sin paquete y el motivo |
 | `empresas_tian.xlsx` | 6 | No | Empresas redirigidas a TIAN en esta corrida |
