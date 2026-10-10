@@ -69,7 +69,7 @@ src/<módulo>/
     ├── persistence/     # adaptadores Sa* (SQLAlchemy), lectores Excel
     ├── odoo/            # XML-RPC (odooInjection)
     ├── scrapers/        # Playwright (scrapping)
-    └── reporting/       # generadores de logs Excel
+    └── reporting/       # generadores de logs y libros de hallazgos (p.ej. XlsxPhaseFindingsReporter)
 ```
 
 Reglas (constitución v1.1.0):
