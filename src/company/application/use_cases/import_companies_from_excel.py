@@ -108,47 +108,35 @@ class ImportCompaniesFromExcel:
                 self._dv_warning_count += 1
                 self.logger.warning(
                     f"Posible error de digitación: '{raw}' se acotó a '{doc.value}' (DV no coincide)",
-                    user_msg=f"El documento '{raw}' fue acotado a '{doc.value}'; verifica si tiene un error de digitación.",
+                )
+                self._findings["documento_acotado"].append(
+                    {"Documento original": raw, "Documento acotado": doc.value}
                 )
 
         doc_values = [doc.value for doc in normalized_by_raw.values()]
 
         df_companies = pl.DataFrame(self.company_repo.all())
-        pending_docs = doc_values
+        known: set[str] = set()
         if df_companies.height > 0:
             known = {normalize_document(n).value for n in df_companies["nit"].to_list()}
-            pending_docs = [d for d in doc_values if d not in known]
 
-        if not pending_docs:
+        if not doc_values:
             return
 
-        cached: dict[str, NitResult] = {}
-        if Path(file_path).exists():
-            with self.progress("Cargando datos de empresas", total=1):
-                with open(file_path, "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                for d in data:
-                    nit = normalize_document(d.get("nit")).value
-                    cached[nit] = NitResult(
-                        nit=nit,
-                        is_company=d.get("is_company", bool(d.get("name"))),
-                        name=d.get("name"),
-                        checked_bases=d.get("checked_bases", ""),
-                    )
-                self.progress.advance()
+        # Odoo es la fuente de verdad: todos los documentos del Excel se validan contra
+        # Odoo, también los que ya están en la BD local. `data.json` solo aporta
+        # resultados de RUES, que evitan volver a consultar RUES (spec 016).
+        rues_cache = self.rues_cache_loader(file_path) if self.rues_cache_loader else {}
+        with self.progress("Validando NITs (Odoo/RUES)", total=1):
+            results = self.nit_service.search(
+                list(dict.fromkeys(doc_values)), rues_cache=rues_cache
+            ) or []
+            self.progress.advance()
+        self.nit_service.writer(results, file_path)
+        self._findings[LOCAL_UPDATE_BOOK] = list(getattr(self.nit_service, "local_updates", []))
 
-        still_pending = [d for d in pending_docs if d not in cached]
-        if still_pending:
-            with self.progress("Validando NITs (Odoo/RUES)", total=len(still_pending)):
-                new_results = self.nit_service.search(still_pending) or []
-                self.progress.advance()
-            for result in new_results:
-                cached[normalize_document(result.nit).value] = result
-            self.nit_service.writer(list(cached.values()), file_path)
-
-        result_scrapping = [
-            cached[d] for d in pending_docs if d in cached
-        ]
+        cached = {normalize_document(r.nit).value: r for r in results}
+        result_scrapping = [cached[d] for d in doc_values if d in cached]
 
         razon_social_by_nit = {
             normalize_document(row["NIT"]).value: row["RAZON SOCIAL"]
