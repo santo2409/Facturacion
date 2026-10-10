@@ -88,12 +88,12 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 
 | # | Opción | ¿Cuándo? | Resultado principal |
 |---|---|---|---|
-| 1 | **1 · Web Scrapping** | Cuando hay empresas nuevas o dudosas | Empresas verificadas + `empresas_no_encontradas.xlsx` |
-| 2 | **2 · Facturadores** | Cuando cambian las asignaciones gestor↔empresa | Facturador de cada empresa |
+| 1 | **1 · Web Scrapping** | Cuando hay empresas nuevas o dudosas | Empresas verificadas + `empresas_no_encontradas.xlsx` (es la única opción que retira de ese reporte las empresas ya resueltas) |
+| 2 | **2 · Facturadores** | Cuando cambian las asignaciones gestor↔empresa | Facturador de cada empresa + hallazgos en `logs/facturadores/` |
 | 3 | **3 · Tratamiento Información** | Cuando llega un libro de tarifas nuevo | `facturacion_normalizada.xlsx` + `novedades_cups.xlsx` |
-| 4 | **4 · Cargar Tarifas** | Con el libro normalizado del paso 3 | Tarifas en la base de datos |
-| 5 | **5 · Registrar Empresas** | Cuando cambia el paquete de alguna empresa | Paquete de cada empresa + `empresas_no_vinculadas.xlsx` |
-| 6 | **6 · Asignar Tarifas** | **Cada mes** | **`CONSOLIDADO.xlsx`** |
+| 4 | **4 · Cargar Tarifas** | Con el libro normalizado del paso 3 | Tarifas en la base de datos + hallazgos en `logs/cargar_tarifas/` |
+| 5 | **5 · Registrar Empresas** | Cuando cambia el paquete de alguna empresa | Paquete de cada empresa + `empresas_no_vinculadas.xlsx` + hallazgos en `logs/registrar_empresas/` |
+| 6 | **6 · Asignar Tarifas** | **Cada mes** | **`CONSOLIDADO.xlsx`** + resumen en consola + `logs/asignar_tarifas/` |
 | 7 | **9 · Generar Faltantes** | Tras el paso 6 | `faltantes.xlsx`: tarifas que no se encontraron |
 | 8 | **7 · Generar Pre Facturas** | Tras revisar el CONSOLIDADO | Carpeta `pre-facturas/` |
 | — | **10 · Duplicados** | Cuando quieras (solo lectura) | `empresas_duplicadas.xlsx` |
