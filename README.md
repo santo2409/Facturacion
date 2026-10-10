@@ -123,8 +123,8 @@ src/<módulo>/
 | Integración ERP | XML-RPC (Odoo 14 / Avancys) |
 | Fuzzy matching | RapidFuzz, Unidecode |
 | CLI | Rich |
-| Logging | logging + ExcelAuditHandler (user_audit.xlsx) |
-| Testing | pytest + fakes manuales (643 tests) |
+| Logging | logging + RichHandler (consola) + libros de hallazgos (Polars/xlsxwriter) |
+| Testing | pytest + fakes manuales (834 tests) |
 
 ## Tests
 
