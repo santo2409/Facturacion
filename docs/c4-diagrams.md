@@ -3,7 +3,7 @@
 Diagramas arquitectónicos según el modelo C4 (Context, Container, Component, Code), más diagramas de flujo de las reglas de negocio clave.
 Notación: [Mermaid](https://mermaid.js.org/), que se renderiza en GitHub/GitLab y VS Code.
 
-> **Última actualización:** 2026-10-06 (specs 001–009). Texto complementario en la [Documentación Técnica](TECHNICAL_DOCUMENTATION.md).
+> **Última actualización:** 2026-10-10 (specs 001–015). Texto complementario en la [Documentación Técnica](TECHNICAL_DOCUMENTATION.md).
 
 ---
 
