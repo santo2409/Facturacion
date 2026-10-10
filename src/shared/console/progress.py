@@ -1,5 +1,7 @@
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
+from src.shared.console.user_console import USER_CONSOLE
+
 
 class RichProgress:
     def __init__(self):
@@ -14,6 +16,7 @@ class RichProgress:
             BarColumn(),
             "[progress.percentage]{task.percentage:>3.0f}%",
             TimeElapsedColumn(),
+            console=USER_CONSOLE,
         )
         self.task = self.progress.add_task(description, total=total)
         return self

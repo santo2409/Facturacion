@@ -31,6 +31,20 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_partner_rates_batch(self, nits: list[str]) -> list[dict]:
+        """Busca empresas por `ref_num` y devuelve sus tarifas relacionadas.
+        [{'nit','partner_id','name','special_id','special_name','base_id','base_name'}]
+        Solo partners encontrados; special_*/base_* son None si no hay tarifa."""
+        pass
+
+    @abstractmethod
+    def find_rate_lines(self, rate_ids: list[int], cup_codes: list[str]) -> list[dict]:
+        """Líneas de tarifa (`account.base.rate.line`) de las tarifas dadas,
+        limitadas a los CUP indicados.
+        [{'rate_id','city','cup','intra','price'}]"""
+        pass
+
+    @abstractmethod
     def get_nit(self, client_id: int) -> str | None:
         pass
 

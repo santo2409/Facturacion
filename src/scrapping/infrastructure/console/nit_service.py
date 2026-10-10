@@ -27,10 +27,20 @@ class RUESNitService:
             logger=self.logger,
         )
 
-    def search(self, nits):
+    @property
+    def local_updates(self) -> list[dict]:
+        """Empresas agregadas o corregidas en la BD local con datos de Odoo (última búsqueda)."""
+        return self._use_case.local_updates
+
+    @property
+    def odoo_available(self) -> bool:
+        return self._use_case.odoo_available
+
+    def search(self, nits, rues_cache=None):
+        extra = {"rues_cache": rues_cache} if rues_cache is not None else {}
         for attempt in range(_MAX_RETRIES + 1):
             try:
-                return self._use_case.execute(nits, show_progress=False)
+                return self._use_case.execute(nits, show_progress=False, **extra)
             except Exception as excep:
                 if attempt < _MAX_RETRIES:
                     time.sleep(_RETRY_DELAY)

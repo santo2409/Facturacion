@@ -7,7 +7,7 @@ Sistema CLI para automatizar el proceso de facturación de SOANDES: importación
 - Python 3.12+
 - PostgreSQL
 - Firefox (para web scraping RUES)
-- Acceso a Odoo 14 / Avancys (para inyección de facturas)
+- Acceso a Odoo 14 / Avancys (validación de clientes, tarifas oficiales de la opción 6 en solo lectura e inyección de facturas)
 
 ## Instalación
 
@@ -35,9 +35,18 @@ DIRECTORY=.
 # Odoo / Avancys
 ODOO_URL=https://soandesv14.avancyserp.com
 ODOO_DB=soandesv14
-ODOO_USER=tu_usuario_odoo
-ODOO_PASSWORD=tu_contraseña_odoo
+ODOO_USERNAME=tu_usuario_odoo
+ODOO_API_KEY=tu_api_key_odoo
+
+# Negocio
+DAY_INITIAL=5
+DAY_FINAL=29
+TIAN_NIT=
+BOOK_ROUTE=/ruta/a/la/carpeta
+BOOK_NAME=libro_nits.xlsx
 ```
+
+La lista completa de variables, con sus valores por defecto, está en la [Documentación Técnica](docs/TECHNICAL_DOCUMENTATION.md#42-variables-de-entorno-env-plantilla-en-envexample).
 
 ## Migraciones
 
@@ -55,12 +64,12 @@ python main.py
 
 | Opción | Función | Descripción |
 |--------|---------|-------------|
-| 1 | Web Scrapping | Valida NITs/nombres: BD local → Odoo → RUES |
-| 2 | Facturadores | Importa facturadores y los vincula con empresas |
+| 1 | Web Scrapping | Valida NITs/nombres: Odoo → BD local → RUES; corrige la BD local con lo que dice Odoo |
+| 2 | Facturadores | Importa facturadores y los vincula con empresas (validadas contra Odoo) |
 | 3 | Tratamiento Información | Normaliza paquetes/proveedores/especiales y corrige CUPs |
 | 4 | Cargar Tarifas | Importa tarifas a BD (fuzzy de ciudades, rename de especiales) |
 | 5 | Registrar Empresas - Paquetes | Registra empresas y su paquete tarifario |
-| 6 | Asignar Tarifas | Cascada de 6 fases, i-medical, TIAN → `CONSOLIDADO.xlsx` |
+| 6 | Asignar Tarifas | Tarifa Odoo (especial → base), luego cascada local de 6 fases; i-medical, TIAN → `CONSOLIDADO.xlsx` + libros por fase |
 | 7 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
 | 8 | Cargar Pre Facturas | Inyección en Odoo — **deshabilitada** |
 | 9 | Generar Faltantes | Lista las tarifas no resueltas |
@@ -78,11 +87,13 @@ Ver la [Guía de Usuario](docs/USER_GUIDE.md) para el detalle de cada opción.
 
 ## Características Principales
 
-- **Cascada de resolución de empresas**: BD local → Odoo → RUES (por NIT y por nombre)
+- **Odoo, fuente de verdad**: las empresas se validan siempre contra Odoo (opciones 1, 2, 5 y 6), también las que ya están en la BD local; la BD local es el respaldo y se corrige con lo que dice Odoo (libro `bd_local_actualizada`). Solo lectura
+- **Cascada de resolución de empresas**: Odoo → BD local → RUES (por NIT y por nombre; en Odoo por `ref_num`, con respaldo en `vat`)
+- **Tarifas desde Odoo**: la tarifa especial/base de cada empresa en Odoo es la fuente principal de la opción 6; la BD local es el respaldo. Solo lectura
 - **Normalización inteligente**: NITs (9 dígitos), fechas (smart swap dd/mm), sufijos corporativos (S.A.S → SAS)
 - **Fuzzy matching**: resolución de nombres con RapidFuzz (ciudades, paquetes, empresas)
 - **Anti-duplicados**: dedup batch antes de INSERT y log de inyección previo
-- **Auditoría Excel**: log de usuario en `user_audit.xlsx` con colores por nivel
+- **Hallazgos por ejecución**: resumen en consola al terminar cada opción y un libro Excel por tipo de hallazgo en `logs/<opcion>/<fecha>/` (ADR-014)
 - **VERIFICAR**: nunca crea clientes automáticamente en Odoo; marca para revisión manual
 
 ## Arquitectura
@@ -112,8 +123,8 @@ src/<módulo>/
 | Integración ERP | XML-RPC (Odoo 14 / Avancys) |
 | Fuzzy matching | RapidFuzz, Unidecode |
 | CLI | Rich |
-| Logging | logging + ExcelAuditHandler (user_audit.xlsx) |
-| Testing | pytest + fakes manuales (643 tests) |
+| Logging | logging + RichHandler (consola) + libros de hallazgos (Polars/xlsxwriter) |
+| Testing | pytest + fakes manuales (834 tests) |
 
 ## Tests
 
@@ -121,6 +132,8 @@ src/<módulo>/
 pytest
 pytest tests/assign/ -v   # Módulo específico
 ```
+
+La suite incluye guardianes: `tests/test_no_duplicate_test_names.py` (nombres de test duplicados), `tests/test_dead_code_removed.py` (código eliminado) y `tests/docs/` (contenido de la documentación).
 
 ## Documentación
 

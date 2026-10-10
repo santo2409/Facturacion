@@ -103,23 +103,26 @@ def test_execute_full_flow(sample_df, use_case_deps):
     assert len(links) == 3
 
 
-def test_uses_existing_data_json(sample_df, use_case_deps, tmp_path, monkeypatch):
+def test_uses_existing_data_json_only_as_rues_cache(sample_df, use_case_deps, tmp_path, monkeypatch):
+    # spec 016: Odoo es la fuente de verdad. El data.json existente ya no decide los
+    # nombres: solo aporta, vía el cargador, las entradas cuya fuente es RUES.
+    from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+
     monkeypatch.setenv("DIRECTORY", str(tmp_path))
-    # Pre-create data.json
     data = [
-        {"nit": "900111111", "name": "DESDE JSON A"},
-        {"nit": "900222222", "name": "DESDE JSON B"},
-        {"nit": "900333333", "name": "DESDE JSON C"},
+        {"nit": "900111111", "name": "DESDE RUES A", "is_company": True, "source": "RUES/NIT"},
+        {"nit": "900222222", "name": "DESDE ODOO B", "is_company": True, "source": "Odoo/NIT"},
+        {"nit": "900333333", "name": "FORMATO VIEJO C", "is_company": True},
     ]
     with open(tmp_path / "data.json", "w") as f:
         json.dump(data, f)
 
-    uc = _build_use_case(use_case_deps)
+    uc = ImportBillersFromExcel(**use_case_deps, rues_cache_loader=load_rues_cache)
     uc.execute(sample_df)
 
-    companies = use_case_deps["company_repo"].all()
-    names = [c["name"] for c in companies]
-    assert "DESDE JSON A" in names
+    assert list(use_case_deps["nit_service"].rues_cache) == ["900111111"]
+    names = [c["name"] for c in use_case_deps["company_repo"].all()]
+    assert "DESDE RUES A" not in names and "DESDE ODOO B" not in names  # los nombres vienen de la búsqueda
 
 
 def test_fuzz_matching_resolves_biller_name(use_case_deps):

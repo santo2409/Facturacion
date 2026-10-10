@@ -28,13 +28,14 @@ def test_find_clients_by_name_returns_list_of_dicts():
     assert result == [{"id": 7, "name": "EMPRESA A SAS", "vat": "900111111"}]
 
 
-def test_requests_id_name_and_vat_fields():
+def test_requests_id_name_ref_num_and_vat_fields():
+    # spec 012: el documento sale de ref_num y, si falta, de vat
     repo = StubExecuteOdooRepo([])
 
     repo.find_clients_by_name("EMPRESA A")
 
     assert repo.calls[0]["model"] == "res.partner"
-    assert repo.calls[0]["args"][1]["fields"] == ["id", "name", "vat"]
+    assert repo.calls[0]["args"][1]["fields"] == ["id", "name", "ref_num", "vat"]
 
 
 def test_strips_corporate_suffix_from_search_term():

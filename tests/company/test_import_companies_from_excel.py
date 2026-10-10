@@ -67,22 +67,24 @@ def test_progress_companies_uses_scrapped_name(sample_df, deps):
     assert "EMPRESA A SCRAPPED" in names
 
 
-def test_progress_companies_uses_data_json_if_exists(sample_df, deps, tmp_path):
+def test_progress_companies_uses_data_json_only_as_rues_cache(sample_df, deps, tmp_path):
+    # spec 016: Odoo es la fuente de verdad; data.json solo aporta resultados de RUES
+    from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+
     data = [
-        {"nit": "900111111", "name": "DESDE JSON A"},
-        {"nit": "900222222", "name": "DESDE JSON B"},
+        {"nit": "900111111", "name": "DESDE RUES A", "is_company": True, "source": "RUES/NIT"},
+        {"nit": "900222222", "name": "DESDE ODOO B", "is_company": True, "source": "Odoo/NIT"},
     ]
     with open(tmp_path / "data.json", "w") as f:
         json.dump(data, f)
 
-    uc = _build(deps)
+    uc = ImportCompaniesFromExcel(**deps, rues_cache_loader=load_rues_cache)
     uc._progress_companies(sample_df)
-    companies = deps["company_repo"].all()
-    names = [c["name"] for c in companies]
-    assert "DESDE JSON A" in names
+
+    assert list(deps["nit_service"].rues_cache) == ["900111111"]
 
 
-def test_progress_companies_skips_scraping_for_nits_already_in_db(sample_df, deps):
+def test_progress_companies_validates_nits_already_in_db_against_odoo(sample_df, deps):
     deps["company_repo"] = FakeCompanyRepo(initial=[
         {"id": 1, "nit": "900111111", "name": "EMPRESA A YA CONOCIDA"},
     ])
@@ -94,7 +96,7 @@ def test_progress_companies_skips_scraping_for_nits_already_in_db(sample_df, dep
     uc = _build(deps)
     uc._progress_companies(sample_df)
 
-    assert tracking.called_with == ["900222222"]
+    assert tracking.called_with == ["900111111", "900222222"]  # spec 016: también el conocido
 
 
 def test_progress_companies_to_packages_links(sample_df, deps):
@@ -143,9 +145,11 @@ def test_progress_companies_does_not_update_existing_company_name(sample_df, dep
 
     companies = deps["company_repo"].all()
     names_by_nit = {c["nit"]: c["name"] for c in companies}
+    # spec 016: el documento conocido se valida contra Odoo; la actualización de su nombre
+    # la hace el buscador (que sincroniza la BD local), no esta opción por su cuenta
     assert names_by_nit["900111111"] == "NOMBRE ORIGINAL"
     assert names_by_nit["900222222"] == "NOMBRE ORIGINAL B"
-    assert tracking.called_with is None
+    assert tracking.called_with == ["900111111", "900222222"]
 
 
 def test_progress_companies_not_found_is_omitted_and_logged(sample_df, deps):
@@ -171,12 +175,12 @@ def test_progress_companies_not_found_is_omitted_and_logged(sample_df, deps):
 
 
 def test_progress_companies_does_not_create_when_not_verified_despite_display_name(sample_df, deps, tmp_path):
-    data = [
-        {"nit": "900111111", "is_company": False, "name": "NOMBRE DE EXHIBICION", "checked_bases": "Odoo, RUES"},
-        {"nit": "900222222", "is_company": True, "name": "EMPRESA B VERIFICADA", "checked_bases": "Odoo"},
-    ]
-    with open(tmp_path / "data.json", "w") as f:
-        json.dump(data, f)
+    from src.scrapping.domain.entities.nit_result import NitResult
+
+    deps["nit_service"] = FakeNitService(results=[
+        NitResult("900111111", False, "NOMBRE DE EXHIBICION", "Odoo, RUES"),
+        NitResult("900222222", True, "EMPRESA B VERIFICADA", "Odoo"),
+    ])
 
     uc = _build(deps)
     uc._progress_companies(sample_df)

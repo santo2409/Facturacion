@@ -71,3 +71,24 @@ def test_import_companies_exito_tambien_cierra_sesion(monkeypatch):
     assert session.closed is True
     assert use_case.executed_with == "df-dummy"
     assert not logger.errors
+
+
+def test_build_use_case_wires_findings_writer_for_registrar_empresas():
+    """spec 011, RF-06: los hallazgos de la opción 5 salen en libros por ejecución."""
+    from pathlib import Path
+
+    from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
+
+    use_case = controller._build_use_case(object(), FakeLogger())
+
+    assert isinstance(use_case.findings_writer, XlsxFindingsWriter)
+    assert use_case.findings_writer._base_dir == Path("logs/registrar_empresas")
+
+
+def test_build_use_case_injects_rues_cache_loader_for_registrar_empresas():
+    """spec 016: data.json solo aporta resultados de RUES; Odoo se consulta siempre."""
+    from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+
+    use_case = controller._build_use_case(object(), FakeLogger())
+
+    assert use_case.rues_cache_loader is load_rues_cache

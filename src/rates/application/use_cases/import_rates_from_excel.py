@@ -7,7 +7,20 @@ from src.rates.domain.entities.rate import Rate
 from src.shared.console.progress import RichProgress
 from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.mega_dataframes import MegaDataFrames
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
 from src.special.domain.entities.special import Special
+
+_ORIGIN_COLUMNS = ["Hoja", "Fila", "CONTRATO", "CIUDAD", "CUP", "INTRA O EXTRA", "VALOR"]
+RATE_FINDING_COLUMNS = {
+    key: _ORIGIN_COLUMNS
+    for key in (
+        "contrato_no_existe",
+        "ciudad_no_existe",
+        "cup_no_existe",
+        "actividad_invalida",
+        "tarifa_vacia",
+    )
+}
 
 
 class ImportRatesFromExcel:
@@ -25,6 +38,7 @@ class ImportRatesFromExcel:
         mega: MegaDataFrames = None,
         rates_repo=None,
         logger=None,
+        findings_writer: FindingsWriter | None = None,
     ):
         self.package_repo = package_repo
         self.provider_repo = provider_repo
@@ -38,12 +52,44 @@ class ImportRatesFromExcel:
         self.mega = mega
         self.rates_repo = rates_repo
         self.logger = logger
+        self.findings_writer = findings_writer
+        self._reset_findings()
+
+    def _reset_findings(self):
+        self._findings: dict[str, list[dict]] = {key: [] for key in RATE_FINDING_COLUMNS}
+        self._seen_findings: set[tuple] = set()
+
+    def _add_finding(self, key: str, row: dict):
+        hoja, fila = row.get("_HOJA"), row.get("_FILA")
+        # Una misma fila puede pasar por más de un callback (paquetes, proveedores,
+        # especiales): con origen conocido se reporta una sola vez por tipo.
+        if fila is not None:
+            marker = (key, hoja, fila)
+            if marker in self._seen_findings:
+                return
+            self._seen_findings.add(marker)
+        self._findings[key].append({
+            "Hoja": hoja,
+            "Fila": fila,
+            "CONTRATO": row["CONTRATO"],
+            "CIUDAD": row["CIUDAD"],
+            "CUP": row["CUP"],
+            "INTRA O EXTRA": row["INTRA O EXTRA"],
+            "VALOR": row.get("_VALOR_ORIG", row["VALOR"]),
+        })
+
+    def _publish_findings(self):
+        folder = self.findings_writer.write(self._findings, RATE_FINDING_COLUMNS) if self.findings_writer else None
+        summary = summarize_findings(self._findings, folder)
+        self.logger.info(f"Resumen de hallazgos de tarifas: {summary}", user_msg=summary)
 
     def execute(self, excel):
+        self._reset_findings()
         self._progress_city(excel)
         self._progress_packages(excel)
         self._progress_providers(excel)
         self._progress_specials(excel)
+        self._publish_findings()
 
     def _resolve_names(self, raw_names, catalog):
         """Apply fuzzy matching and return deduplicated resolved names."""
@@ -154,6 +200,7 @@ class ImportRatesFromExcel:
                 if slug:
                     city_alias[upper] = city_map[slug]
 
+        df = df.with_columns(pl.col("VALOR").cast(pl.Utf8).alias("_VALOR_ORIG"))
         df = df.with_columns(
             pl.col("VALOR").cast(pl.Utf8).str.replace_all(r"\D", "").alias("VALOR")
         )
@@ -176,40 +223,40 @@ class ImportRatesFromExcel:
                     if not contract_id:
                         self.logger.error(
                             f"Contrato no encontrado: '{row['CONTRATO']}'",
-                            user_msg=f"El contrato '{row['CONTRATO']}' no existe en el sistema.",
                         )
+                        self._add_finding("contrato_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not city_id:
                         self.logger.error(
                             f"Ciudad no encontrada: '{row['CIUDAD']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"La ciudad '{row['CIUDAD']}' no existe. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("ciudad_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not cup_id:
                         self.logger.error(
                             f"CUP no encontrado: '{row['CUP']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"El CUP '{row['CUP']}' no existe. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("cup_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not activity_id:
                         self.logger.error(
                             f"Actividad no encontrada: '{row['INTRA O EXTRA']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"La actividad '{row['INTRA O EXTRA']}' no es válida. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("actividad_invalida", row)
                         self.progress.advance()
                         continue
 
                     if not rate_value:
                         self.logger.error(
                             f"Valor vacío para CUP '{row['CUP']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"El valor de la tarifa está vacío. CUP: '{row['CUP']}', Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("tarifa_vacia", row)
                         self.progress.advance()
                         continue
 

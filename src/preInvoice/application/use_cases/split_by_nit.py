@@ -41,6 +41,7 @@ _FIXED_UPPER = {c.strip().upper() for c in FIXED_COLUMNS}
 
 # Colores de fase usados en assigned_rates (sin prefijo alpha "00")
 _PHASE_COLORS_6 = {
+    "E2EFDA",  # Fase 1 — Paquete propio local (spec 010: el blanco es tarifa Odoo)
     "FFF2CC",  # Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)
     "F4B183",  # Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)
     "BDD7EE",  # Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)
@@ -53,6 +54,7 @@ _PHASE_COLORS_6 = {
 _PHASE_COLORS_ARGB = {f"00{c}" for c in _PHASE_COLORS_6}
 
 _PHASE_LEGEND = [
+    ("E2EFDA", "Fase 1 — Paquete propio local"),
     ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
     ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
     ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
@@ -339,9 +341,9 @@ class SplitByNit:
         ws.cell(row=1, column=1, value="Color").font = h_font
         ws.cell(row=1, column=2, value="Significado").font = h_font
 
-        # Fase 1: sin color (blanco)
+        # Sin color (blanco): precio oficial de la tarifa de Odoo
         ws.cell(row=2, column=1, value="").fill = PatternFill("solid", fgColor="FFFFFF")
-        ws.cell(row=2, column=2, value="Fase 1 — Paquete propio (sin fallback)")
+        ws.cell(row=2, column=2, value="Sin color — Tarifa Odoo (especial/base)")
 
         for i, (color, label) in enumerate(_PHASE_LEGEND, start=3):
             ws.cell(row=i, column=1, value="").fill = PatternFill("solid", fgColor=color)

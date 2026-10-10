@@ -31,6 +31,8 @@ from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
 from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
+from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
     SaSpecialRepository,
@@ -73,6 +75,8 @@ def _build_use_case(session, logger) -> ImportCompaniesFromExcel:
         not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
         logs_dir=Path("logs"),
         not_linked_log_generator=NotLinkedCompaniesLogGenerator(logger),
+        findings_writer=XlsxFindingsWriter(Path("logs/registrar_empresas")),
+        rues_cache_loader=load_rues_cache,
     )
 
 
