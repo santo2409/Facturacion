@@ -225,9 +225,13 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         r = self._execute(
             "res.partner", "read",
             [[client_id]],
-            {"fields": ["vat"]},
+            {"fields": ["ref_num", "vat"]},
         )
-        if r and r[0].get("vat"):
+        if not r:
+            return None
+        if r[0].get("ref_num"):
+            return str(r[0]["ref_num"]).strip()
+        if r[0].get("vat"):
             return str(r[0]["vat"]).split("-")[0].strip()
         return None
 
