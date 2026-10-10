@@ -1476,7 +1476,6 @@ class AssignRatesFromExcel:
 
         self.logger.info(
             f"Columna Total generada: {len(headers)} columnas CUP, {df.height} filas",
-            user_msg=f"Columna Total calculada para {df.height} registros.",
         )
         return df, cell_colors
 
