@@ -150,6 +150,13 @@ class AssignRatesFromExcel:
         self.imedical_repo = imedical_repo
         self.tian_repo = tian_repo
         self.tian_log_generator = tian_log_generator
+        self.findings_reporter = findings_reporter
+        self.odoo_available = False
+        self._odoo_by_nit: dict[str, dict] = {}
+        self._odoo_index = OdooRateIndex([])
+        self._company_findings: list[dict] = []
+        self._findings: dict[str, list[dict]] = {key: [] for key in PHASE_FINDING_KEYS}
+        self._odoo_cells = 0
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
