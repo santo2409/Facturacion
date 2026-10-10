@@ -473,7 +473,9 @@ Es normal: consulta el RUES empresa por empresa. Si se corta por el límite de c
 | **CUP** | Código Único de Procedimiento: identifica cada examen (p.ej. `890201`). Con sufijo (`890201-1`) es una variante que puede homologarse al código base |
 | **NIT** | Identificación tributaria de la empresa. El sistema lo guarda con 9 dígitos, sin dígito de verificación |
 | **DV** | Dígito de verificación del NIT |
-| **Paquete** | Conjunto de tarifas pactado con una empresa. `PAQUETE C 2025` es el paquete de referencia por defecto |
+| **Paquete** | Conjunto de tarifas pactado con una empresa, en la base de datos local. `PAQUETE C 2025` es el paquete de referencia por defecto |
+| **Tarifa especial / Tarifa base (Odoo)** | Tarifas asignadas a cada empresa en su ficha de Odoo. Son la fuente principal de precios de la opción 6: primero la especial, luego la base |
+| **Hallazgo** | Fila que el sistema no pudo procesar o resolvió con un respaldo, y que queda en un libro de `logs/<opción>/<fecha>/` para que el área correspondiente la corrija |
 | **Proveedor / Tarifa especial** | Otros tipos de contrato tarifario, además de los paquetes |
 | **INTRA / EXTRA** | Examen intramural (en sede) o extramural (fuera de sede); cambian la tarifa |
 | **Facturador / Gestor** | Persona responsable de facturar a una empresa |
