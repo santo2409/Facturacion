@@ -64,12 +64,12 @@ python main.py
 
 | Opción | Función | Descripción |
 |--------|---------|-------------|
-| 1 | Web Scrapping | Valida NITs/nombres: BD local → Odoo → RUES |
-| 2 | Facturadores | Importa facturadores y los vincula con empresas |
+| 1 | Web Scrapping | Valida NITs/nombres: Odoo → BD local → RUES; corrige la BD local con lo que dice Odoo |
+| 2 | Facturadores | Importa facturadores y los vincula con empresas (validadas contra Odoo) |
 | 3 | Tratamiento Información | Normaliza paquetes/proveedores/especiales y corrige CUPs |
 | 4 | Cargar Tarifas | Importa tarifas a BD (fuzzy de ciudades, rename de especiales) |
 | 5 | Registrar Empresas - Paquetes | Registra empresas y su paquete tarifario |
-| 6 | Asignar Tarifas | Cascada de 6 fases, i-medical, TIAN → `CONSOLIDADO.xlsx` |
+| 6 | Asignar Tarifas | Tarifa Odoo (especial → base), luego cascada local de 6 fases; i-medical, TIAN → `CONSOLIDADO.xlsx` + libros por fase |
 | 7 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
 | 8 | Cargar Pre Facturas | Inyección en Odoo — **deshabilitada** |
 | 9 | Generar Faltantes | Lista las tarifas no resueltas |
