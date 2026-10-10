@@ -310,7 +310,31 @@ class AssignRatesFromExcel:
 
     # Columnas auxiliares usadas internamente por el pipeline (spec 008
     # RF-23): nunca deben llegar al CONSOLIDADO.xlsx.
-    _INTERNAL_COLUMNS = ("_NIT_RAW",)
+    _INTERNAL_COLUMNS = ("_NIT_RAW", "_PAQUETE_LOCAL")
+
+    def _write_legend(self, workbook) -> None:
+        legend_ws = workbook.add_worksheet("Leyenda")
+        legend_ws.set_column(0, 0, 6)
+        legend_ws.set_column(1, 1, 55)
+        legend_ws.write(0, 0, "Color", workbook.add_format({"bold": True}))
+        legend_ws.write(0, 1, "Significado", workbook.add_format({"bold": True}))
+        white_fmt = workbook.add_format({"bg_color": "#FFFFFF"})
+        legend_ws.write(1, 0, "", white_fmt)
+        legend_ws.write(1, 1, "Sin color — Tarifa Odoo (especial/base)")
+        for row, (color, label) in enumerate(_PHASE_LEGEND, start=2):
+            fmt = workbook.add_format({"bg_color": f"#{color}"})
+            legend_ws.write(row, 0, "", fmt)
+            legend_ws.write(row, 1, label)
+
+    def _publish_findings(self) -> AssignRatesResult:
+        findings_dir = None
+        if self.findings_reporter:
+            findings_dir = self.findings_reporter.write(self._findings, self._company_findings)
+        counts = {"odoo": self._odoo_cells}
+        counts.update({key: len(rows) for key, rows in self._findings.items()})
+        return AssignRatesResult(
+            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available
+        )
 
     def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:
         presentes = [c for c in self._INTERNAL_COLUMNS if c in df.columns]
