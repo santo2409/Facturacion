@@ -1,11 +1,19 @@
 from pathlib import Path
 
 import polars as pl
+from rich.console import Console
+from rich.table import Table
 
 from src.activity.infrastructure.sa_activity_type_repository import (
     SaActivityRepository,
 )
-from src.assign.application.use_cases.assigned_rates import AssignRatesFromExcel
+from src.assign.application.use_cases.assigned_rates import (
+    AssignRatesFromExcel,
+    AssignRatesResult,
+)
+from src.assign.infrastructure.reporting.xlsx_phase_findings_reporter import (
+    XlsxPhaseFindingsReporter,
+)
 from src.billers.infrastructure.persistence.sa_biller_company_repository import (
     SaBillerCompanyRepository,
 )
