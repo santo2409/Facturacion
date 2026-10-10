@@ -35,9 +35,18 @@ DIRECTORY=.
 # Odoo / Avancys
 ODOO_URL=https://soandesv14.avancyserp.com
 ODOO_DB=soandesv14
-ODOO_USER=tu_usuario_odoo
-ODOO_PASSWORD=tu_contraseña_odoo
+ODOO_USERNAME=tu_usuario_odoo
+ODOO_API_KEY=tu_api_key_odoo
+
+# Negocio
+DAY_INITIAL=5
+DAY_FINAL=29
+TIAN_NIT=
+BOOK_ROUTE=/ruta/a/la/carpeta
+BOOK_NAME=libro_nits.xlsx
 ```
+
+La lista completa de variables, con sus valores por defecto, está en la [Documentación Técnica](docs/TECHNICAL_DOCUMENTATION.md#42-variables-de-entorno-env-plantilla-en-envexample).
 
 ## Migraciones
 
