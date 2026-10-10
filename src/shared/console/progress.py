@@ -16,6 +16,7 @@ class RichProgress:
             BarColumn(),
             "[progress.percentage]{task.percentage:>3.0f}%",
             TimeElapsedColumn(),
+            console=USER_CONSOLE,
         )
         self.task = self.progress.add_task(description, total=total)
         return self
