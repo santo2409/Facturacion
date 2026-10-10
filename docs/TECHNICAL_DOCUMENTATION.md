@@ -257,32 +257,48 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
 - **Entrada:** `BOOK_ROUTE/BOOK_NAME`, hoja `nits`, columnas `nits` (obligatoria) y `empresa` (opcional; sin ella solo se busca por NIT).
 - **Puertos:** `NitScraperRepository`, `NitCacheRepository`.
 - **Adaptadores:** `RuesPlaywrightScraper` (`infrastructure/scrapers/rues_selenium_scraper.py:28`; usa Playwright aunque el archivo diga selenium), `SaCompanyNitCacheRepository` (índices en memoria por NIT/nombre sobre `companies`), `XmlRpcOdooRepository`.
-- **Cascada de 7 pasos** (use case l.105-244). Cada paso recibe solo lo que quedó pendiente del anterior:
+- **Cascada de 8 pasos, con Odoo como fuente de verdad** (spec 016; use case l.105-310). Cada paso recibe solo lo que quedó pendiente del anterior. Odoo se consulta **siempre**, también para los NIT que ya están en la BD local; la BD local es el respaldo:
 
 | Paso | Fuente | Criterio |
 |---|---|---|
-| 1 | BD local | NIT normalizado |
-| 2 | BD local | Nombre normalizado exacto |
-| 3 | Odoo | NIT en batch (`vat in`, lotes de 500, luego `vat =like 'nit%'`, lotes de 50) |
-| 4 | Odoo | Nombre (`ilike` sin sufijo societario, límite 10) + validación fuzzy |
-| 5 | RUES | NIT (9 primeros dígitos) |
+| 1 | Odoo | NIT en batch en 4 etapas (`_find_partners_by_document`, spec 012): `ref_num in` → `ref_num =like 'nit%'` (espacio final o DV pegado) → `vat in` → `vat =like 'nit%'`. Lotes de 500 (`in`) y 50 (`=like`); cada etapa consulta solo los pendientes; se acepta una fila si `normalize_nit` del campo coincide; gana el menor `id`. Una sola llamada para todos los NIT, conocidos o no |
+| 2 | Odoo | Nombre (`ilike` sin sufijo societario, límite 10) + validación fuzzy. El documento devuelto sale de `ref_num`, con `vat` sin DV como respaldo (`_document_of`) |
+| 3 | BD local | NIT normalizado (respaldo si Odoo no lo tiene o no está disponible) |
+| 4 | BD local | Nombre normalizado exacto |
+| 5 | RUES | NIT (9 primeros dígitos). Antes de scrapear se usa la caché `rues_cache` (entradas de `data.json` cuya fuente es RUES); solo el resto se consulta |
 | 6 | RUES | Nombre (hasta `RUES_NAME_LOOKUP_LIMIT`) + validación fuzzy |
 | 7 | — | `is_company=False` → pendiente de revisión manual |
+| 8 | BD local ← Odoo | Sincronización (ver abajo) |
 
+- **Odoo no disponible** (falla `connect` o falla la consulta en lote): se continúa con BD local y RUES, la consola muestra *Odoo no disponible: se validó con la BD local y RUES.* y no se escribe nada en la BD local basado en Odoo (`odoo_available = False`).
+- **Sincronización de la BD local con Odoo (paso 8, spec 016):** para cada empresa que resolvió Odoo se compara con la BD local en una sola lectura en memoria y se guarda en **un único `save_many`** (que reutiliza el upsert por NIT de `SaCompanyRepository.save_batch`, ADR-012):
+  - no existe en la BD local → **Agregada**;
+  - existe con otra razón social (comparación normalizada) → **Actualizada**;
+  - la razón social de Odoo ya la usa otra empresa con otro NIT → no se actualiza, `conflict = "Nombre duplicado en BD local con otro NIT"` y **No actualizada: nombre duplicado en BD local**;
+  - iguales → no se escribe nada.
+
+  El detalle queda en `use_case.local_updates`, que se publica como libro `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción). Odoo nunca se modifica.
+- **`data.json` como caché de RUES:** `load_rues_cache(path)` (`src/scrapping/infrastructure/persistence/rues_json_cache.py`) lee `data.json` y conserva solo las entradas cuyo `source` empieza por `RUES`. Las de Odoo, las de BD local y las del formato anterior (sin `source`) se ignoran, así que Odoo se vuelve a consultar. Un archivo ausente o ilegible da una caché vacía. Los use cases la reciben como argumento (`rues_cache`), no leen archivos.
 - **Fuzzy:** `CompanyNameMatcher` sobre `RapidFuzzBiller.fuzz_property`: `token_sort_ratio`, si no alcanza `partial_ratio`, y acepta con score ≥ 90. `_names_differ` usa el mismo matcher para no reportar novedades falsas (spec 003).
-- **Salidas:** `DIRECTORY/data.json` (lista de `NitResult`), persiste los positivos nuevos en `companies` y escribe `logs/empresas_no_encontradas.xlsx` (acumulativo).
+- **Salidas:** `DIRECTORY/data.json` (lista de `NitResult` de la corrida), sincroniza `companies` con Odoo y persiste los positivos nuevos de RUES, escribe `logs/web_scrapping/<AAAA-MM-DD_HHMM>/bd_local_actualizada.xlsx` (con resumen en consola) y `logs/empresas_no_encontradas.xlsx` (acumulativo). Es la **única** opción que pasa al libro todos los resultados, así que es la única que retira un NIT cuando queda resuelto sin novedades.
+- **Dato de Odoo (spec 012):** de los 57 clientes que solo tienen `vat`, 54 son duplicados de un partner original con el mismo NIT en `ref_num`, creados entre el 2026-05-07 y el 2026-06-02 (probablemente por `create_client`, que solo llena `vat`). Con la prioridad por `ref_num` se elige el partner original. Se recomienda que el administrador de Odoo los fusione o archive.
 
 ### 7.2 Opción 2 — Facturadores (`src/billers`)
 
-- **Cadena:** `import_billers` (`infrastructure/console/import_billers_controller.py:29`) → `ImportBillersFromExcel.execute` (`application/use_cases/import_billers_from_excel.py:35`).
+- **Cadena:** `import_billers` (`infrastructure/console/import_billers_controller.py:60`, arma dependencias en `_build_use_case` l.32 e inyecta el `logger`) → `ImportBillersFromExcel.execute` (`application/use_cases/import_billers_from_excel.py:53`).
 - **Entrada:** columnas `GESTOR`, `NIT`, `EMPRESA`.
 - **Algoritmo:**
   1. `_process_billers`: toma los GESTOR únicos y los empareja por fuzzy (90) con `billers`; hace upsert por `name`.
   2. `_process_companies`:
-     - Toma los NIT que no están en `companies` y busca su nombre primero en `data.json` y luego con `RUESNitService` (solo cascada por NIT).
-     - Hace `save_batch`.
+     - Envía **todos** los NIT del Excel, conocidos o no, a `RUESNitService.search(nits, rues_cache=…)`: Odoo primero (spec 016). `data.json` solo aporta la caché de RUES (`load_rues_cache`, inyectada como `rues_cache_loader`) y se reescribe con los resultados de la corrida.
+     - Hace `save_batch` con el nombre que dio la búsqueda (el de Odoo tiene prioridad).
      - Vincula GESTOR→biller por fuzzy; si no encuentra el NIT, cae a un match **exacto** por nombre.
-     - Deduplica por `company_id` y hace upsert en `companies_billers` con `ON CONFLICT(company_id)`: gana el último.
+     - Deduplica por `company_id` y hace upsert en `companies_billers` con `ON CONFLICT(company_id)`: gana el último. Repetir la empresa con el **mismo** facturador no es conflicto (spec 015).
+- **Hallazgos** (`logs/facturadores/<AAAA-MM-DD_HHMM>/`, specs 011 y 015):
+  - `empresa_no_encontrada` y `facturador_no_encontrado` (columnas NIT, Facturador).
+  - `vinculacion_duplicada` (NIT, Empresa, Facturador descartado, Facturador vigente), una fila por reemplazo.
+  - `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción): empresas agregadas o corregidas en la BD local con datos de Odoo (spec 016).
+  - Al terminar, la consola muestra el resumen de `summarize_findings`.
 
 ### 7.3 Opción 3 — Tratamiento de Información (`src/dataProcessing`)
 
