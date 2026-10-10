@@ -1447,15 +1447,19 @@ class AssignRatesFromExcel:
                     self.logger.warning(
                         f"{len(phase7_logs)} tarifas asignadas desde cualquier ciudad/paquete:\n"
                         + "\n".join(f"  {l}" for l in unique_p7logs[:50]),
-                        user_msg=f"{len(phase7_logs)} tarifas tomadas de otra ciudad por falta de tarifa local.",
                     )
+
+        resolved_cells = set(odoo_resolved) | set(cell_colors)
+        for idx, row in enumerate(rows_data):
+            for h in headers:
+                if row.get(str(h)) == 1 and (str(h), idx) not in resolved_cells:
+                    record(PHASE_FINDING_KEYS[6], idx, h, 1, "Sin tarifa")
 
         if fallback_logs:
             unique_logs = sorted(set(fallback_logs))
             self.logger.warning(
                 f"{len(fallback_logs)} tarifas asignadas desde paquete por defecto:\n"
                 + "\n".join(f"  {l}" for l in unique_logs[:50]),
-                user_msg=f"{len(fallback_logs)} tarifas tomadas del paquete '{default_package}' por falta de tarifa en el paquete original.",
             )
 
         # Replace columns with computed values
