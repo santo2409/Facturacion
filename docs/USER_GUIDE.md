@@ -213,14 +213,17 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 - Si una tarifa especial cambia de año (`ALQUERIA 2025` → `ALQUERIA 2026`), **renombra** la existente en lugar de crear otra.
 - Si una tarifa ya existía, actualiza su valor.
 
-**Errores por fila.** La fila se salta y el resto continúa:
+**Errores por fila.** La fila se salta, el resto continúa y la fila queda en un libro de `logs/cargar_tarifas/<fecha>/` con la **Hoja** y la **Fila** del Excel de origen. En la consola solo verás el resumen (*"Hallazgos en …"* o *"Sin hallazgos."*):
 
-| Mensaje | Qué hacer |
+| Libro | Qué hacer |
 |---|---|
-| *La ciudad '…' no existe.* | Revisa la ortografía o la hoja `Ciudades` |
-| *El CUP '…' no existe.* | Revisa `novedades_cups.xlsx` de la opción 3 |
-| *La actividad '…' no es válida.* | Solo se admiten INTRA o EXTRA |
-| *El valor de la tarifa está vacío.* | Completa el VALOR |
+| `contrato_no_existe` | Revisa el `CONTRATO` de la fila (suele ser una diferencia de escritura con el contrato ya registrado) |
+| `ciudad_no_existe` | Revisa la ortografía o la hoja `Ciudades` |
+| `cup_no_existe` | Revisa `novedades_cups.xlsx` de la opción 3 |
+| `actividad_invalida` | Solo se admiten INTRA o EXTRA |
+| `tarifa_vacia` | Completa el VALOR |
+
+> La opción crea antes los contratos y las ciudades nuevas del libro, así que en la práctica lo que más aparece es `cup_no_existe`, `actividad_invalida` y `tarifa_vacia`.
 
 ### Opción 5 — Registrar Empresas - Paquetes
 
