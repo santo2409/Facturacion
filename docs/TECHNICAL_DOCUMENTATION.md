@@ -100,7 +100,7 @@ Reglas (constitución v1.1.0):
 - `console_app()` (l.103-130) pinta el menú y pide `Seleccione una opción` (por defecto `0`).
 - `dispatch_option()` (l.39-83) despacha al controller.
 - `safe_dispatch()` (l.86-100) captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
-- Todos los controllers reciben `tech_logger` (`LoggerAdapter`).
+- Todos los controllers reciben `tech_logger` (`LoggerAdapter`). La opción 6 lo envuelve en `TechOnlyLogger`, que descarta `user_msg`.
 
 ## 4. Configuración del entorno
 
