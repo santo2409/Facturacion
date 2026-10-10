@@ -17,6 +17,7 @@ from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
     XmlRpcOdooRepository,
 )
 from src.scrapping.infrastructure.console.nit_service import RUESNitService
+from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
 from src.scrapping.infrastructure.persistence.sa_company_nit_cache_repository import (
     SaCompanyNitCacheRepository,
 )
