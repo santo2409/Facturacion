@@ -341,9 +341,9 @@ class SplitByNit:
         ws.cell(row=1, column=1, value="Color").font = h_font
         ws.cell(row=1, column=2, value="Significado").font = h_font
 
-        # Fase 1: sin color (blanco)
+        # Sin color (blanco): precio oficial de la tarifa de Odoo
         ws.cell(row=2, column=1, value="").fill = PatternFill("solid", fgColor="FFFFFF")
-        ws.cell(row=2, column=2, value="Fase 1 — Paquete propio (sin fallback)")
+        ws.cell(row=2, column=2, value="Sin color — Tarifa Odoo (especial/base)")
 
         for i, (color, label) in enumerate(_PHASE_LEGEND, start=3):
             ws.cell(row=i, column=1, value="").fill = PatternFill("solid", fgColor=color)
