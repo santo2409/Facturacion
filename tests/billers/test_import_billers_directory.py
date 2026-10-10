@@ -1,6 +1,7 @@
 """Tests para la resolución de DIRECTORY en la opción 2 (spec 007, RF-06/AC-07)."""
 
 import json
+from pathlib import Path
 
 import polars as pl
 import pytest
