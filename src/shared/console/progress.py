@@ -1,5 +1,7 @@
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
+from src.shared.console.user_console import USER_CONSOLE
+
 
 class RichProgress:
     def __init__(self):
