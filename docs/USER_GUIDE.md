@@ -49,7 +49,7 @@ La configura normalmente el equipo técnico una sola vez. Lo que te conviene sab
 | `BOOK_ROUTE` / `BOOK_NAME` | Carpeta y nombre del libro que usa la opción 1 (Web Scrapping) |
 | `TIAN_NIT` | NIT al que se facturan las empresas de la lista TIAN |
 | `DIRECTORY` | Carpeta donde se guardan `data.json` y el log técnico (por defecto, la carpeta del proyecto) |
-| `ODOO_USERNAME` / `ODOO_API_KEY` | Acceso a Odoo; sin ellos el sistema valida solo con la BD y el RUES |
+| `ODOO_USERNAME` / `ODOO_API_KEY` | Acceso a Odoo; sin ellos el sistema valida solo con la BD y el RUES, y la opción 6 usa solo las tarifas de la base de datos |
 
 > ⚠️ Si `DAY_INITIAL` o `DAY_FINAL` están vacías, la opción 6 falla con *"Ocurrió un error ejecutando la opción. Revisa los logs."*
 
