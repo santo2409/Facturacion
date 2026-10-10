@@ -13,6 +13,8 @@ from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
 )
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
 from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
+    LOCAL_UPDATE_BOOK,
+    LOCAL_UPDATE_COLUMNS,
     SearchNitsWithOdooFallbackUseCase,
 )
 from src.scrapping.infrastructure.persistence.sa_company_nit_cache_repository import (
