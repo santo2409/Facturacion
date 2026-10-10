@@ -90,39 +90,16 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
             pl.col("NIT").str.replace_all(r"[^\d]", "").str.slice(0, 9).alias("NIT")
         ).filter(pl.col("NIT") != "")
 
-        df_companies = pl.DataFrame(self.company_repo.all())
-        new_nits = rows
-        if df_companies.height > 0:
-            new_nits = rows.filter(~pl.col("NIT").is_in(df_companies["nit"]))
-
-        result_scrapping = []
-
-        if len(new_nits) > 0:
-            if Path(file_path).exists():
-                with open(file_path, "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                    result_scrapping = [
-                        Company(d.get("nit"), d.get("name")) for d in data
-                    ]
-                # Buscar NITs que no estén en el archivo
-                existing_nits = {str(r.nit) for r in result_scrapping}
-                pending = [
-                    n for n in new_nits["NIT"].to_list() if n not in existing_nits
-                ]
-                if pending:
-                    new_results = self.nit_service.search(pending) or []
-                    result_scrapping.extend(
-                        Company(r.nit, r.name) for r in new_results if r.name
-                    )
-                    self.nit_service.writer(new_results, file_path)
-            else:
-                scraped = self.nit_service.search(new_nits["NIT"].to_list()) or []
-                self.nit_service.writer(scraped, file_path)
-                result_scrapping = [Company(r.nit, r.name) for r in scraped if r.name]
-        elif Path(file_path).exists():
-            with open(file_path, "r", encoding="utf-8") as file:
-                data = json.load(file)
-                result_scrapping = [Company(d.get("nit"), d.get("name")) for d in data]
+        # Odoo es la fuente de verdad: todos los NIT del Excel se validan contra Odoo,
+        # también los que ya están en la BD local. `data.json` solo aporta resultados
+        # de RUES, que evitan volver a consultar RUES (spec 016).
+        rues_cache = self.rues_cache_loader(file_path) if self.rues_cache_loader else {}
+        results = self.nit_service.search(
+            list(dict.fromkeys(rows["NIT"].to_list())), rues_cache=rues_cache
+        ) or []
+        self.nit_service.writer(results, file_path)
+        result_scrapping = [Company(r.nit, r.name) for r in results if r.name]
+        self._findings[LOCAL_UPDATE_BOOK] = list(getattr(self.nit_service, "local_updates", []))
 
         nit_df = pl.DataFrame(
             {
