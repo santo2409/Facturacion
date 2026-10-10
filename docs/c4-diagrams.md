@@ -123,6 +123,11 @@ C4Component
     Rel(company, normalizers, "normalize_document")
     Rel(assign, fuzz, "Ciudades, nombres")
     Rel(preInvoice, excel_io, "openpyxl")
+    Rel(billers, reporting, "FindingsWriter")
+    Rel(rates, reporting, "FindingsWriter")
+    Rel(company, reporting, "FindingsWriter")
+    Rel(assign, reporting, "PhaseFindingsReporter")
+    Rel(rates, excel_io, "MegaDataFrames")
 ```
 
 ---
