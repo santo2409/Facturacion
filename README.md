@@ -7,7 +7,7 @@ Sistema CLI para automatizar el proceso de facturación de SOANDES: importación
 - Python 3.12+
 - PostgreSQL
 - Firefox (para web scraping RUES)
-- Acceso a Odoo 14 / Avancys (para inyección de facturas)
+- Acceso a Odoo 14 / Avancys (validación de clientes, tarifas oficiales de la opción 6 en solo lectura e inyección de facturas)
 
 ## Instalación
 
