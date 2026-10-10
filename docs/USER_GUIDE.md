@@ -113,18 +113,19 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 | `nits` | `nits` | Sí |
 | `nits` | `empresa` | Recomendada: sin ella solo se busca por NIT y no se pueden corregir NITs errados |
 
-**Cómo busca cada empresa**, en este orden: base de datos local → Odoo (por NIT y por nombre) → RUES (por NIT y por nombre). Lo que no aparece en ninguna fuente queda pendiente de revisión manual.
+**Cómo busca cada empresa**, en este orden: **Odoo** (por NIT y por nombre) → base de datos local → RUES (por NIT y por nombre). **Odoo es la fuente de verdad**: se consulta siempre, también para las empresas que ya están en la base de datos local. La base local solo es respaldo y se **corrige con lo que dice Odoo**: si una empresa no estaba, se agrega; si cambió su razón social en Odoo, se actualiza. En Odoo el NIT se busca en el campo *Número de identificación* y, si no está, en el NIT tributario (`vat`). Lo que no aparece en ninguna fuente queda pendiente de revisión manual. El sistema solo **lee** de Odoo; nunca lo modifica.
 
 **Resultado:**
 
-- `data.json`: lo usan después las opciones 2 y 5. No lo edites a mano.
+- `data.json`: guarda los resultados de la corrida. Las opciones 2 y 5 solo reutilizan de él lo que vino de RUES (para no repetir consultas lentas); Odoo se vuelve a consultar siempre. No lo edites a mano.
+- `logs/web_scrapping/<fecha>/bd_local_actualizada.xlsx`: empresas que se agregaron o se corrigieron en la base local con los datos de Odoo (columnas: NIT, Nombre en BD local, Nombre en Odoo, Acción). Revísalo si quieres confirmar los cambios.
 - `logs/empresas_no_encontradas.xlsx`: ver §7.
 
 **Mensajes que puedes ver:**
 
 | Mensaje | Qué hacer |
 |---|---|
-| *No se pudo conectar a Odoo; se consultará RUES para todos los NITs.* | Revisa la conexión o las credenciales de Odoo; el proceso continúa |
+| *Odoo no disponible: se validó con la BD local y RUES.* | Revisa la conexión o las credenciales de Odoo y vuelve a ejecutar. Mientras tanto el proceso continúa con la base local y RUES, y **no** corrige la base local |
 | *N empresa(s) quedaron sin consulta por nombre en RUES por el límite configurado* | Vuelve a ejecutar la opción para procesar las restantes |
 | *Se corrigieron datos de la empresa '…'; revisa empresas_no_encontradas.xlsx.* | Confirma la corrección en el reporte |
 
