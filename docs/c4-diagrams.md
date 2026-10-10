@@ -186,6 +186,29 @@ classDiagram
         +find_clients_by_name(name, limit) list~dict~
         +find_clients_batch(nits) dict
         +get_nit(client_id) str
+        +find_partner_rates_batch(nits) list~dict~
+        +find_rate_lines(rate_ids, cup_codes) list~dict~
+    }
+
+    class OdooRateIndex {
+        +price(rate_id, city, cup, activity) int
+    }
+
+    class AssignRatesResult {
+        <<dataclass>>
+        +counts: dict
+        +findings_dir: Path
+        +odoo_available: bool
+    }
+
+    class PhaseFindingsReporter {
+        <<abstract>>
+        +write(findings, companies) Path
+    }
+
+    class FindingsWriter {
+        <<abstract>>
+        +write(books, columns) Path
     }
 
     class ImedicalRepository {
