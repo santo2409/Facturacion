@@ -328,7 +328,7 @@ Cada pre-factura tiene la hoja **BASE GENERAL** y la hoja **Leyenda**:
 - La fila 1 muestra el **nombre** de cada examen.
 - La fila 2 tiene los encabezados.
 - Solo aparecen los exámenes que esa empresa usó.
-- Se conservan los **colores** del CONSOLIDADO.
+- Se conservan los **colores** del CONSOLIDADO. La hoja Leyenda también explica que una celda sin color es tarifa de Odoo (todavía muestra una fila *Fase 7* que ya no se usa).
 
 Si no existe el CONSOLIDADO, verás *"Archivo CONSOLIDADO.xlsx no encontrado. No se pueden generar pre-facturas."*: ejecuta primero la opción 6.
 
