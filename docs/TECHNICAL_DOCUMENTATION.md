@@ -82,16 +82,16 @@ Reglas (constitución v1.1.0):
 
 | Módulo | Responsabilidad | Opción |
 |---|---|---|
-| `scrapping` | Validación de NITs: BD local → Odoo → RUES | 1 |
+| `scrapping` | Validación de NITs: Odoo (fuente de verdad) → BD local (respaldo) → RUES; sincroniza la BD local con Odoo | 1 |
 | `billers` | Facturadores y vínculo empresa↔facturador | 2 |
 | `dataProcessing` | Normalización de paquetes/proveedores/especiales + corrección de CUPs | 3 |
 | `rates` | Importación de tarifas a BD | 4 |
 | `company` | Empresas, vínculo empresa↔paquete, duplicados, i-medical, TIAN | 5, 10 |
-| `assign` | Asignación de tarifas → `CONSOLIDADO.xlsx`; faltantes | 6, 9 |
+| `assign` | Asignación de tarifas (Odoo especial → base, luego cascada local) → `CONSOLIDADO.xlsx` + libros por fase; faltantes | 6, 9 |
 | `preInvoice` | Split del CONSOLIDADO por facturador/NIT | 7 |
-| `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 5, 6) | 8 (deshabilitada) |
+| `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 5, 6): búsqueda de clientes por `ref_num` → `vat` y lectura de tarifas para la opción 6 | 8 (deshabilitada) |
 | `package`, `provider`, `special`, `city`, `cup`, `activity` | Catálogos | — |
-| `shared` | BD, Excel, consola, utilidades, logging, config | — |
+| `shared` | BD, Excel, consola, utilidades, logging, reporting (`FindingsWriter`), config | — |
 
 ### 3.3 Entry point
 
