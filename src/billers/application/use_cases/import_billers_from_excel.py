@@ -9,8 +9,20 @@ from src.billers.domain.repositories.import_biller_from_excel_repository import 
     ImportBillerFromExcelRepository,
 )
 from src.company.domain.entities.company import Company
+from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
+    LOCAL_UPDATE_BOOK,
+    LOCAL_UPDATE_COLUMNS,
+)
 from src.shared.config import get_paths_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
+
+BILLER_FINDING_COLUMNS = {
+    "empresa_no_encontrada": ["NIT", "Facturador"],
+    "facturador_no_encontrado": ["NIT", "Facturador"],
+    "vinculacion_duplicada": ["NIT", "Empresa", "Facturador descartado", "Facturador vigente"],
+    LOCAL_UPDATE_BOOK: LOCAL_UPDATE_COLUMNS[LOCAL_UPDATE_BOOK],
+}
 
 
 class ImportBillersFromExcel(ImportBillerFromExcelRepository):
