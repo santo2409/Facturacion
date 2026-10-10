@@ -1189,7 +1189,7 @@ class AssignRatesFromExcel:
                     continue
 
                 for h in headers:
-                    if row.get(str(h)) == 1:
+                    if row.get(str(h)) == 1 and (str(h), idx) not in odoo_resolved:
                         cup_id = cup_code_to_id.get(str(h).strip())
                         if cup_id:
                             rate_keys_set.add((package_id, city_id, cup_id, activity_id, model))
