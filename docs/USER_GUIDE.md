@@ -374,24 +374,25 @@ La corrección se hace a mano en la base de datos o con el equipo técnico.
 |---|---|
 | `FACTURADOR` | Facturador asignado o `GENERAL` |
 | `Especial / General` | `ESPECIAL` o `GENERAL` |
-| `PAQUETE` | Paquete de la empresa o `PAQUETE C 2025` |
+| `PAQUETE` | Tarifa especial de Odoo; si no, tarifa base de Odoo; si no, paquete de la base de datos o `PAQUETE C 2025` |
 | `FACTURAS` | Número(s) de factura del paciente |
 | `Total` | Suma de las tarifas de la fila |
 | Columnas CUP | **Valor de la tarifa** asignada a cada examen |
 
 **Colores: ¿de dónde salió cada tarifa?**
 
-Cuando la empresa no tiene tarifa propia para un examen, el sistema la busca en otras fuentes, en este orden. El color indica cuál usó:
+El sistema busca primero la tarifa de la empresa en Odoo (tarifa especial y luego tarifa base). Si Odoo no tiene precio para ese examen, ciudad y actividad, la busca en la base de datos, en este orden. El color indica de dónde salió:
 
 | Color | Fase | De dónde salió la tarifa | ¿Revisar? |
 |---|---|---|---|
-| Sin color | 1 | Paquete propio de la empresa | No |
+| Sin color (con valor) | Odoo | Tarifa especial o tarifa base de la empresa en Odoo | No |
+| 🟩 Verde claro `#E2EFDA` | 1 | Paquete propio de la empresa en la base de datos | Opcional |
 | 🟨 Dorado suave `#FFF2CC` | 2 | `PAQUETE C 2025`, mismo examen y ciudad | Opcional |
 | 🟧 Naranja `#F4B183` | 3 | Otro paquete cualquiera, mismo examen y ciudad | Sí |
 | 🟦 Azul claro `#BDD7EE` | 4 | `PAQUETE C 2025`, examen base (sin sufijo `-1`, `-2`…) | Sí |
 | 🔷 Azul medio `#9DC3E6` | 5 | Otro paquete, examen base, misma ciudad | Sí |
 | 🟪 Púrpura `#D5A6E6` | 6 | Cualquier paquete de **otra ciudad** | Sí, con prioridad |
-| Sin color y valor **1** | — | **No se encontró tarifa** | **Obligatorio**: usa la opción 9 |
+| Sin color y valor **1** | — | **No se encontró tarifa** (ver `sin_resolver.xlsx`) | **Obligatorio**: usa la opción 9 |
 
 > Un **1** en una columna CUP no es una tarifa de $1: significa que el examen se hizo y no hay tarifa. No generes pre-facturas sin resolver esos casos.
 
