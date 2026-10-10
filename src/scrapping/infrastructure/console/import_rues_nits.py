@@ -118,6 +118,7 @@ def execute_web_scrapping(logger):
     data = use_case.execute(nits, show_progress=True, book_names=book_names)
 
     NotFoundCompaniesLogGenerator(logger).generate(data, LOGS_DIR)
+    publish_local_updates(use_case, XlsxFindingsWriter(Path("logs/web_scrapping")), logger)
 
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump([d.__dict__ for d in data], file, ensure_ascii=False, indent=2)
