@@ -677,7 +677,7 @@ class AssignRatesFromExcel:
                 # ── 4. Sin resultado — se deja el dato y se registra NOVEDAD ──
                 novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en Odoo, BD local ni RUES"
                 cambios.append(novedad)
-                self.logger.warning(novedad, user_msg=f"No se encontró registro para NIT {nit} ({empresa}).")
+                self.logger.warning(novedad)
                 not_found_by_nit[nit] = NitResult(
                     nit=nit,
                     is_company=False,
