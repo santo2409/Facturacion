@@ -485,4 +485,4 @@ Es normal: consulta el RUES empresa por empresa. Si se corta por el límite de c
 | **i-medical** | Tabla de correcciones de NITs que llegan mal desde i-medical |
 | **TIAN** | Lista de empresas que se facturan a nombre de TIAN |
 | **RUES** | Registro Único Empresarial y Social: fuente pública para verificar empresas |
-| **Odoo / Avancys** | ERP donde se emiten las facturas |
+| **Odoo / Avancys** | ERP donde se emiten las facturas y donde está la tarifa oficial de cada empresa (fuente principal de precios de la opción 6) |
