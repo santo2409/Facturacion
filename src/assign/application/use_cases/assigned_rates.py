@@ -1,10 +1,12 @@
 import json
 import os
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import polars as pl
 
+from src.assign.domain.odoo_rate_index import OdooRateIndex
 from src.company.domain.entities.imedical_correction import ImedicalCorrection
 from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
