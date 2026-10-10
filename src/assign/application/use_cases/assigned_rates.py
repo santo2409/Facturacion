@@ -1315,7 +1315,6 @@ class AssignRatesFromExcel:
                 self.logger.warning(
                     f"{len(wildcard_logs)} tarifas asignadas desde otros paquetes:\n"
                     + "\n".join(f"  {l}" for l in unique_wlogs[:50]),
-                    user_msg=f"{len(wildcard_logs)} tarifas tomadas de otros paquetes por falta de tarifa.",
                 )
 
         # Phase 5: CUP homologation — strip suffix and search base CUP in PAQUETE C 2025
