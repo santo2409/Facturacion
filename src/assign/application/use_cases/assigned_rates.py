@@ -75,9 +75,36 @@ def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) ->
     sin_factura = df.filter(pl.col("FACTURAS") == "").height
     logger.info(
         f"Enriquecimiento facturas: {df.height - sin_factura} con match, {sin_factura} sin factura.",
-        user_msg=f"{df.height - sin_factura} registros con factura asignada.",
     )
     return df
+
+
+PHASE_FINDING_KEYS = (
+    "fase_01_paquete_propio_local",
+    "fase_02_paquete_c_2025",
+    "fase_03_cualquier_paquete",
+    "fase_04_cup_base_paquete_c",
+    "fase_05_cup_base_cualquier_paquete",
+    "fase_06_cualquier_ciudad",
+    "sin_resolver",
+)
+_COLOR_LOCAL_OWN = "E2EFDA"  # Verde claro — fase 1 local (paquete propio)
+
+_PHASE_LEGEND = [
+    (_COLOR_LOCAL_OWN, "Fase 1 — Paquete propio local"),
+    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
+    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
+    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
+    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
+    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
+]
+
+
+@dataclass
+class AssignRatesResult:
+    counts: dict[str, int] = field(default_factory=dict)
+    findings_dir: Path | None = None
+    odoo_available: bool = False
 
 
 class AssignRatesFromExcel:
