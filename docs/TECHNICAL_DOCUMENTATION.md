@@ -32,7 +32,7 @@
 | ERP | Odoo 14 / Avancys vía XML-RPC |
 | Arquitectura | Hexagonal (Ports & Adapters) por módulo |
 | Entry point | `main.py` → menú → controller por opción |
-| Tests | 643 en verde (pytest, fakes manuales) |
+| Tests | 834 en verde (pytest, fakes manuales) |
 
 El sistema automatiza la facturación mensual de exámenes médicos ocupacionales para ~500 empresas clientes: valida NITs, carga catálogos y tarifas, asigna la tarifa a cada examen por paciente, separa pre-facturas por NIT/facturador y (cuando está habilitado) inyecta facturas borrador en Odoo.
 
