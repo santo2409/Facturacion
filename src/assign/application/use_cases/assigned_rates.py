@@ -1251,13 +1251,15 @@ class AssignRatesFromExcel:
                 continue
 
             for h in headers:
-                if row.get(str(h)) == 1:
+                if row.get(str(h)) == 1 and (str(h), idx) not in odoo_resolved:
                     cup_id = cup_code_to_id.get(str(h).strip())
                     if cup_id:
                         key = (package_id, city_id, cup_id, activity_id, model)
                         price = rates_cache.get(key)
                         if price:
                             result_cols[str(h)][idx] = int(price)
+                            cell_colors[(str(h), idx)] = _COLOR_LOCAL_OWN
+                            record(PHASE_FINDING_KEYS[0], idx, h, price, pkg_name)
                         elif default_pkg_tuple:
                             def_id, def_model = default_pkg_tuple
                             fallback_key = (def_id, city_id, cup_id, activity_id, def_model)
