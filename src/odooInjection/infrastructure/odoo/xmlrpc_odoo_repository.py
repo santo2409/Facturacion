@@ -63,85 +63,131 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         return self._cache_products[code]
 
     def find_client(self, nit: str, name: str) -> tuple[int | None, str | None, str | None]:
-        # Búsqueda exacta
-        r = self._execute(
-            "res.partner", "search_read",
-            [[["vat", "=", nit]]],
-            {"fields": ["id", "name"], "limit": 1},
-        )
-        if r:
-            return r[0]["id"], r[0]["name"], "NIT"
-        # Búsqueda con patrón (cubre cualquier dígito de verificación)
-        r = self._execute(
-            "res.partner", "search_read",
-            [[["vat", "=like", f"{nit}%"]]],
-            {"fields": ["id", "name"], "limit": 1},
-        )
-        if r:
-            return r[0]["id"], r[0]["name"], "NIT"
-        return None, None, None
+        found = self.find_clients_batch([nit])
+        return found.get(nit, (None, None, None))
 
     _BATCH_SIZE = 500
     _LIKE_BATCH_SIZE = 50
 
-    def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
+    # Etapas de la búsqueda por documento: en Odoo el NIT vive en `ref_num`; `vat`
+    # solo lo tienen algunos clientes creados recientemente. Cada etapa consulta
+    # solo los NIT que las anteriores no resolvieron.
+    _DOCUMENT_STAGES = (
+        ("ref_num", "in"),    # exacto
+        ("ref_num", "like"),  # =like nit%: espacio final o DV pegado
+        ("vat", "in"),        # exacto
+        ("vat", "like"),      # =like nit%: vat con DV
+    )
+
+    @staticmethod
+    def _document_domain(field: str, mode: str, nits: list[str]) -> list:
+        if mode == "in":
+            return [[field, "in", nits]]
+        return ["|"] * (len(nits) - 1) + [[field, "=like", f"{n}%"] for n in nits]
+
+    def _find_partners_by_document(self, nits: list[str], fields: list[str]) -> dict[str, dict]:
+        """{nit: fila de res.partner}. Una fila se acepta si `normalize_nit` del campo
+        consultado coincide con el NIT pedido; gana la de menor id. Un fallo de una
+        etapa se registra y no impide las siguientes. Solo lectura."""
         unique_nits = list(dict.fromkeys(n for n in nits if n))
-        found: dict[str, tuple[int, str, str]] = {}
-        for i in range(0, len(unique_nits), self._BATCH_SIZE):
-            chunk = unique_nits[i : i + self._BATCH_SIZE]
-            try:
-                found.update(self._find_clients_batch_chunk(chunk))
-            except Exception as e:
-                self._logger.warning(
-                    f"Fallo consultando Odoo en batch para {len(chunk)} NIT(s): {e}"
-                )
-        return found
-
-    def _find_clients_batch_chunk(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
-        found: dict[str, tuple[int, str, str]] = {}
-
-        try:
-            rows = self._execute(
-                "res.partner", "search_read",
-                [[["vat", "in", nits]]],
-                {"fields": ["id", "name", "vat"]},
-            )
-            for row in rows:
-                vat = row.get("vat")
-                if vat in nits and vat not in found:
-                    found[vat] = (row["id"], row["name"], "NIT")
-        except Exception as e:
-            self._logger.warning(
-                f"Fallo la búsqueda exacta de Odoo para {len(nits)} NIT(s): {e}"
-            )
-
-        pending = [n for n in nits if n not in found]
-        if not pending:
-            return found
-
-        for i in range(0, len(pending), self._LIKE_BATCH_SIZE):
-            sub_chunk = pending[i : i + self._LIKE_BATCH_SIZE]
-            try:
-                domain = ["|"] * (len(sub_chunk) - 1) + [
-                    ["vat", "=like", f"{n}%"] for n in sub_chunk
-                ]
-                rows = self._execute(
-                    "res.partner", "search_read",
-                    [domain],
-                    {"fields": ["id", "name", "vat"], "order": "id asc"},
-                )
+        fields = list(dict.fromkeys([*fields, "ref_num", "vat"]))
+        found: dict[str, dict] = {}
+        for field, mode in self._DOCUMENT_STAGES:
+            pending = [n for n in unique_nits if n not in found]
+            if not pending:
+                break
+            size = self._BATCH_SIZE if mode == "in" else self._LIKE_BATCH_SIZE
+            for i in range(0, len(pending), size):
+                chunk = pending[i : i + size]
+                try:
+                    rows = self._execute(
+                        "res.partner", "search_read",
+                        [self._document_domain(field, mode, chunk)],
+                        {"fields": fields, "order": "id asc"},
+                    )
+                except Exception as e:
+                    self._logger.warning(
+                        f"Fallo consultando Odoo ({field}, {mode}) para {len(chunk)} NIT(s): {e}"
+                    )
+                    continue
+                wanted = set(chunk)
                 for row in rows:
-                    vat = row.get("vat") or ""
-                    for n in sub_chunk:
-                        if n not in found and vat.startswith(n):
-                            found[n] = (row["id"], row["name"], "NIT")
-                            break
-            except Exception as e:
-                self._logger.warning(
-                    f"Fallo la búsqueda por patrón de Odoo para {len(sub_chunk)} NIT(s) "
-                    f"(quedan pendientes para RUES): {e}"
-                )
+                    nit = normalize_nit(row.get(field) or "")
+                    if nit in wanted and nit not in found:
+                        found[nit] = row
         return found
+
+    @staticmethod
+    def _document_of(row: dict) -> str:
+        """Documento del partner: `ref_num`; si está vacío, `vat` sin DV."""
+        ref_num = normalize_nit(row.get("ref_num") or "")
+        if ref_num:
+            return ref_num
+        return normalize_nit(str(row.get("vat") or "").split("-")[0])
+
+    def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
+        rows = self._find_partners_by_document(nits, ["id", "name"])
+        return {nit: (row["id"], row["name"], "NIT") for nit, row in rows.items()}
+
+    _PARTNER_RATE_FIELDS = ["id", "name", "rate_base_special_id", "rate_base_id"]
+
+    def find_partner_rates_batch(self, nits: list[str]) -> list[dict]:
+        rows = self._find_partners_by_document(nits, self._PARTNER_RATE_FIELDS)
+        result = []
+        for nit, row in rows.items():
+            special = row.get("rate_base_special_id") or [None, None]
+            base = row.get("rate_base_id") or [None, None]
+            result.append({
+                "nit": nit,
+                "partner_id": row["id"],
+                "name": row["name"],
+                "special_id": special[0],
+                "special_name": special[1],
+                "base_id": base[0],
+                "base_name": base[1],
+            })
+        return result
+
+    _RATE_BATCH_SIZE = 50
+
+    def find_rate_lines(self, rate_ids: list[int], cup_codes: list[str]) -> list[dict]:
+        unique_rates = list(dict.fromkeys(r for r in rate_ids if r))
+        unique_cups = list(dict.fromkeys(c for c in cup_codes if c))
+        if not unique_rates or not unique_cups:
+            return []
+
+        rows: list[dict] = []
+        for i in range(0, len(unique_rates), self._RATE_BATCH_SIZE):
+            chunk = unique_rates[i : i + self._RATE_BATCH_SIZE]
+            rows.extend(self._execute(
+                "account.base.rate.line", "search_read",
+                [[["base_rate_id", "in", chunk], ["product_id.default_code", "in", unique_cups]]],
+                {"fields": ["base_rate_id", "city_id", "product_id", "intra", "price_unit"]},
+            ))
+
+        product_ids = list(dict.fromkeys(r["product_id"][0] for r in rows if r.get("product_id")))
+        if not product_ids:
+            return []
+        products = self._execute(
+            "product.product", "read", [product_ids], {"fields": ["default_code"]},
+        )
+        code_by_product = {p["id"]: p.get("default_code") for p in products}
+
+        lines = []
+        for row in rows:
+            city = row.get("city_id")
+            product = row.get("product_id")
+            cup = code_by_product.get(product[0]) if product else None
+            if not city or not cup:
+                continue
+            lines.append({
+                "rate_id": row["base_rate_id"][0],
+                "city": city[1],
+                "cup": cup,
+                "intra": bool(row.get("intra")),
+                "price": row.get("price_unit") or 0,
+            })
+        return lines
 
     @staticmethod
     def _strip_suffix(name: str) -> str:
