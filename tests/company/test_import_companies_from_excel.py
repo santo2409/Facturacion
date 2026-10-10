@@ -175,12 +175,12 @@ def test_progress_companies_not_found_is_omitted_and_logged(sample_df, deps):
 
 
 def test_progress_companies_does_not_create_when_not_verified_despite_display_name(sample_df, deps, tmp_path):
-    data = [
-        {"nit": "900111111", "is_company": False, "name": "NOMBRE DE EXHIBICION", "checked_bases": "Odoo, RUES"},
-        {"nit": "900222222", "is_company": True, "name": "EMPRESA B VERIFICADA", "checked_bases": "Odoo"},
-    ]
-    with open(tmp_path / "data.json", "w") as f:
-        json.dump(data, f)
+    from src.scrapping.domain.entities.nit_result import NitResult
+
+    deps["nit_service"] = FakeNitService(results=[
+        NitResult("900111111", False, "NOMBRE DE EXHIBICION", "Odoo, RUES"),
+        NitResult("900222222", True, "EMPRESA B VERIFICADA", "Odoo"),
+    ])
 
     uc = _build(deps)
     uc._progress_companies(sample_df)
