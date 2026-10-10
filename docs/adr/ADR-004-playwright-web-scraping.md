@@ -45,3 +45,5 @@ Se adopta **Playwright con Firefox headless** para el scraping del RUES:
 
 ## Notas
 Se mantiene `datos_gov_scraper.py` como alternativa para consultas que no requieren JavaScript. El scraper implementa el patrón Repository (`NitScraperRepository`) permitiendo intercambiar implementaciones.
+
+> **Actualización (spec 014, 2026-10-10):** `datos_gov_scraper.py` se eliminó: nunca participó en la cascada de búsqueda (BD → Odoo → RUES) y no implementaba `search_by_name`. El patrón Repository sigue vigente con `NitScraperRepository` y `RuesPlaywrightScraper`. El texto de arriba se conserva como historia.
