@@ -112,8 +112,13 @@ class SearchNitsWithOdooFallbackUseCase:
         nits: list,
         show_progress: bool = False,
         book_names: dict[str, str] | None = None,
+        rues_cache: dict[str, NitResult] | None = None,
     ) -> list[NitResult]:
+        """`rues_cache` ({nit normalizado: NitResult}) son resultados previos de
+        RUES: solo evitan volver a consultar RUES; Odoo se consulta siempre."""
         book_names = book_names or {}
+        rues_cache = rues_cache or {}
+        self.local_updates = []
         originals = {str(n): n for n in nits}
         keys = list(originals)
         resolved: dict[str, NitResult] = {}
