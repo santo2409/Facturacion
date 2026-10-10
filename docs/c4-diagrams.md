@@ -276,7 +276,9 @@ classDiagram
         -name_matcher: CompanyNameMatcher
         -local_name_lookup: bool
         -rues_name_limit: int
-        +execute(nits, show_progress, book_names) list~NitResult~
+        +odoo_available: bool
+        +local_updates: list~dict~
+        +execute(nits, show_progress, book_names, rues_cache) list~NitResult~
         -_names_differ(book_name, found_name) bool
         -_resolve(...)
     }
