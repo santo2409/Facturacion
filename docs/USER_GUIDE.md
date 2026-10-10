@@ -366,7 +366,7 @@ La corrección se hace a mano en la base de datos o con el equipo técnico.
 
 ## 6. Cómo leer el CONSOLIDADO
 
-`CONSOLIDADO.xlsx` tiene la hoja **Consolidado** y, si hubo celdas coloreadas, la hoja **Leyenda**.
+`CONSOLIDADO.xlsx` tiene la hoja **Consolidado** y, si hubo celdas coloreadas o con tarifa de Odoo, la hoja **Leyenda**.
 
 **Columnas calculadas:**
 
