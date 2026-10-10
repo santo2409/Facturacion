@@ -1,6 +1,7 @@
 """Tests para la resolución de DIRECTORY en la opción 2 (spec 007, RF-06/AC-07)."""
 
 import json
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -49,19 +50,21 @@ def test_process_companies_sin_directory_resuelve_la_ruta_por_defecto(
     encuentra y el servicio externo no se consulta."""
     monkeypatch.delenv("DIRECTORY", raising=False)
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "data.json").write_text(
-        json.dumps([{"nit": "900111111", "name": "EMPRESA A"}]), encoding="utf-8"
-    )
     df = pl.DataFrame({
         "NIT": ["900111111"],
         "GESTOR": ["GESTOR A"],
         "EMPRESA": ["EMPRESA A"],
     })
-    uc = ImportBillersFromExcel(**deps)
+    seen = {}
+
+    def loader(path):
+        seen["path"] = path
+        return {}
+
+    uc = ImportBillersFromExcel(**deps, rues_cache_loader=loader)
 
     uc._process_companies(df)
 
-    assert deps["nit_service"].called_with is None, (
-        "se consultó el servicio externo: la caché en el directorio por "
-        "defecto no se resolvió"
-    )
+    # spec 016: el servicio de búsqueda se consulta siempre (Odoo primero); lo que se
+    # verifica es que la ruta por defecto de data.json se resuelve en el directorio de trabajo
+    assert (tmp_path / "data.json").resolve() == Path(seen["path"]).resolve()

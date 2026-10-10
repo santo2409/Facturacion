@@ -1,7 +1,9 @@
 # ADR-008: Sistema de Logging Dual (Usuario + Técnico)
 
 ## Estado
-Aceptado
+Reemplazado por [ADR-014](ADR-014-salida-consola-y-libros-por-ejecucion.md) (2026-10-10)
+
+> **Nota histórica:** este ADR describe el diseño original. Desde la spec 011 el logger de usuario ya no escribe en un archivo: `user_msg` se muestra en la consola Rich y los hallazgos por fila van a libros por ejecución. El texto de abajo se conserva sin cambios como registro de la decisión.
 
 ## Fecha
 2024-12-17

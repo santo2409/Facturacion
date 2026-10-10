@@ -5,13 +5,24 @@ from src.shared.utils.text_normalizer import normalize_company_name, normalize_n
 
 CONFLICT_DUPLICATE_NAME = "Nombre ya registrado en BD local con otro NIT"
 DEFAULT_RUES_NAME_LIMIT = 200
+ODOO_UNAVAILABLE_MSG = "Odoo no disponible: se validó con la BD local y RUES."
+
+# Libro `bd_local_actualizada`: empresas que se agregaron o corrigieron en la BD
+# local con los datos de Odoo (spec 016). Lo comparten las opciones 1, 2 y 5.
+LOCAL_UPDATE_BOOK = "bd_local_actualizada"
+LOCAL_UPDATE_COLUMNS = {
+    LOCAL_UPDATE_BOOK: ["NIT", "Nombre en BD local", "Nombre en Odoo", "Acción"]
+}
+ACTION_ADDED = "Agregada"
+ACTION_UPDATED = "Actualizada"
+ACTION_NOT_UPDATED = "No actualizada: nombre duplicado en BD local"
 
 
 class SearchNitsWithOdooFallbackUseCase:
-    """Resuelve NITs en cascada: BD local (NIT y nombre), Odoo (NIT y nombre) y
-    RUES (NIT y nombre). Cada paso recibe solo lo que los anteriores no
-    resolvieron, y toda coincidencia por nombre se valida contra un umbral
-    difuso antes de aceptarse."""
+    """Resuelve NITs en cascada con Odoo como fuente de verdad: Odoo (NIT y
+    nombre), BD local como respaldo (NIT y nombre) y RUES (NIT y nombre). Cada
+    paso recibe solo lo que los anteriores no resolvieron, y toda coincidencia
+    por nombre se valida contra un umbral difuso antes de aceptarse."""
 
     def __init__(
         self,
@@ -30,6 +41,8 @@ class SearchNitsWithOdooFallbackUseCase:
         self.name_matcher = name_matcher
         self.local_name_lookup = local_name_lookup
         self.rues_name_limit = rues_name_limit
+        self.odoo_available = False
+        self.local_updates: list[dict] = []
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
@@ -39,7 +52,7 @@ class SearchNitsWithOdooFallbackUseCase:
         except Exception as e:
             self.logger.warning(
                 f"No se pudo conectar a Odoo: {e}",
-                user_msg="No se pudo conectar a Odoo; se consultará RUES para todos los NITs.",
+                user_msg=ODOO_UNAVAILABLE_MSG,
             )
             self.odoo_repo = None
 
@@ -99,8 +112,13 @@ class SearchNitsWithOdooFallbackUseCase:
         nits: list,
         show_progress: bool = False,
         book_names: dict[str, str] | None = None,
+        rues_cache: dict[str, NitResult] | None = None,
     ) -> list[NitResult]:
+        """`rues_cache` ({nit normalizado: NitResult}) son resultados previos de
+        RUES: solo evitan volver a consultar RUES; Odoo se consulta siempre."""
         book_names = book_names or {}
+        rues_cache = rues_cache or {}
+        self.local_updates = []
         originals = {str(n): n for n in nits}
         keys = list(originals)
         resolved: dict[str, NitResult] = {}
@@ -118,10 +136,51 @@ class SearchNitsWithOdooFallbackUseCase:
                     groups.setdefault(name, []).append(key)
             return groups
 
+        self._connect_odoo()
+        self.odoo_available = self.odoo_repo is not None
+        default_bases = "Odoo, RUES" if self.odoo_repo else "RUES"
+
+        # ── 3. Odoo por NIT (una sola llamada) ───────────────────────────
+        if self.odoo_repo and pending():
+            normalized = {key: normalize_nit(key) for key in pending()}
+            try:
+                batch = self.odoo_repo.find_clients_batch(
+                    list(dict.fromkeys(normalized.values()))
+                )
+            except Exception as e:
+                batch = {}
+                self.odoo_available = False
+                self.logger.warning(
+                    f"Fallo consultando Odoo en batch: {e}", user_msg=ODOO_UNAVAILABLE_MSG
+                )
+            for key, norm in normalized.items():
+                match = batch.get(norm)
+                if match:
+                    _, name, _ = match
+                    resolved[key] = self._resolve(
+                        key, book_names.get(key), name, None, "Odoo", "Odoo/NIT"
+                    )
+
+        # ── 4. Odoo por nombre ───────────────────────────────────────────
+        if self.odoo_available and self.name_matcher and pending():
+            for name, group in pending_names().items():
+                candidates = self._safe(
+                    lambda n=name: self.odoo_repo.find_clients_by_name(n),
+                    [],
+                    f"buscando '{name}' por nombre en Odoo",
+                )
+                winner = self.name_matcher.best_match(name, candidates)
+                if not winner or not winner.get("vat"):
+                    continue
+                for key in group:
+                    resolved[key] = self._resolve(
+                        key, name, winner["name"], winner["vat"], "Odoo", "Odoo/nombre"
+                    )
+
         # ── 1. BD local por NIT ──────────────────────────────────────────
-        if self.nit_cache_repo:
+        if self.nit_cache_repo and pending():
             cached = self._safe(
-                lambda: self.nit_cache_repo.get_many(keys), {}, "consultando caché local de NITs"
+                lambda: self.nit_cache_repo.get_many(pending()), {}, "consultando caché local de NITs"
             )
             for key, hit in cached.items():
                 known_nits.add(normalize_nit(str(hit.nit)))
@@ -145,44 +204,13 @@ class SearchNitsWithOdooFallbackUseCase:
                                 key, name, hit.name, str(hit.nit), "BD local", "BD local/nombre"
                             )
 
-        self._connect_odoo()
-        default_bases = "Odoo, RUES" if self.odoo_repo else "RUES"
-
-        # ── 3. Odoo por NIT (una sola llamada) ───────────────────────────
-        if self.odoo_repo and pending():
-            normalized = {key: normalize_nit(key) for key in pending()}
-            batch = self._safe(
-                lambda: self.odoo_repo.find_clients_batch(
-                    list(dict.fromkeys(normalized.values()))
-                ),
-                {},
-                "consultando Odoo en batch",
-            )
-            for key, norm in normalized.items():
-                match = batch.get(norm)
-                if match:
-                    _, name, _ = match
-                    resolved[key] = self._resolve(
-                        key, book_names.get(key), name, None, "Odoo", "Odoo/NIT"
-                    )
-
-        # ── 4. Odoo por nombre ───────────────────────────────────────────
-        if self.odoo_repo and self.name_matcher and pending():
-            for name, group in pending_names().items():
-                candidates = self._safe(
-                    lambda n=name: self.odoo_repo.find_clients_by_name(n),
-                    [],
-                    f"buscando '{name}' por nombre en Odoo",
-                )
-                winner = self.name_matcher.best_match(name, candidates)
-                if not winner or not winner.get("vat"):
-                    continue
-                for key in group:
-                    resolved[key] = self._resolve(
-                        key, name, winner["name"], winner["vat"], "Odoo", "Odoo/nombre"
-                    )
-
         # ── 5. RUES por NIT ──────────────────────────────────────────────
+        for key in pending():
+            cached_hit = rues_cache.get(normalize_nit(key))
+            if cached_hit and cached_hit.is_company and cached_hit.name:
+                resolved[key] = self._resolve(
+                    key, book_names.get(key), cached_hit.name, None, default_bases, "RUES/NIT"
+                )
         if pending():
             scraped = self._safe(
                 lambda: self.search_nits_use_case.execute(
@@ -246,21 +274,55 @@ class SearchNitsWithOdooFallbackUseCase:
                 )
             results.append(result)
 
-        # ── Persistencia en BD local y reporte de conflictos ─────────────
+        # ── 8. BD local ← Odoo, y persistencia de lo nuevo de RUES ───────
+        # Odoo es la fuente de verdad: lo que resolvió se agrega o corrige en la BD
+        # local (una sola escritura en lote). Lo que resolvió RUES se guarda si es
+        # nuevo, como antes. Nada se escribe en Odoo.
         if self.nit_cache_repo:
-            nuevos = [
-                r for r in results
-                if r.is_company and normalize_nit(str(r.nit)) not in known_nits
-            ]
-            if nuevos:
+            positives = [r for r in results if r.is_company]
+            stored = self._safe(
+                lambda: self.nit_cache_repo.get_many([str(r.nit) for r in positives]),
+                {},
+                "consultando caché local de NITs",
+            )
+            local_by_norm = {normalize_nit(str(h.nit)): h for h in stored.values()}
+            known_nits.update(local_by_norm)
+
+            to_save: list[NitResult] = []
+            odoo_changes: dict[str, dict] = {}
+            for r in positives:
+                norm = normalize_nit(str(r.nit))
+                if str(r.source).startswith("Odoo"):
+                    previous = local_by_norm.get(norm)
+                    if previous is None:
+                        action, local_name = ACTION_ADDED, ""
+                    elif normalize_company_name(previous.name) != normalize_company_name(r.name):
+                        action, local_name = ACTION_UPDATED, previous.name
+                    else:
+                        continue
+                    to_save.append(r)
+                    odoo_changes[norm] = {
+                        "NIT": norm,
+                        "Nombre en BD local": local_name,
+                        "Nombre en Odoo": r.name,
+                        "Acción": action,
+                    }
+                elif norm not in known_nits:
+                    to_save.append(r)
+
+            if to_save:
                 omitted = self._safe(
-                    lambda: self.nit_cache_repo.save_many(nuevos),
+                    lambda: self.nit_cache_repo.save_many(to_save),
                     [],
                     "guardando caché local de NITs",
                 ) or []
                 omitted_nits = {normalize_nit(str(o)) for o in omitted}
-                for result in nuevos:
-                    if normalize_nit(str(result.nit)) in omitted_nits:
+                for result in to_save:
+                    norm = normalize_nit(str(result.nit))
+                    if norm in omitted_nits:
                         result.conflict = CONFLICT_DUPLICATE_NAME
+                        if norm in odoo_changes:
+                            odoo_changes[norm]["Acción"] = ACTION_NOT_UPDATED
+            self.local_updates = list(odoo_changes.values())
 
         return results

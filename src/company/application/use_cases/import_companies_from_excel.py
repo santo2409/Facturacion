@@ -13,7 +13,19 @@ from src.scrapping.domain.entities.nit_result import NitResult
 from src.shared.config import get_paths_config
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
+    LOCAL_UPDATE_BOOK,
+    LOCAL_UPDATE_COLUMNS,
+)
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
 from src.shared.utils.document_normalizer import normalize_document
+
+COMPANY_FINDING_COLUMNS = {
+    "documento_acotado": ["Documento original", "Documento acotado"],
+    "paquetes_en_conflicto": ["Documento", "Paquete descartado", "Paquete vigente"],
+    "paquete_no_encontrado": ["Documento", "Razón social", "Paquete"],
+    LOCAL_UPDATE_BOOK: LOCAL_UPDATE_COLUMNS[LOCAL_UPDATE_BOOK],
+}
 from src.special.domain.entities.special import Special
 
 
@@ -33,6 +45,8 @@ class ImportCompaniesFromExcel:
         not_found_log_generator=None,
         logs_dir: Path = Path("logs"),
         not_linked_log_generator=None,
+        findings_writer: FindingsWriter | None = None,
+        rues_cache_loader=None,
     ):
         self.company_repo = company_repo
         self.package_repo = package_repo
@@ -50,13 +64,22 @@ class ImportCompaniesFromExcel:
         self._links_persisted = 0
         self._unlinked_count = 0
         self._empty_catalogs: list[str] = []
+        self.findings_writer = findings_writer
+        self.rues_cache_loader = rues_cache_loader
+        self._reset_findings()
+
+    def _reset_findings(self):
+        self._findings: dict[str, list[dict]] = {key: [] for key in COMPANY_FINDING_COLUMNS}
 
     def execute(self, df: pl.DataFrame):
+        self._reset_findings()
         self._progress_companies(df)
         self._progress_companies_to_packages(df)
         self._emit_summary()
 
     def _emit_summary(self):
+        folder = self.findings_writer.write(self._findings, COMPANY_FINDING_COLUMNS) if self.findings_writer else None
+        findings_summary = summarize_findings(self._findings, folder)
         self.logger.info(
             (
                 f"Resumen importación empresas: {self._companies_created} creada(s), "
@@ -67,7 +90,8 @@ class ImportCompaniesFromExcel:
             user_msg=(
                 f"Empresas creadas: {self._companies_created}. "
                 f"Vinculaciones persistidas: {self._links_persisted}. "
-                f"Filas sin vincular: {self._unlinked_count}."
+                f"Filas sin vincular: {self._unlinked_count}. "
+                f"{findings_summary}"
             ),
         )
 
@@ -84,47 +108,35 @@ class ImportCompaniesFromExcel:
                 self._dv_warning_count += 1
                 self.logger.warning(
                     f"Posible error de digitación: '{raw}' se acotó a '{doc.value}' (DV no coincide)",
-                    user_msg=f"El documento '{raw}' fue acotado a '{doc.value}'; verifica si tiene un error de digitación.",
+                )
+                self._findings["documento_acotado"].append(
+                    {"Documento original": raw, "Documento acotado": doc.value}
                 )
 
         doc_values = [doc.value for doc in normalized_by_raw.values()]
 
         df_companies = pl.DataFrame(self.company_repo.all())
-        pending_docs = doc_values
+        known: set[str] = set()
         if df_companies.height > 0:
             known = {normalize_document(n).value for n in df_companies["nit"].to_list()}
-            pending_docs = [d for d in doc_values if d not in known]
 
-        if not pending_docs:
+        if not doc_values:
             return
 
-        cached: dict[str, NitResult] = {}
-        if Path(file_path).exists():
-            with self.progress("Cargando datos de empresas", total=1):
-                with open(file_path, "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                for d in data:
-                    nit = normalize_document(d.get("nit")).value
-                    cached[nit] = NitResult(
-                        nit=nit,
-                        is_company=d.get("is_company", bool(d.get("name"))),
-                        name=d.get("name"),
-                        checked_bases=d.get("checked_bases", ""),
-                    )
-                self.progress.advance()
+        # Odoo es la fuente de verdad: todos los documentos del Excel se validan contra
+        # Odoo, también los que ya están en la BD local. `data.json` solo aporta
+        # resultados de RUES, que evitan volver a consultar RUES (spec 016).
+        rues_cache = self.rues_cache_loader(file_path) if self.rues_cache_loader else {}
+        with self.progress("Validando NITs (Odoo/RUES)", total=1):
+            results = self.nit_service.search(
+                list(dict.fromkeys(doc_values)), rues_cache=rues_cache
+            ) or []
+            self.progress.advance()
+        self.nit_service.writer(results, file_path)
+        self._findings[LOCAL_UPDATE_BOOK] = list(getattr(self.nit_service, "local_updates", []))
 
-        still_pending = [d for d in pending_docs if d not in cached]
-        if still_pending:
-            with self.progress("Validando NITs (Odoo/RUES)", total=len(still_pending)):
-                new_results = self.nit_service.search(still_pending) or []
-                self.progress.advance()
-            for result in new_results:
-                cached[normalize_document(result.nit).value] = result
-            self.nit_service.writer(list(cached.values()), file_path)
-
-        result_scrapping = [
-            cached[d] for d in pending_docs if d in cached
-        ]
+        cached = {normalize_document(r.nit).value: r for r in results}
+        result_scrapping = [cached[d] for d in doc_values if d in cached]
 
         razon_social_by_nit = {
             normalize_document(row["NIT"]).value: row["RAZON SOCIAL"]
@@ -152,7 +164,9 @@ class ImportCompaniesFromExcel:
         for result in result_scrapping:
             if _is_found(result):
                 doc = normalize_document(result.nit)
-                companies_map[doc.value] = Company(doc.value, result.name.strip().upper())
+                # Los ya conocidos los sincroniza el buscador con los datos de Odoo
+                if doc.value not in known:
+                    companies_map[doc.value] = Company(doc.value, result.name.strip().upper())
 
         if companies_map:
             with self.progress("Importando empresas", total=1):
@@ -269,7 +283,6 @@ class ImportCompaniesFromExcel:
                 if not found:
                     self.logger.warning(
                         f"Empresa no encontrada para documento '{nit}'",
-                        user_msg=f"No se encontró la empresa con documento '{nit}'.",
                     )
                     unlinked_rows.append(
                         UnlinkedRow(
@@ -294,18 +307,23 @@ class ImportCompaniesFromExcel:
                         self.logger.warning(
                             f"Vinculación duplicada para documento '{nit}': "
                             f"se descarta '{previous_pkg_name}' y prevalece '{row['PAQUETE']}'",
-                            user_msg=(
-                                f"El documento '{nit}' tiene paquetes en conflicto: "
-                                f"se descartó '{previous_pkg_name}' y quedó '{row['PAQUETE']}'."
-                            ),
                         )
+                        self._findings["paquetes_en_conflicto"].append({
+                            "Documento": nit,
+                            "Paquete descartado": previous_pkg_name,
+                            "Paquete vigente": row["PAQUETE"],
+                        })
                     batch_by_company[company_id] = CompanyPackage(company_id, package_id, model)
                     conflict_info[company_id] = (row["PAQUETE"], model)
                 else:
                     self.logger.warning(
                         f"Package not found: {row['PAQUETE']}",
-                        user_msg=f"No se encontró el paquete '{row['PAQUETE']}'.",
                     )
+                    self._findings["paquete_no_encontrado"].append({
+                        "Documento": nit,
+                        "Razón social": row["RAZON SOCIAL"],
+                        "Paquete": row["PAQUETE"],
+                    })
                 self.progress.advance()
 
         batch = list(batch_by_company.values())

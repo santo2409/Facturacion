@@ -596,84 +596,6 @@ def test_assign_rates_cup_homologation(deps):
         {"id": 1, "name": "PAQUETE BASICO"},
         {"id": 2, "name": "PAQUETE C 2025"},
     ])
-    # CUP con guion (id=2) y CUP base (id=3)
-    deps["cup_repo"] = FakeCupRepo([
-        {"id": 1, "code": "890201", "name": "HEMOGRAMA"},
-        {"id": 2, "code": "890201-01", "name": "HEMOGRAMA ESP"},
-        {"id": 3, "code": "890208", "name": "BASE CUP"},
-        {"id": 4, "code": "890208-03", "name": "CUP CON GUION"},
-    ])
-    # Solo existe tarifa para el CUP base (890208) en PAQUETE C 2025 (id=2)
-    deps["rates_repo"]._data[(2, 1, 3, 1, "Package")] = 42000
-
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890208-03": [1],
-    })
-    result, _ = uc._assign_rates(df, lookups)
-    assert result["890208-03"][0] == 42000
-
-
-def test_assign_rates_cup_homologation_logs(deps):
-    """Homologación genera log con CUP original y CUP base."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-    ])
-    deps["cup_repo"] = FakeCupRepo([
-        {"id": 1, "code": "890201", "name": "HEMOGRAMA"},
-        {"id": 3, "code": "890208", "name": "BASE CUP"},
-        {"id": 4, "code": "890208-03", "name": "CUP CON GUION"},
-    ])
-    deps["rates_repo"]._data[(2, 1, 3, 1, "Package")] = 42000
-
-    logger = FakeLogger()
-    deps["logger"] = logger
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890208-03": [1],
-    })
-    uc._assign_rates(df, lookups)
-    assert any("890208-03" in w and "890208" in w for w in logger.warnings)
-    assert any("PAQUETE C 2025" in w for w in logger.warnings)
-
-
-def test_assign_rates_no_homologation_without_dash(deps):
-    """CUP sin guion no intenta homologación — permanece en 1 si no hay tarifa."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-    ])
-    # No rates at all
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890201": [1],
-    })
-    result, _ = uc._assign_rates(df, lookups)
-    assert result["890201"][0] == 1
-
-
-def test_assign_rates_cup_homologation(deps):
-    """CUP con guion sin tarifa → se homologa al CUP base en PAQUETE C 2025."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-    ])
     deps["cup_repo"] = FakeCupRepo([
         {"id": 1, "code": "890201", "name": "HEMOGRAMA"},
         {"id": 3, "code": "890208", "name": "BASE CUP"},
@@ -798,54 +720,6 @@ def test_assign_rates_phase6_logs_source_package(deps):
     })
     uc._assign_rates(df, lookups)
     assert any("890208-03" in w and "890208" in w for w in logger.warnings)
-    assert any("OTRO PAQUETE" in w for w in logger.warnings)
-
-
-def test_assign_rates_phase7_any_city(deps):
-    """Phase 7: CUP sin tarifa en ninguna ciudad conocida → toma de otra ciudad."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-        {"id": 3, "name": "OTRO PAQUETE"},
-    ])
-    # Solo hay tarifa para city_id=99 (otra ciudad), cup=1, activity=1
-    deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000
-
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890201": [1],
-    })
-    result, _ = uc._assign_rates(df, lookups)
-    assert result["890201"][0] == 33000
-
-
-def test_assign_rates_phase7_logs_ciudad_diferente(deps):
-    """Phase 7 genera log con indicación de ciudad diferente."""
-    deps["package_repo"] = FakePackageRepo([
-        {"id": 1, "name": "PAQUETE BASICO"},
-        {"id": 2, "name": "PAQUETE C 2025"},
-        {"id": 3, "name": "OTRO PAQUETE"},
-    ])
-    deps["rates_repo"]._data[(3, 99, 1, 1, "Package")] = 33000
-
-    logger = FakeLogger()
-    deps["logger"] = logger
-    uc = _build(deps)
-    lookups = uc._build_lookups()
-    df = pl.DataFrame({
-        "NIT": ["900111111"],
-        "Ciudad": ["BOGOTA"],
-        "TIPO DE ACTIVIDAD": ["INTRA"],
-        "PAQUETE": ["PAQUETE BASICO"],
-        "890201": [1],
-    })
-    uc._assign_rates(df, lookups)
-    assert any("ciudad diferente" in w for w in logger.warnings)
     assert any("OTRO PAQUETE" in w for w in logger.warnings)
 
 
@@ -1017,8 +891,9 @@ def test_cell_colors_phase6_lilac(deps):
     assert colors.get(("890201", 0)) == "D5A6E6"
 
 
-def test_cell_colors_phase1_no_color(deps):
-    """Phase 1 (paquete propio) → sin color."""
+def test_cell_colors_phase1_local_own_package(deps):
+    """Fase 1 local (paquete propio) → color verde claro (spec 010, RF-09): el
+    blanco queda reservado para precios oficiales de Odoo."""
     deps["rates_repo"]._data[(1, 1, 1, 1, "Package")] = 80000  # paquete propio
 
     uc = _build(deps)
@@ -1031,7 +906,7 @@ def test_cell_colors_phase1_no_color(deps):
         "890201": [1],
     })
     _, colors = uc._assign_rates(df, lookups)
-    assert ("890201", 0) not in colors
+    assert colors.get(("890201", 0)) == "E2EFDA"
 
 
 def test_build_lookups_sin_directory_resuelve_al_valor_unico_por_defecto(deps, monkeypatch):

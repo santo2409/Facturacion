@@ -49,7 +49,7 @@ def setup_logging() -> LoggerAdapter:
         "propagate": False,
     }
 
-    # Ensure user audit log directory exists
+    # Crea la carpeta de todo handler que escriba a archivo (hoy solo tech_file)
     for handler in config.get("handlers", {}).values():
         if "filename" in handler:
             Path(handler["filename"]).parent.mkdir(parents=True, exist_ok=True)

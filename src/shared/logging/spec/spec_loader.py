@@ -9,15 +9,14 @@ _FALLBACK = {
         "disable_existing_loggers": False,
         "formatters": {
             "user_console": {
-                "format": "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+                "format": "%(message)s"
             }
         },
         "handlers": {
             "console": {
-                "class": "logging.StreamHandler",
+                "()": "src.shared.console.user_console.build_user_console_handler",
                 "level": "INFO",
                 "formatter": "user_console",
-                "stream": "ext://sys.stdout",
             }
         },
         "loggers": {

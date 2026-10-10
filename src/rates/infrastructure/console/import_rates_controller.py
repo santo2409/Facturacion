@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from src.activity.infrastructure.sa_activity_type_repository import (
     SaActivityRepository,
 )
@@ -19,6 +21,7 @@ from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.mega_dataframes import MegaDataFrames
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
@@ -26,13 +29,8 @@ from src.special.infrastructure.persistence.sa_special_repository import (
 )
 
 
-def import_rates(logger):
-    path = ask_excel_path()
-    loader = ExcelLoader()
-    excel = loader.load(path)
-    session = get_session()
-
-    use_case = ImportRatesFromExcel(
+def _build_use_case(session, logger, loader):
+    return ImportRatesFromExcel(
         package_repo=SaPackageRepository(session, logger),
         provider_repo=SaProviderRepository(session, logger),
         special_repo=SaSpecialRepository(session, logger),
@@ -45,6 +43,15 @@ def import_rates(logger):
         mega=MegaDataFrames(),
         rates_repo=SaRatesRepository(session, logger),
         logger=logger,
+        findings_writer=XlsxFindingsWriter(Path("logs/cargar_tarifas")),
     )
 
+
+def import_rates(logger):
+    path = ask_excel_path()
+    loader = ExcelLoader()
+    excel = loader.load(path)
+    session = get_session()
+
+    use_case = _build_use_case(session, logger, loader)
     use_case.execute(excel)

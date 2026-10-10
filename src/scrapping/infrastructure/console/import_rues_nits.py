@@ -13,6 +13,8 @@ from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
 )
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
 from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
+    LOCAL_UPDATE_BOOK,
+    LOCAL_UPDATE_COLUMNS,
     SearchNitsWithOdooFallbackUseCase,
 )
 from src.scrapping.infrastructure.persistence.sa_company_nit_cache_repository import (
@@ -26,6 +28,8 @@ from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
 )
 from src.shared.config import get_paths_config
 from src.shared.database.database import get_session
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.console import console
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
@@ -53,6 +57,15 @@ def build_book_names(book_df, logger) -> dict[str, str]:
         )
         if empresa
     }
+
+
+def publish_local_updates(use_case, writer: FindingsWriter, logger) -> Path | None:
+    """Escribe el libro de empresas agregadas o corregidas en la BD local con datos
+    de Odoo y muestra un único resumen en consola (spec 016)."""
+    books = {LOCAL_UPDATE_BOOK: use_case.local_updates}
+    folder = writer.write(books, LOCAL_UPDATE_COLUMNS)
+    logger.info("Resumen BD local ← Odoo", user_msg=summarize_findings(books, folder))
+    return folder
 
 
 def execute_web_scrapping(logger):
@@ -105,6 +118,7 @@ def execute_web_scrapping(logger):
     data = use_case.execute(nits, show_progress=True, book_names=book_names)
 
     NotFoundCompaniesLogGenerator(logger).generate(data, LOGS_DIR)
+    publish_local_updates(use_case, XlsxFindingsWriter(Path("logs/web_scrapping")), logger)
 
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump([d.__dict__ for d in data], file, ensure_ascii=False, indent=2)

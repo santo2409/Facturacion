@@ -1,10 +1,12 @@
 import json
 import os
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import polars as pl
 
+from src.assign.domain.odoo_rate_index import OdooRateIndex
 from src.company.domain.entities.imedical_correction import ImedicalCorrection
 from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
@@ -73,9 +75,36 @@ def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) ->
     sin_factura = df.filter(pl.col("FACTURAS") == "").height
     logger.info(
         f"Enriquecimiento facturas: {df.height - sin_factura} con match, {sin_factura} sin factura.",
-        user_msg=f"{df.height - sin_factura} registros con factura asignada.",
     )
     return df
+
+
+PHASE_FINDING_KEYS = (
+    "fase_01_paquete_propio_local",
+    "fase_02_paquete_c_2025",
+    "fase_03_cualquier_paquete",
+    "fase_04_cup_base_paquete_c",
+    "fase_05_cup_base_cualquier_paquete",
+    "fase_06_cualquier_ciudad",
+    "sin_resolver",
+)
+_COLOR_LOCAL_OWN = "E2EFDA"  # Verde claro — fase 1 local (paquete propio)
+
+_PHASE_LEGEND = [
+    (_COLOR_LOCAL_OWN, "Fase 1 — Paquete propio local"),
+    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
+    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
+    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
+    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
+    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
+]
+
+
+@dataclass
+class AssignRatesResult:
+    counts: dict[str, int] = field(default_factory=dict)
+    findings_dir: Path | None = None
+    odoo_available: bool = False
 
 
 class AssignRatesFromExcel:
@@ -100,6 +129,7 @@ class AssignRatesFromExcel:
         imedical_repo=None,
         tian_repo=None,
         tian_log_generator=None,
+        findings_reporter=None,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
@@ -120,6 +150,13 @@ class AssignRatesFromExcel:
         self.imedical_repo = imedical_repo
         self.tian_repo = tian_repo
         self.tian_log_generator = tian_log_generator
+        self.findings_reporter = findings_reporter
+        self.odoo_available = False
+        self._odoo_by_nit: dict[str, dict] = {}
+        self._odoo_index = OdooRateIndex([])
+        self._company_findings: list[dict] = []
+        self._findings: dict[str, list[dict]] = {key: [] for key in PHASE_FINDING_KEYS}
+        self._odoo_cells = 0
 
     def _connect_odoo(self) -> None:
         if not self.odoo_repo:
@@ -129,9 +166,55 @@ class AssignRatesFromExcel:
         except Exception as e:
             self.logger.warning(
                 f"No se pudo conectar a Odoo: {e}",
-                user_msg="No se pudo conectar a Odoo; se validarán empresas contra BD local y RUES únicamente.",
             )
             self.odoo_repo = None
+
+    def _load_odoo_rates(self, df: pl.DataFrame) -> None:
+        """Consulta en batch las tarifas (especial/base) de las empresas en Odoo.
+
+        Si Odoo no está disponible o falla la consulta, queda sin tarifas y la
+        cascada local resuelve todo (spec 010, RF-14).
+        """
+        self.odoo_available = False
+        self._odoo_by_nit = {}
+        self._odoo_index = OdooRateIndex([])
+        self._company_findings = []
+        if not self.odoo_repo:
+            return
+
+        nits = list(dict.fromkeys(n for n in df["NIT"].to_list() if n))
+        cups = [str(h) for h in df.columns if str(h).replace("-", "").isdigit()]
+        try:
+            partners = self.odoo_repo.find_partner_rates_batch(nits)
+            rate_ids = list(dict.fromkeys(
+                i for p in partners for i in (p["special_id"], p["base_id"]) if i
+            ))
+            lines = self.odoo_repo.find_rate_lines(rate_ids, cups) if rate_ids and cups else []
+        except Exception as e:
+            self.logger.warning(
+                f"No se pudieron consultar las tarifas en Odoo; se usará la cascada local: {e}"
+            )
+            return
+
+        self._odoo_by_nit = {p["nit"]: p for p in partners}
+        self._odoo_index = OdooRateIndex(lines)
+        self.odoo_available = True
+
+        names: dict[str, str] = {}
+        if "Empresa" in df.columns:
+            for nit, name in zip(df["NIT"].to_list(), df["Empresa"].to_list()):
+                names.setdefault(nit, name)
+        for nit in nits:
+            partner = self._odoo_by_nit.get(nit)
+            if partner is None:
+                reason = "No encontrada en Odoo"
+            elif not partner["special_id"] and not partner["base_id"]:
+                reason = "Sin tarifa especial ni base"
+            else:
+                continue
+            self._company_findings.append(
+                {"NIT": nit, "Empresa": names.get(nit) or "", "Motivo": reason}
+            )
 
     def execute(self, excel: pl.DataFrame, df_facture: pl.DataFrame):
         self._connect_odoo()
@@ -153,6 +236,7 @@ class AssignRatesFromExcel:
         # herede los de TIAN.
         df = self._apply_tian(df, lookups)
         df = self._normalize_city(df, lookups)
+        self._load_odoo_rates(df)
         df = self._assign_facturador(df, lookups)
         df = self._assign_paquete(df, lookups)
         df, cell_colors = self._assign_rates(df, lookups)
@@ -171,13 +255,6 @@ class AssignRatesFromExcel:
             )
             # Apply cell colors from cascade fallback phases
             if cell_colors:
-                _PHASE_LEGEND = [
-                    ("FFF2CC", "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"),
-                    ("F4B183", "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"),
-                    ("BDD7EE", "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"),
-                    ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
-                    ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
-                ]
                 ws = workbook.get_worksheet_by_name("Consolidado")
                 if ws is not None:
                     # Build column index map: col_name → xlsxwriter col index
@@ -196,21 +273,12 @@ class AssignRatesFromExcel:
                         ws.write(row_idx + 1, col_index[col_name],
                                  df[col_name][row_idx], fmt_cache[color])
 
-                # Add legend sheet
-                legend_ws = workbook.add_worksheet("Leyenda")
-                legend_ws.set_column(0, 0, 6)
-                legend_ws.set_column(1, 1, 55)
-                legend_ws.write(0, 0, "Color", workbook.add_format({"bold": True}))
-                legend_ws.write(0, 1, "Significado", workbook.add_format({"bold": True}))
-                white_fmt = workbook.add_format({"bg_color": "#FFFFFF"})
-                legend_ws.write(1, 0, "", white_fmt)
-                legend_ws.write(1, 1, "Fase 1 — Paquete propio (sin fallback)")
-                for row, (color, label) in enumerate(_PHASE_LEGEND, start=2):
-                    fmt = workbook.add_format({"bg_color": f"#{color}"})
-                    legend_ws.write(row, 0, "", fmt)
-                    legend_ws.write(row, 1, label)
+            if cell_colors or self._odoo_cells:
+                self._write_legend(workbook)
             workbook.close()
             self.progress.advance()
+
+        return self._publish_findings()
 
     # ── Column ordering ───────────────────────────────────────────────────
 
@@ -242,7 +310,31 @@ class AssignRatesFromExcel:
 
     # Columnas auxiliares usadas internamente por el pipeline (spec 008
     # RF-23): nunca deben llegar al CONSOLIDADO.xlsx.
-    _INTERNAL_COLUMNS = ("_NIT_RAW",)
+    _INTERNAL_COLUMNS = ("_NIT_RAW", "_PAQUETE_LOCAL")
+
+    def _write_legend(self, workbook) -> None:
+        legend_ws = workbook.add_worksheet("Leyenda")
+        legend_ws.set_column(0, 0, 6)
+        legend_ws.set_column(1, 1, 55)
+        legend_ws.write(0, 0, "Color", workbook.add_format({"bold": True}))
+        legend_ws.write(0, 1, "Significado", workbook.add_format({"bold": True}))
+        white_fmt = workbook.add_format({"bg_color": "#FFFFFF"})
+        legend_ws.write(1, 0, "", white_fmt)
+        legend_ws.write(1, 1, "Sin color — Tarifa Odoo (especial/base)")
+        for row, (color, label) in enumerate(_PHASE_LEGEND, start=2):
+            fmt = workbook.add_format({"bg_color": f"#{color}"})
+            legend_ws.write(row, 0, "", fmt)
+            legend_ws.write(row, 1, label)
+
+    def _publish_findings(self) -> AssignRatesResult:
+        findings_dir = None
+        if self.findings_reporter:
+            findings_dir = self.findings_reporter.write(self._findings, self._company_findings)
+        counts = {"odoo": self._odoo_cells}
+        counts.update({key: len(rows) for key, rows in self._findings.items()})
+        return AssignRatesResult(
+            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available
+        )
 
     def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:
         presentes = [c for c in self._INTERNAL_COLUMNS if c in df.columns]
@@ -401,7 +493,6 @@ class AssignRatesFromExcel:
             self.logger.info(
                 f"imedical: {len(corregidos)} NIT corregido(s):\n"
                 + "\n".join(f"  {origen} → {destino}" for origen, destino in unique),
-                user_msg=f"{len(corregidos)} NIT corregido(s) según la tabla i-medical.",
             )
 
         return df.with_columns(pl.Series("NIT", nuevos_nit))
@@ -434,7 +525,6 @@ class AssignRatesFromExcel:
         if self.imedical_repo and not tiene_columna_base:
             self.logger.warning(
                 "imedical: el libro de entrada no tiene columna 'Base'; se omite el auto-registro.",
-                user_msg="El libro no tiene columna 'Base': no se registrarán correcciones nuevas de i-medical.",
             )
         candidatos_imedical: dict[str, ImedicalCorrection] = {}
         name_matcher = CompanyNameMatcher(self.fuzz, threshold=90) if self.imedical_repo else None
@@ -587,7 +677,7 @@ class AssignRatesFromExcel:
                 # ── 4. Sin resultado — se deja el dato y se registra NOVEDAD ──
                 novedad = f"[NOVEDAD] NIT {nit} - '{empresa}': no encontrado en Odoo, BD local ni RUES"
                 cambios.append(novedad)
-                self.logger.warning(novedad, user_msg=f"No se encontró registro para NIT {nit} ({empresa}).")
+                self.logger.warning(novedad)
                 not_found_by_nit[nit] = NitResult(
                     nit=nit,
                     is_company=False,
@@ -602,7 +692,6 @@ class AssignRatesFromExcel:
         if cambios:
             self.logger.info(
                 f"_match_companies: {len(cambios)} cambios/novedades:\n" + "\n".join(f"  {c}" for c in cambios),
-                user_msg=f"{len(cambios)} actualizaciones/novedades registradas en empresas.",
             )
 
         if not_found_by_nit and self.not_found_log_generator:
@@ -660,7 +749,6 @@ class AssignRatesFromExcel:
                         f"  {c.nit_error} → {c.nit_success} ('{c.name_error}' → '{c.name}')"
                         for c in candidatos_imedical.values()
                     ),
-                    user_msg=f"{n} corrección(es) nueva(s) registradas en i-medical.",
                 )
 
         return df.with_columns([
@@ -732,7 +820,6 @@ class AssignRatesFromExcel:
         if advertencias:
             self.logger.warning(
                 f"{len(advertencias)} fecha(s) fuera del periodo de 3 meses:\n" + "\n".join(f"  {a}" for a in advertencias),
-                user_msg=f"{len(advertencias)} fecha(s) con antigüedad mayor a 3 meses.",
             )
 
         return df.with_columns(
@@ -804,7 +891,6 @@ class AssignRatesFromExcel:
         if not tian_nit:
             self.logger.error(
                 "TIAN: variable de entorno TIAN_NIT no está definida; se omite la redirección.",
-                user_msg="No se definió TIAN_NIT: las empresas de la tabla TIAN no se redirigieron.",
             )
             return df
 
@@ -813,7 +899,6 @@ class AssignRatesFromExcel:
         if not tian_company:
             self.logger.error(
                 f"TIAN: el NIT {tian_nit} (TIAN_NIT) no existe en companies; se aborta la redirección.",
-                user_msg=f"El NIT de TIAN ({tian_nit}) no existe en la base de datos: no se redirigió ninguna empresa.",
             )
             return df
 
@@ -821,7 +906,6 @@ class AssignRatesFromExcel:
         if tian_company["id"] not in company_to_package:
             self.logger.error(
                 f"TIAN: la empresa {tian_nit} no tiene paquete asignado; se aborta la redirección.",
-                user_msg=f"TIAN (NIT {tian_nit}) no tiene paquete asignado: no se redirigió ninguna empresa.",
             )
             return df
 
@@ -984,7 +1068,49 @@ class AssignRatesFromExcel:
 
         df = df.with_columns(pl.col("PAQUETE").fill_null(default_package))
 
+        # PAQUETE muestra la tarifa de Odoo (especial, si no base); la cascada
+        # local sigue leyendo el paquete local desde _PAQUETE_LOCAL (spec 010, RF-08).
+        df = df.with_columns(pl.col("PAQUETE").alias("_PAQUETE_LOCAL"))
+        odoo_names = {
+            nit: p["special_name"] or p["base_name"]
+            for nit, p in self._odoo_by_nit.items()
+            if p["special_name"] or p["base_name"]
+        }
+        if odoo_names:
+            df_odoo = pl.DataFrame({
+                "NIT": list(odoo_names.keys()),
+                "_PAQUETE_ODOO": list(odoo_names.values()),
+            })
+            df = (
+                df.join(df_odoo, on="NIT", how="left")
+                .with_columns(pl.coalesce("_PAQUETE_ODOO", "_PAQUETE_LOCAL").alias("PAQUETE"))
+                .drop("_PAQUETE_ODOO")
+            )
+
         return df
+
+    # ── Tarifas de Odoo (especial → base) ─────────────────────────────────
+
+    def _resolve_odoo_cells(self, rows_data: list[dict], headers: list) -> dict[tuple[str, int], int]:
+        """Precio de Odoo por celda (columna CUP, fila): tarifa especial y luego base."""
+        resolved: dict[tuple[str, int], int] = {}
+        if not self.odoo_available:
+            return resolved
+        for idx, row in enumerate(rows_data):
+            partner = self._odoo_by_nit.get(row["NIT"])
+            if not partner:
+                continue
+            for h in headers:
+                if row.get(str(h)) != 1:
+                    continue
+                for rate_id in (partner["special_id"], partner["base_id"]):
+                    price = self._odoo_index.price(
+                        rate_id, row["Ciudad"], str(h).strip(), row["TIPO DE ACTIVIDAD"]
+                    )
+                    if price:
+                        resolved[(str(h), idx)] = price
+                        break
+        return resolved
 
     # ── Assign rates with batch query ─────────────────────────────────────
 
@@ -1012,10 +1138,33 @@ class AssignRatesFromExcel:
 
         # Phase 1: Collect all unique rate keys needed
         rate_keys_set = set()
-        rows_data = df.select(["NIT", "Ciudad", "TIPO DE ACTIVIDAD", "PAQUETE"] + [str(h) for h in headers]).to_dicts()
+        local_pkg_col = "_PAQUETE_LOCAL" if "_PAQUETE_LOCAL" in df.columns else "PAQUETE"
+        report_cols = [c for c in ("Empresa", "Paciente", "N° Identificación") if c in df.columns]
+        rows_data = df.select(
+            ["NIT", "Ciudad", "TIPO DE ACTIVIDAD", pl.col(local_pkg_col).alias("PAQUETE")]
+            + report_cols
+            + [str(h) for h in headers]
+        ).to_dicts()
+        odoo_resolved = self._resolve_odoo_cells(rows_data, headers)
+        self._odoo_cells = len(odoo_resolved)
+        self._findings = {key: [] for key in PHASE_FINDING_KEYS}
+
+        def record(phase_key: str, idx: int, h, price, origin: str) -> None:
+            row = rows_data[idx]
+            self._findings[phase_key].append({
+                "NIT": row["NIT"],
+                "Empresa": row.get("Empresa"),
+                "Paciente": row.get("Paciente"),
+                "N° Identificación": row.get("N° Identificación"),
+                "Ciudad": row["Ciudad"],
+                "TIPO DE ACTIVIDAD": row["TIPO DE ACTIVIDAD"],
+                "CUP": str(h),
+                "Precio asignado": int(price),
+                "Origen": origin,
+            })
 
         with self.progress("Calculando tarifas", total=len(rows_data)):
-            for row in rows_data:
+            for idx, row in enumerate(rows_data):
                 nit = row["NIT"]
                 city = row["Ciudad"]
                 activity = row["TIPO DE ACTIVIDAD"]
@@ -1040,7 +1189,7 @@ class AssignRatesFromExcel:
                     continue
 
                 for h in headers:
-                    if row.get(str(h)) == 1:
+                    if row.get(str(h)) == 1 and (str(h), idx) not in odoo_resolved:
                         cup_id = cup_code_to_id.get(str(h).strip())
                         if cup_id:
                             rate_keys_set.add((package_id, city_id, cup_id, activity_id, model))
@@ -1059,16 +1208,16 @@ class AssignRatesFromExcel:
         # Phase 2: Batch query all needed rates
         self.logger.info(
             f"Consultando {len(rate_keys_set)} combinaciones únicas de tarifas",
-            user_msg=f"Consultando {len(rate_keys_set)} tarifas en lote...",
         )
         rates_cache = self.rates_repo.find_batch(list(rate_keys_set))
         self.logger.info(
             f"Encontradas {len(rates_cache)} tarifas de {len(rate_keys_set)} consultadas",
-            user_msg=f"{len(rates_cache)} tarifas encontradas.",
         )
 
         # Phase 3: Build result columns with fallback, collect unresolved for wildcard
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
+        for (col, idx), price in odoo_resolved.items():
+            result_cols[col][idx] = price
         # cell_colors[(col, row_idx)] = hex color — populated per fallback phase
         cell_colors: dict[tuple[str, int], str] = {}
         _COLOR_PHASE2 = "FFF2CC"   # Dorado suave — PAQUETE C 2025, mismo CUP
@@ -1076,7 +1225,6 @@ class AssignRatesFromExcel:
         _COLOR_PHASE4 = "BDD7EE"   # Azul acero claro — PAQUETE C 2025, CUP base
         _COLOR_PHASE5 = "9DC3E6"   # Azul medio — cualquier paquete, CUP base, misma ciudad
         _COLOR_PHASE6 = "D5A6E6"   # Púrpura medio — cualquier paquete, otra ciudad (cup+actividad)
-        _COLOR_PHASE7 = "FFB6C1"   # Rosa     — cualquier paquete, otra ciudad (cup+actividad)
         fallback_logs = []
         unresolved = []  # list of (idx, h, city_id, cup_id, activity_id, pkg_name, city, activity)
 
@@ -1103,13 +1251,15 @@ class AssignRatesFromExcel:
                 continue
 
             for h in headers:
-                if row.get(str(h)) == 1:
+                if row.get(str(h)) == 1 and (str(h), idx) not in odoo_resolved:
                     cup_id = cup_code_to_id.get(str(h).strip())
                     if cup_id:
                         key = (package_id, city_id, cup_id, activity_id, model)
                         price = rates_cache.get(key)
                         if price:
                             result_cols[str(h)][idx] = int(price)
+                            cell_colors[(str(h), idx)] = _COLOR_LOCAL_OWN
+                            record(PHASE_FINDING_KEYS[0], idx, h, price, pkg_name)
                         elif default_pkg_tuple:
                             def_id, def_model = default_pkg_tuple
                             fallback_key = (def_id, city_id, cup_id, activity_id, def_model)
@@ -1117,6 +1267,7 @@ class AssignRatesFromExcel:
                             if fallback_price:
                                 result_cols[str(h)][idx] = int(fallback_price)
                                 cell_colors[(str(h), idx)] = _COLOR_PHASE2
+                                record(PHASE_FINDING_KEYS[1], idx, h, fallback_price, default_package)
                                 fallback_logs.append(
                                     f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                                     f"para la actividad '{activity}', se asignó tarifa del paquete '{default_package}'"
@@ -1151,6 +1302,7 @@ class AssignRatesFromExcel:
                         source = prov_id_to_name.get(w_id, str(w_id))
                     else:
                         source = spec_id_to_name.get(w_id, str(w_id))
+                    record(PHASE_FINDING_KEYS[2], idx, h, w_rate, source)
                     wildcard_logs.append(
                         f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                         f"para la actividad '{activity}', se asignó tarifa del paquete '{source}'"
@@ -1163,7 +1315,6 @@ class AssignRatesFromExcel:
                 self.logger.warning(
                     f"{len(wildcard_logs)} tarifas asignadas desde otros paquetes:\n"
                     + "\n".join(f"  {l}" for l in unique_wlogs[:50]),
-                    user_msg=f"{len(wildcard_logs)} tarifas tomadas de otros paquetes por falta de tarifa.",
                 )
 
         # Phase 5: CUP homologation — strip suffix and search base CUP in PAQUETE C 2025
@@ -1185,6 +1336,7 @@ class AssignRatesFromExcel:
                 if homolog_price:
                     result_cols[str(h)][idx] = int(homolog_price)
                     cell_colors[(str(h), idx)] = _COLOR_PHASE4
+                    record(PHASE_FINDING_KEYS[3], idx, h, homolog_price, f"{default_package} (CUP {base_code})")
                     homolog_logs.append(
                         f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                         f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
@@ -1198,7 +1350,6 @@ class AssignRatesFromExcel:
                 self.logger.warning(
                     f"{len(homolog_logs)} tarifas homologadas al CUP base en '{default_package}':\n"
                     + "\n".join(f"  {l}" for l in unique_hlogs[:50]),
-                    user_msg=f"{len(homolog_logs)} tarifas homologadas al CUP base del paquete '{default_package}'.",
                 )
         else:
             still_unresolved_2 = list(still_unresolved)
@@ -1243,6 +1394,7 @@ class AssignRatesFromExcel:
                             source = prov_id_to_name.get(w_id, str(w_id))
                         else:
                             source = spec_id_to_name.get(w_id, str(w_id))
+                        record(PHASE_FINDING_KEYS[4], idx, h, w_rate, f"{source} (CUP {base_code})")
                         wildcard2_logs.append(
                             f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                             f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
@@ -1256,7 +1408,6 @@ class AssignRatesFromExcel:
                     self.logger.warning(
                         f"{len(wildcard2_logs)} tarifas homologadas al CUP base en cualquier paquete:\n"
                         + "\n".join(f"  {l}" for l in unique_w2logs[:50]),
-                        user_msg=f"{len(wildcard2_logs)} tarifas homologadas al CUP base desde otros paquetes.",
                     )
             else:
                 still_unresolved_3 = list(still_unresolved_2)
@@ -1285,6 +1436,7 @@ class AssignRatesFromExcel:
                             source = prov_id_to_name.get(w_id, str(w_id))
                         else:
                             source = spec_id_to_name.get(w_id, str(w_id))
+                        record(PHASE_FINDING_KEYS[5], idx, h, w_rate, source)
                         phase7_logs.append(
                             f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}', "
                             f"se asignó tarifa del paquete '{source}' (ciudad diferente)"
@@ -1295,15 +1447,19 @@ class AssignRatesFromExcel:
                     self.logger.warning(
                         f"{len(phase7_logs)} tarifas asignadas desde cualquier ciudad/paquete:\n"
                         + "\n".join(f"  {l}" for l in unique_p7logs[:50]),
-                        user_msg=f"{len(phase7_logs)} tarifas tomadas de otra ciudad por falta de tarifa local.",
                     )
+
+        resolved_cells = set(odoo_resolved) | set(cell_colors)
+        for idx, row in enumerate(rows_data):
+            for h in headers:
+                if row.get(str(h)) == 1 and (str(h), idx) not in resolved_cells:
+                    record(PHASE_FINDING_KEYS[6], idx, h, 1, "Sin tarifa")
 
         if fallback_logs:
             unique_logs = sorted(set(fallback_logs))
             self.logger.warning(
                 f"{len(fallback_logs)} tarifas asignadas desde paquete por defecto:\n"
                 + "\n".join(f"  {l}" for l in unique_logs[:50]),
-                user_msg=f"{len(fallback_logs)} tarifas tomadas del paquete '{default_package}' por falta de tarifa en el paquete original.",
             )
 
         # Replace columns with computed values
@@ -1320,7 +1476,6 @@ class AssignRatesFromExcel:
 
         self.logger.info(
             f"Columna Total generada: {len(headers)} columnas CUP, {df.height} filas",
-            user_msg=f"Columna Total calculada para {df.height} registros.",
         )
         return df, cell_colors
 
@@ -1352,7 +1507,6 @@ class AssignRatesFromExcel:
         if mismatches:
             self.logger.warning(
                 f"{mismatches} empresas no coinciden con BD. Corrigiendo.",
-                user_msg=f"{mismatches} nombres de empresa corregidos según la base de datos.",
             )
             df = df.with_columns(
                 pl.struct(["NIT", "Empresa"])
