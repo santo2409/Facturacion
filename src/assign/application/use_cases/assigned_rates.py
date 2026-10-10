@@ -1507,7 +1507,6 @@ class AssignRatesFromExcel:
         if mismatches:
             self.logger.warning(
                 f"{mismatches} empresas no coinciden con BD. Corrigiendo.",
-                user_msg=f"{mismatches} nombres de empresa corregidos según la base de datos.",
             )
             df = df.with_columns(
                 pl.struct(["NIT", "Empresa"])
