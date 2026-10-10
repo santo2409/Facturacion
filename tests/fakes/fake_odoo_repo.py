@@ -56,7 +56,18 @@ class FakeOdooRepo:
                 return nit
         return None
 
+    def find_partner_rates_batch(self, nits):
+        self.calls["find_partner_rates_batch"] += 1
+        wanted = set(nits)
+        return [p for p in self._partner_rates if p["nit"] in wanted]
+
+    def find_rate_lines(self, rate_ids, cup_codes):
+        self.calls["find_rate_lines"] += 1
+        rates, cups = set(rate_ids), set(cup_codes)
+        return [l for l in self._rate_lines if l["rate_id"] in rates and l["cup"] in cups]
+
     def create_client(self, nit, name):
+        self.write_attempts.append("create_client")
         cid = self._next_client_id
         self._next_client_id += 1
         self._clients[nit] = {"id": cid, "name": name}
