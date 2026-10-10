@@ -86,23 +86,27 @@ def test_progress_companies_documento_normalizado_ya_en_bd_no_duplica_la_empresa
 
     uc._progress_companies(df)
 
-    assert deps_t05["nit_service"].called_with is None
+    # spec 016: el documento se valida contra Odoo (normalizado, una sola vez) y no se duplica
+    assert deps_t05["nit_service"].called_with == ["900111111"]
+    assert len(deps_t05["company_repo"].all()) == 1
 
 
 def test_progress_companies_cache_indexada_por_documento_normalizado(deps_t05, tmp_path):
+    from src.scrapping.infrastructure.persistence.rues_json_cache import load_rues_cache
+
     cache_path = tmp_path / "data.json"
     cache_path.write_text(
-        _json.dumps([{"nit": "900111111", "is_company": True, "name": "EMPRESA A CACHED"}]),
+        _json.dumps([{"nit": "9001111110", "is_company": True, "name": "EMPRESA A CACHED", "source": "RUES/NIT"}]),
         encoding="utf-8",
     )
-    df = pl.DataFrame({"NIT": ["900.111.111-1"], "RAZON SOCIAL": ["EMPRESA A"], "PAQUETE": ["X"]})
-    uc = ImportCompaniesFromExcel(**deps_t05)
+    df = pl.DataFrame({"NIT": ["900.111.111-0"], "RAZON SOCIAL": ["EMPRESA A"], "PAQUETE": ["X"]})
+    uc = ImportCompaniesFromExcel(**deps_t05, rues_cache_loader=load_rues_cache)
 
     uc._progress_companies(df)
 
-    assert deps_t05["nit_service"].called_with is None
-    companies = deps_t05["company_repo"].all()
-    assert companies[0]["name"] == "EMPRESA A CACHED"
+    # la caché de RUES queda indexada por el documento normalizado y se pasa a la búsqueda
+    assert list(deps_t05["nit_service"].rues_cache) == ["900111111"]
+    assert deps_t05["nit_service"].called_with == ["900111111"]
 
 
 def test_progress_companies_advierte_dv_invalido(deps_t05):
