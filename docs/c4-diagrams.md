@@ -317,8 +317,6 @@ classDiagram
     SearchNitsWithOdooFallbackUseCase ..> NitResult : devuelve
 ```
 
-> `DatosGovScraper` existe en `infrastructure/scrapers/` pero no participa en ninguna cascada y no implementa `search_by_name`.
-
 ---
 
 ## Nivel 4: Diagrama de Código (Módulo OdooInjection)
