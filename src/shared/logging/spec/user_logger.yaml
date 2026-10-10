@@ -10,21 +10,16 @@ config:
   disable_existing_loggers: false
   formatters:
     user_console:
-      format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+      format: "%(message)s"
   handlers:
     console:
-      class: logging.StreamHandler
+      "()": src.shared.console.user_console.build_user_console_handler
       level: INFO
       formatter: user_console
-      stream: ext://sys.stdout
-    excel:
-      class: src.shared.logging.infrastructure.logging.excel_audit_handler.ExcelAuditHandler
-      level: INFO
-      filename: "./logs/user_audit.xlsx"
   loggers:
     user_logger:
       level: INFO
-      handlers: [excel]
+      handlers: [console]
       propagate: false
 validation:
   allowed_levels: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
