@@ -502,7 +502,12 @@ flowchart LR
         T7[(imedical / tian)]
     end
 
+    ODOO[(Odoo: res.partner / account.base.rate)]
+
     X1 --> O1[1 Web Scrapping] --> T1
+    ODOO --> O1
+    ODOO --> O5
+    ODOO -->|tarifas especial/base| O6
     O1 --> J[data.json]
     X2 --> O2[2 Facturadores] --> T2
     J --> O2
