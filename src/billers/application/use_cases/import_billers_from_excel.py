@@ -194,17 +194,23 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
                         ),
                         "?",
                     )
-                    biller = id_to_biller_name.get(biller_id, "?")
+                    discarded = id_to_biller_name.get(previous_biller_id, "?")
+                    current = id_to_biller_name.get(biller_id, "?")
                     duplicados_log.append(
-                        f"NIT {nit} - '{empresa}' → facturador '{biller}'"
+                        f"NIT {nit} - '{empresa}': facturador '{discarded}' reemplazado por '{current}'"
                     )
+                    self._findings["vinculacion_duplicada"].append({
+                        "NIT": nit,
+                        "Empresa": empresa,
+                        "Facturador descartado": discarded,
+                        "Facturador vigente": current,
+                    })
                 unique_links[company_id] = biller_id
             if duplicados_log:
                 self.logger.error(
-                    f"{len(duplicados_log)} vinculación(es) duplicada(s) omitida(s):",
-                    user_msg=f"{len(duplicados_log)} vinculación(es) duplicada(s) omitida(s):",
+                    f"{len(duplicados_log)} vinculación(es) duplicada(s) reemplazada(s) (prevalece la última):",
                 )
 
                 for dup in duplicados_log:
-                    self.logger.error(f"  {dup}", user_msg=f"  {dup}")
+                    self.logger.error(f"  {dup}")
             self.biller_company_repo.link_or_update_batch(list(unique_links.items()))
