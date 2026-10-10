@@ -446,10 +446,10 @@ flowchart TD
     P5 -->|Sí| C5[Fase 5 · #9DC3E6]
     P5 -->|No| P6{Cualquier rateable<br/>+ cualquier ciudad + CUP}
     P6 -->|Sí| C6[Fase 6 · #D5A6E6]
-    P6 -->|No| X["Sin resolver · valor 1 → opción 9"]
+    P6 -->|No| X["Sin resolver · valor 1 → sin_resolver.xlsx / opción 9"]
 ```
 
-> Las fases 3, 5 y 6 toman la primera fila que devuelve la BD (consulta sin `ORDER BY`).
+> Las fases 3, 5 y 6 toman la primera fila que devuelve la BD (consulta sin `ORDER BY`). Odoo: solo precios > 0, sin validar la vigencia de la tarifa; la ciudad se compara por nombre normalizado exacto. Cada fase local (1–6) y el sin resolver van a su libro en `logs/asignar_tarifas/<fecha>/`.
 
 ## Flujo: Inyección a Odoo (opción 8, deshabilitada)
 
