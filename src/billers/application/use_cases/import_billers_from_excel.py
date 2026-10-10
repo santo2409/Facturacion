@@ -45,10 +45,23 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
         self.progress = progress
         self.fuzz = fuzz
         self.logger = logger or LoggerAdapter(__name__)
+        self.findings_writer = findings_writer
+        self.rues_cache_loader = rues_cache_loader
+        self._reset_findings()
+
+    def _reset_findings(self):
+        self._findings: dict[str, list[dict]] = {key: [] for key in BILLER_FINDING_COLUMNS}
+
+    def _publish_findings(self):
+        folder = self.findings_writer.write(self._findings, BILLER_FINDING_COLUMNS) if self.findings_writer else None
+        summary = summarize_findings(self._findings, folder)
+        self.logger.info(f"Resumen de hallazgos de facturadores: {summary}", user_msg=summary)
 
     def execute(self, df):
+        self._reset_findings()
         self._process_billers(df)
         self._process_companies(df)
+        self._publish_findings()
 
     def _process_billers(self, df):
         gestores = df["GESTOR"].drop_nulls().unique()
