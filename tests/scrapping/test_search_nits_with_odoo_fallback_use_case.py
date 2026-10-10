@@ -197,7 +197,8 @@ def test_checked_bases_is_rues_only_without_odoo_repo():
     assert result[0].checked_bases == "RUES"
 
 
-def test_cache_hit_skips_odoo_and_rues_entirely():
+def test_cache_hit_skips_rues_when_odoo_has_no_data():
+    # spec 016: Odoo se consulta primero (una llamada); la BD local evita RUES
     scraper = TrackingScraper()
     odoo = TrackingOdooRepo(clients={})
     cache = FakeNitCacheRepo(cached={"111": NitResult("111", True, "EMPRESA CACHEADA", "BD local")})
