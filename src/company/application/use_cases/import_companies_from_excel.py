@@ -13,7 +13,19 @@ from src.scrapping.domain.entities.nit_result import NitResult
 from src.shared.config import get_paths_config
 from src.shared.console.progress import RichProgress
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
+    LOCAL_UPDATE_BOOK,
+    LOCAL_UPDATE_COLUMNS,
+)
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
 from src.shared.utils.document_normalizer import normalize_document
+
+COMPANY_FINDING_COLUMNS = {
+    "documento_acotado": ["Documento original", "Documento acotado"],
+    "paquetes_en_conflicto": ["Documento", "Paquete descartado", "Paquete vigente"],
+    "paquete_no_encontrado": ["Documento", "Razón social", "Paquete"],
+    LOCAL_UPDATE_BOOK: LOCAL_UPDATE_COLUMNS[LOCAL_UPDATE_BOOK],
+}
 from src.special.domain.entities.special import Special
 
 
