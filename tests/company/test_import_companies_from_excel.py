@@ -96,7 +96,7 @@ def test_progress_companies_validates_nits_already_in_db_against_odoo(sample_df,
     uc = _build(deps)
     uc._progress_companies(sample_df)
 
-    assert tracking.called_with == ["900222222"]
+    assert tracking.called_with == ["900111111", "900222222"]  # spec 016: también el conocido
 
 
 def test_progress_companies_to_packages_links(sample_df, deps):
