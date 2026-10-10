@@ -749,7 +749,6 @@ class AssignRatesFromExcel:
                         f"  {c.nit_error} → {c.nit_success} ('{c.name_error}' → '{c.name}')"
                         for c in candidatos_imedical.values()
                     ),
-                    user_msg=f"{n} corrección(es) nueva(s) registradas en i-medical.",
                 )
 
         return df.with_columns([
