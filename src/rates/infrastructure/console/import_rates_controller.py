@@ -21,6 +21,7 @@ from src.shared.console.file_input import ask_excel_path
 from src.shared.console.progress import RichProgress
 from src.shared.database.database import get_session
 from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
 from src.shared.utils.mega_dataframes import MegaDataFrames
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
