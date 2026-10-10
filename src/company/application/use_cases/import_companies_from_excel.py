@@ -90,7 +90,8 @@ class ImportCompaniesFromExcel:
             user_msg=(
                 f"Empresas creadas: {self._companies_created}. "
                 f"Vinculaciones persistidas: {self._links_persisted}. "
-                f"Filas sin vincular: {self._unlinked_count}."
+                f"Filas sin vincular: {self._unlinked_count}. "
+                f"{findings_summary}"
             ),
         )
 
