@@ -283,7 +283,6 @@ class ImportCompaniesFromExcel:
                 if not found:
                     self.logger.warning(
                         f"Empresa no encontrada para documento '{nit}'",
-                        user_msg=f"No se encontró la empresa con documento '{nit}'.",
                     )
                     unlinked_rows.append(
                         UnlinkedRow(
