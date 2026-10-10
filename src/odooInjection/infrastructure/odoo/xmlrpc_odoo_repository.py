@@ -210,13 +210,13 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         rows = self._execute(
             "res.partner", "search_read",
             [[["name", "ilike", search_term]]],
-            {"fields": ["id", "name", "vat"], "limit": limit},
+            {"fields": ["id", "name", "ref_num", "vat"], "limit": limit},
         )
         return [
             {
                 "id": row["id"],
                 "name": row["name"],
-                "vat": normalize_nit(str(row.get("vat") or "")),
+                "vat": self._document_of(row),
             }
             for row in rows or []
         ]
