@@ -177,7 +177,40 @@ class SearchNitsWithOdooFallbackUseCase:
                         key, name, winner["name"], winner["vat"], "Odoo", "Odoo/nombre"
                     )
 
+        # ── 1. BD local por NIT ──────────────────────────────────────────
+        if self.nit_cache_repo and pending():
+            cached = self._safe(
+                lambda: self.nit_cache_repo.get_many(pending()), {}, "consultando caché local de NITs"
+            )
+            for key, hit in cached.items():
+                known_nits.add(normalize_nit(str(hit.nit)))
+                resolved[key] = self._resolve(
+                    key, book_names.get(key), hit.name, None, "BD local", "BD local/NIT"
+                )
+
+            # ── 2. BD local por nombre ───────────────────────────────────
+            if self.local_name_lookup:
+                groups = pending_names()
+                if groups:
+                    by_name = self._safe(
+                        lambda: self.nit_cache_repo.get_by_names(list(groups)),
+                        {},
+                        "consultando caché local por nombre",
+                    )
+                    for name, hit in by_name.items():
+                        known_nits.add(normalize_nit(str(hit.nit)))
+                        for key in groups.get(name, []):
+                            resolved[key] = self._resolve(
+                                key, name, hit.name, str(hit.nit), "BD local", "BD local/nombre"
+                            )
+
         # ── 5. RUES por NIT ──────────────────────────────────────────────
+        for key in pending():
+            cached_hit = rues_cache.get(normalize_nit(key))
+            if cached_hit and cached_hit.is_company and cached_hit.name:
+                resolved[key] = self._resolve(
+                    key, book_names.get(key), cached_hit.name, None, default_bases, "RUES/NIT"
+                )
         if pending():
             scraped = self._safe(
                 lambda: self.search_nits_use_case.execute(
