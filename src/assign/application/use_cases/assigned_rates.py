@@ -525,7 +525,6 @@ class AssignRatesFromExcel:
         if self.imedical_repo and not tiene_columna_base:
             self.logger.warning(
                 "imedical: el libro de entrada no tiene columna 'Base'; se omite el auto-registro.",
-                user_msg="El libro no tiene columna 'Base': no se registrarán correcciones nuevas de i-medical.",
             )
         candidatos_imedical: dict[str, ImedicalCorrection] = {}
         name_matcher = CompanyNameMatcher(self.fuzz, threshold=90) if self.imedical_repo else None
