@@ -526,6 +526,10 @@ flowchart LR
     CONS --> O7[7 Pre Facturas] --> PF[pre-facturas/]
     PF -.-> O8[8 Inyección Odoo<br/>deshabilitada]
     T1 --> O10[10 Duplicados] --> DUP[empresas_duplicadas.xlsx]
+    O2 --> F2["logs/facturadores/"]
+    O4 --> F4["logs/cargar_tarifas/"]
+    O5 --> F5["logs/registrar_empresas/"]
+    O6 --> F6["logs/asignar_tarifas/"]
     FALTANTES -.->|completar tarifas| X3
 ```
 
