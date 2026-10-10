@@ -891,8 +891,9 @@ def test_cell_colors_phase6_lilac(deps):
     assert colors.get(("890201", 0)) == "D5A6E6"
 
 
-def test_cell_colors_phase1_no_color(deps):
-    """Phase 1 (paquete propio) → sin color."""
+def test_cell_colors_phase1_local_own_package(deps):
+    """Fase 1 local (paquete propio) → color verde claro (spec 010, RF-09): el
+    blanco queda reservado para precios oficiales de Odoo."""
     deps["rates_repo"]._data[(1, 1, 1, 1, "Package")] = 80000  # paquete propio
 
     uc = _build(deps)
