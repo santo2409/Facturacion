@@ -891,7 +891,6 @@ class AssignRatesFromExcel:
         if not tian_nit:
             self.logger.error(
                 "TIAN: variable de entorno TIAN_NIT no está definida; se omite la redirección.",
-                user_msg="No se definió TIAN_NIT: las empresas de la tabla TIAN no se redirigieron.",
             )
             return df
 
