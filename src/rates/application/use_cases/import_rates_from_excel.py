@@ -7,7 +7,20 @@ from src.rates.domain.entities.rate import Rate
 from src.shared.console.progress import RichProgress
 from src.shared.excel.excel_loader import ExcelLoader
 from src.shared.utils.mega_dataframes import MegaDataFrames
+from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
 from src.special.domain.entities.special import Special
+
+_ORIGIN_COLUMNS = ["Hoja", "Fila", "CONTRATO", "CIUDAD", "CUP", "INTRA O EXTRA", "VALOR"]
+RATE_FINDING_COLUMNS = {
+    key: _ORIGIN_COLUMNS
+    for key in (
+        "contrato_no_existe",
+        "ciudad_no_existe",
+        "cup_no_existe",
+        "actividad_invalida",
+        "tarifa_vacia",
+    )
+}
 
 
 class ImportRatesFromExcel:
