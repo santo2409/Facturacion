@@ -88,23 +88,24 @@ C4Component
     title Módulos de negocio - Diagrama de Componentes
 
     Container_Boundary(core, "Módulos (src/<módulo>)") {
-        Component(scrapping, "scrapping (op. 1)", "SearchNitsWithOdooFallbackUseCase", "Cascada BD local → Odoo → RUES por NIT y por nombre. data.json + empresas_no_encontradas.xlsx")
-        Component(billers, "billers (op. 2)", "ImportBillersFromExcel", "Facturadores por fuzzy (90) y vínculo empresa↔facturador (1:1)")
+        Component(scrapping, "scrapping (op. 1)", "SearchNitsWithOdooFallbackUseCase", "Cascada Odoo (fuente de verdad) → BD local (respaldo) → RUES por NIT y por nombre; sincroniza la BD local con Odoo. data.json (solo caché de RUES) + empresas_no_encontradas.xlsx + bd_local_actualizada")
+        Component(billers, "billers (op. 2)", "ImportBillersFromExcel", "Facturadores por fuzzy (90) y vínculo empresa↔facturador (1:1); duplicado: gana el último. Hallazgos en logs/facturadores")
         Component(dataProcessing, "dataProcessing (op. 3)", "NormalizeInformationFromExcel + CupResolver", "Normaliza contratos y corrige CUPs (F0-F4). novedades_cups.xlsx")
-        Component(rates, "rates (op. 4)", "ImportRatesFromExcel", "Reclasifica contratos, fuzzy de ciudad (90) y nombres (95), rename de especiales, dedup + upsert")
-        Component(company, "company (op. 5, 10)", "ImportCompaniesFromExcel, DetectDuplicateCompanies", "normalize_document NIT/cédula, vínculo empresa↔paquete (1:1), duplicados; repos imedical/tian")
-        Component(assign, "assign (op. 6, 9)", "AssignRatesFromExcel, MissingRates", "i-medical, cascada de empresas, TIAN, cascada de tarifas de 6 fases → CONSOLIDADO.xlsx; faltantes.xlsx")
-        Component(preInvoice, "preInvoice (op. 7)", "SplitByNit", "Split por facturador/NIT conservando colores de fase")
-        Component(odooInjection, "odooInjection (op. 8, deshabilitada)", "InjectInvoicesToOdoo", "Anti-duplicados, VERIFICAR en vez de crear, account.move borrador. Su XmlRpcOdooRepository se reutiliza en op. 1, 2, 5 y 6")
+        Component(rates, "rates (op. 4)", "ImportRatesFromExcel", "Reclasifica contratos, fuzzy de ciudad (90) y nombres (95), rename de especiales, dedup + upsert. Hallazgos con Hoja/Fila en logs/cargar_tarifas")
+        Component(company, "company (op. 5, 10)", "ImportCompaniesFromExcel, DetectDuplicateCompanies", "normalize_document NIT/cédula, vínculo empresa↔paquete (1:1), duplicados; repos imedical/tian. Hallazgos en logs/registrar_empresas")
+        Component(assign, "assign (op. 6, 9)", "AssignRatesFromExcel, MissingRates", "i-medical, cascada de empresas, TIAN, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas; faltantes.xlsx")
+        Component(preInvoice, "preInvoice (op. 7)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
+        Component(odooInjection, "odooInjection (op. 8, deshabilitada)", "InjectInvoicesToOdoo", "Anti-duplicados, VERIFICAR en vez de crear, account.move borrador. Su XmlRpcOdooRepository se reutiliza en op. 1, 2, 5 y 6: búsqueda por ref_num → vat y lectura de tarifas para op. 6")
         Component(catalogs, "Catálogos", "package, provider, special, city, cup, activity", "Repos Sa* de catálogos")
     }
 
     Container_Boundary(shared, "src/shared") {
         Component(normalizers, "Normalizadores", "text_normalizer, document_normalizer", "normalize_nit (9 díg.), normalize_document (NIT vs cédula, DV DIAN), nombres")
         Component(fuzz, "Fuzzy", "RapidFuzzBiller, CompanyNameMatcher", "token_sort_ratio → partial_ratio")
-        Component(excel_io, "Excel", "ExcelLoader, ExcelExporter", "calamine Utf8; export multihoja")
-        Component(console, "Consola", "file_input, sheet_input, file_output, RichProgress", "Prompts validados y progreso")
-        Component(logging, "Logging", "LoggerAdapter, ExcelAuditHandler", "user_msg → user_audit.xlsx")
+        Component(excel_io, "Excel", "ExcelLoader, ExcelExporter, MegaDataFrames", "calamine Utf8; export multihoja; origen _HOJA/_FILA en op. 4")
+        Component(console, "Consola", "file_input, sheet_input, file_output, RichProgress, USER_CONSOLE", "Prompts validados, progreso y mensajes al usuario en la misma consola")
+        Component(logging, "Logging", "LoggerAdapter, TechOnlyLogger, RichHandler", "tech → logs.log · user_msg → consola (TechOnlyLogger lo descarta en op. 6)")
+        Component(reporting, "Hallazgos", "FindingsWriter, XlsxFindingsWriter, PhaseFindingsReporter", "Un libro por tipo de hallazgo en logs/<opcion>/<fecha>/")
         Component(config, "Config / BD", "config.py, database.py, models.py", "DIRECTORY, TIAN_NIT, sesión SQLAlchemy")
     }
 
