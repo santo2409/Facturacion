@@ -64,13 +64,22 @@ class ImportCompaniesFromExcel:
         self._links_persisted = 0
         self._unlinked_count = 0
         self._empty_catalogs: list[str] = []
+        self.findings_writer = findings_writer
+        self.rues_cache_loader = rues_cache_loader
+        self._reset_findings()
+
+    def _reset_findings(self):
+        self._findings: dict[str, list[dict]] = {key: [] for key in COMPANY_FINDING_COLUMNS}
 
     def execute(self, df: pl.DataFrame):
+        self._reset_findings()
         self._progress_companies(df)
         self._progress_companies_to_packages(df)
         self._emit_summary()
 
     def _emit_summary(self):
+        folder = self.findings_writer.write(self._findings, COMPANY_FINDING_COLUMNS) if self.findings_writer else None
+        findings_summary = summarize_findings(self._findings, folder)
         self.logger.info(
             (
                 f"Resumen importación empresas: {self._companies_created} creada(s), "
