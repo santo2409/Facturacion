@@ -1138,10 +1138,33 @@ class AssignRatesFromExcel:
 
         # Phase 1: Collect all unique rate keys needed
         rate_keys_set = set()
-        rows_data = df.select(["NIT", "Ciudad", "TIPO DE ACTIVIDAD", "PAQUETE"] + [str(h) for h in headers]).to_dicts()
+        local_pkg_col = "_PAQUETE_LOCAL" if "_PAQUETE_LOCAL" in df.columns else "PAQUETE"
+        report_cols = [c for c in ("Empresa", "Paciente", "N° Identificación") if c in df.columns]
+        rows_data = df.select(
+            ["NIT", "Ciudad", "TIPO DE ACTIVIDAD", pl.col(local_pkg_col).alias("PAQUETE")]
+            + report_cols
+            + [str(h) for h in headers]
+        ).to_dicts()
+        odoo_resolved = self._resolve_odoo_cells(rows_data, headers)
+        self._odoo_cells = len(odoo_resolved)
+        self._findings = {key: [] for key in PHASE_FINDING_KEYS}
+
+        def record(phase_key: str, idx: int, h, price, origin: str) -> None:
+            row = rows_data[idx]
+            self._findings[phase_key].append({
+                "NIT": row["NIT"],
+                "Empresa": row.get("Empresa"),
+                "Paciente": row.get("Paciente"),
+                "N° Identificación": row.get("N° Identificación"),
+                "Ciudad": row["Ciudad"],
+                "TIPO DE ACTIVIDAD": row["TIPO DE ACTIVIDAD"],
+                "CUP": str(h),
+                "Precio asignado": int(price),
+                "Origen": origin,
+            })
 
         with self.progress("Calculando tarifas", total=len(rows_data)):
-            for row in rows_data:
+            for idx, row in enumerate(rows_data):
                 nit = row["NIT"]
                 city = row["Ciudad"]
                 activity = row["TIPO DE ACTIVIDAD"]
