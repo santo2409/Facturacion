@@ -692,7 +692,6 @@ class AssignRatesFromExcel:
         if cambios:
             self.logger.info(
                 f"_match_companies: {len(cambios)} cambios/novedades:\n" + "\n".join(f"  {c}" for c in cambios),
-                user_msg=f"{len(cambios)} actualizaciones/novedades registradas en empresas.",
             )
 
         if not_found_by_nit and self.not_found_log_generator:
