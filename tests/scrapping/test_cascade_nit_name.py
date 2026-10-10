@@ -156,9 +156,10 @@ def test_name_correction_is_still_flagged_for_genuinely_different_names():
 # ── T14: pasos 1-2, BD local ─────────────────────────────────────────────────
 
 
-def test_local_db_by_nit_short_circuits_cascade():
+def test_local_db_by_nit_short_circuits_rues_when_odoo_has_no_data():
+    # spec 016: Odoo se consulta primero; la BD local es el respaldo y evita RUES
     scraper = FakeNitScraper()
-    odoo = FakeOdooRepo(clients={"111": {"id": 1, "name": "NUNCA SE USA"}})
+    odoo = FakeOdooRepo(clients={})
     cache = FakeNitCacheRepo(
         cached={"111": NitResult("111", True, "EMPRESA CACHEADA", "BD local")}
     )
