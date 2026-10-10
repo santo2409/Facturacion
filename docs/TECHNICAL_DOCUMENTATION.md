@@ -646,19 +646,27 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 
 | # | Área | Hallazgo | Ubicación |
 |---|---|---|---|
-| 1 | Código | `_COLOR_PHASE7` (rosa) está definido y sin uso: la cascada tiene 6 fases (docs y reglas ya corregidas a 6) | `assigned_rates.py:1079` |
+| 1 | Código | **Resuelto en `assign` (spec 010).** Queda `FFB6C1` / *Fase 7* en la lista blanca y la Leyenda de las pre-facturas | `split_by_nit.py:50,63` |
 | 2 | Opción 8 | Inyección deshabilitada (llamada comentada, sin import) | `main.py:69-71` |
-| 3 | Opción 1 | `DatosGovScraper` no se usa y no implementa `search_by_name` (instanciarlo da `TypeError`). La cascada real es BD → Odoo → RUES | `scrapping/.../datos_gov_scraper.py` |
-| 4 | Opción 2 | El fallback de vínculo por nombre sigue siendo exacto (spec 003 RF-02 pedía fuzzy; tasks sin marcar) | `import_billers_from_excel.py:150-155` |
-| 5 | Opción 2 | `data.json` se sobrescribe solo con los resultados nuevos y pierde los previos | `import_billers_from_excel.py:90` |
+| 3 | Opción 1 | **Resuelto (spec 014):** el scraper `datos_gov_scraper.py` (no se usaba y no implementaba `search_by_name`) se eliminó. La cascada real es Odoo → BD local → RUES (spec 016) | — |
+| 4 | Opción 2 | El fallback de vínculo por nombre sigue siendo exacto (spec 003 RF-02 pedía fuzzy; tasks sin marcar) | `import_billers_from_excel.py:167-173` |
+| 5 | Opciones 2 y 5 | **Cambió (spec 016):** `data.json` se reescribe con los resultados de la corrida (también los de RUES que vinieron de la caché), pero pierde los de NIT que no estaban en el Excel de esa corrida | `import_billers_from_excel.py`, `import_companies_from_excel.py` |
 | 6 | Opción 3 | `str.replace("[\s]{2,}", "")` reemplaza solo la primera ocurrencia y pega palabras | normalizadores `dataProcessing` |
 | 7 | Opción 3 | `VERIFIED=True` significa que el CUP sigue **sin** existir (semántica invertida) | `cup_column_validator.py:197` |
 | 8 | Opción 3 | `VALOR` "5.000" → 5 | `_is_success` |
 | 9 | Opción 5 | `SaCompanyNitCacheRepository.save_many` usa `normalize_nit`, y una cédula de 10 o más dígitos puede quedar truncada | `sa_company_nit_cache_repository.py:64-67` |
-| 10 | Opción 5 | Un paquete no encontrado no pasa al reporte de no vinculadas | `import_companies_from_excel.py:306` |
+| 10 | Opción 5 | Un paquete no encontrado va a `paquete_no_encontrado.xlsx` (spec 011), pero sigue sin entrar a `empresas_no_vinculadas.xlsx` | `import_companies_from_excel.py:322-331` |
 | 11 | Opción 6 | Las fases comodín (3, 5, 6) no son deterministas (sin `ORDER BY`) | `sa_rates_repository.py:89,122` |
 | 12 | Opción 6 | `DAY_INITIAL`/`DAY_FINAL` vacíos → `int()` falla (lo captura `safe_dispatch`) | `main.py:59-65` |
 | 13 | Opción 7 | El mensaje de consolidado faltante usa `print` y muestra `[red]` literal | `pre_invoice_controller.py:19-21` |
 | 14 | BD | La app ignora `DATABASE_URL`; Alembic la usa (puertos por defecto 5432 vs 6543) | `database.py`, `migrations/env.py` |
 | 15 | BD | Los controllers de las opciones 4 y 10 no cierran la sesión | spec 007, no-objetivos |
 | 16 | Arquitectura | `SaBillerRepository` / `SaBillerCompanyRepository` no heredan su ABC; `rates` no tiene ABC | `src/billers`, `src/rates` |
+| 17 | Opción 6 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |
+| 18 | Opción 6 | `render_summary` se imprime con un `Console()` nuevo y no con `USER_CONSOLE` | `assigned_rates_controller.py:156` |
+| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto y no se valida el estado ni la vigencia de la tarifa | `odoo_rate_index.py` |
+| 20 | Opción 5 | `paquetes_en_conflicto` se registra aunque la empresa se repita con el **mismo** paquete (la regla "mismo valor no es conflicto" de la spec 015 solo se aplicó a la opción 2) | `import_companies_from_excel.py:305-320` |
+| 21 | Odoo | `create_client` escribe solo `vat`, no `ref_num` (no se invoca) | `xmlrpc_odoo_repository.py:238-249` |
+| 22 | Datos Odoo | 54 partners duplicados creados solo con `vat` (2026-05-07 a 2026-06-02); el administrador de Odoo debe fusionarlos o archivarlos | Odoo, `res.partner` |
+| 23 | `empresas_no_encontradas` | Las opciones 5 y 6 solo agregan no encontrados y nunca retiran los resueltos; solo la opción 1 limpia el libro | `import_companies_from_excel.py`, `assigned_rates.py:698` |
+| 24 | Opción 6 | La opción 6 valida las empresas Odoo-primero pero no sincroniza la BD local con Odoo (sí lo hacen las opciones 1, 2 y 5, spec 016) | `assigned_rates.py` |
