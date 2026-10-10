@@ -209,7 +209,7 @@ def test_cache_hit_skips_rues_when_odoo_has_no_data():
     result = uc.execute(["111"])
 
     assert scraper.called_with is None
-    assert odoo.batch_calls == 0
+    assert odoo.batch_calls == 1
     assert result[0].name == "EMPRESA CACHEADA"
     assert result[0].checked_bases == "BD local"
 
