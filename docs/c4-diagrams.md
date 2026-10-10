@@ -29,7 +29,7 @@ C4Context
     Rel(facturador, excel, "Prepara libros de entrada")
     Rel(coordinador, excel, "Revisa salidas y logs de novedades")
     Rel(facturacion, rues, "Consulta NIT y nombre", "HTTPS / Playwright")
-    Rel(facturacion, odoo, "Valida clientes por NIT/nombre (inyección de facturas deshabilitada)", "XML-RPC / HTTPS")
+    Rel(facturacion, odoo, "Valida clientes por NIT (ref_num, respaldo vat) y nombre; lee tarifas especial/base. Solo lectura; inyección deshabilitada", "XML-RPC / HTTPS")
     Rel(facturacion, db, "Lee y escribe", "SQL / TLS")
     Rel(facturacion, excel, "Lee entradas y genera salidas", "fastexcel / xlsxwriter / openpyxl")
 ```
