@@ -52,7 +52,7 @@ class SearchNitsWithOdooFallbackUseCase:
         except Exception as e:
             self.logger.warning(
                 f"No se pudo conectar a Odoo: {e}",
-                user_msg="No se pudo conectar a Odoo; se consultará RUES para todos los NITs.",
+                user_msg=ODOO_UNAVAILABLE_MSG,
             )
             self.odoo_repo = None
 
