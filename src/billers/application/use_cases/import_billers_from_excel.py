@@ -163,12 +163,16 @@ class ImportBillersFromExcel(ImportBillerFromExcelRepository):
                 elif not company_id:
                     self.logger.warning(
                         f"Company not found for NIT '{nit}' - cannot link to biller '{biller_name}'",
-                        user_msg=f"Empresa NIT {nit} no encontrada para vincular con '{biller_name}'.",
+                    )
+                    self._findings["empresa_no_encontrada"].append(
+                        {"NIT": nit, "Facturador": biller_name}
                     )
                 elif not biller_id:
                     self.logger.error(
                         f"Biller not found: '{biller_name}'",
-                        user_msg=f"No se encontró el facturador '{biller_name}'.",
+                    )
+                    self._findings["facturador_no_encontrado"].append(
+                        {"NIT": nit, "Facturador": biller_name}
                     )
                 self.progress.advance()
 
