@@ -550,7 +550,7 @@ C4Deployment
         }
         Deployment_Node(fs, "Carpeta del proyecto / DIRECTORY") {
             Container(files, "Excel y JSON", ".xlsx / .json", "CONSOLIDADO.xlsx, pre-facturas/, data.json")
-            Container(logs, "Logs", ".xlsx / .log", "logs/*.xlsx, user_audit.xlsx, logs.log")
+            Container(logs, "Logs", ".xlsx / .log", "logs/*.xlsx, logs/<opcion>/<fecha>/*.xlsx, logs.log")
         }
     }
 
