@@ -75,6 +75,8 @@ def _build_use_case(session, logger) -> ImportCompaniesFromExcel:
         not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
         logs_dir=Path("logs"),
         not_linked_log_generator=NotLinkedCompaniesLogGenerator(logger),
+        findings_writer=XlsxFindingsWriter(Path("logs/registrar_empresas")),
+        rues_cache_loader=load_rues_cache,
     )
 
 
