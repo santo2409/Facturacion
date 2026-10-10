@@ -21,7 +21,7 @@ C4Context
     System(facturacion, "Sistema de Facturación SOANDES", "CLI que valida empresas, carga tarifas, asigna tarifas por examen y genera CONSOLIDADO y pre-facturas")
 
     System_Ext(rues, "RUES", "Registro Único Empresarial y Social: validación pública de NIT y razón social")
-    System_Ext(odoo, "Odoo 14 / Avancys", "ERP: maestro de clientes (res.partner) y destino de facturas")
+    System_Ext(odoo, "Odoo 14 / Avancys", "ERP: maestro de clientes (res.partner, NIT en ref_num), tarifas oficiales por empresa (account.base.rate) y destino de facturas")
     SystemDb_Ext(db, "PostgreSQL (Supabase)", "Catálogos, empresas, tarifas, correcciones i-medical / TIAN")
     System_Ext(excel, "Libros Excel", "Entradas (atenciones, tarifas, empresas, gestores) y salidas (CONSOLIDADO, pre-facturas, logs)")
 
