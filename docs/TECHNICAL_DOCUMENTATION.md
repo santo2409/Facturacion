@@ -449,9 +449,9 @@ Detalles:
 
 - Las filas cuyo NIT (final o crudo) está en `tian` se facturan al NIT `TIAN_NIT`.
 - El nombre queda `"<razón social>(TIAN)"`, sin duplicar el sufijo.
-- Heredan el facturador, el paquete y las tarifas de TIAN.
+- Heredan el facturador, el paquete y las tarifas de TIAN, incluida la tarifa Odoo del `TIAN_NIT` (`_load_odoo_rates` corre después de `_apply_tian`).
 - Se abortan sin error (con aviso) si falta `TIAN_NIT`, si TIAN no existe en `companies` o si no tiene paquete.
-- Se escribe `logs/empresas_tian.xlsx` (se reemplaza en cada corrida).
+- Se escribe `logs/empresas_tian.xlsx` (se reemplaza en cada corrida). En la opción 6 los avisos van solo a `logs.log` (`TechOnlyLogger`).
 
 **Unificación de nombre por NIT:** si un mismo NIT llega con varios nombres, se toma el canónico con prioridad Odoo > BD > primer visto. Nunca se compara por similitud.
 
