@@ -465,7 +465,7 @@ Detalles:
 - **Cadena:** `generate_pre_invoices` (`infrastructure/console/pre_invoice_controller.py`) → `SplitByNit(logger, cup_repo, RichProgress()).execute(...)` (`application/use_cases/split_by_nit.py`).
 - **Rutas fijas:** entrada `CONSOLIDADO.xlsx` (hoja `Consolidado`), salida `pre-facturas/`.
 - **Algoritmo:**
-  1. Carga con openpyxl, sin `read_only`, para leer los rellenos de fase.
+  1. Carga con openpyxl, sin `read_only`, para leer los rellenos de fase. Solo copia los de la lista blanca `_PHASE_COLORS_6` (incluye `E2EFDA` desde la spec 010 y aún `FFB6C1`). La `Leyenda` de las pre-facturas dice *Sin color — Tarifa Odoo (especial/base)* y las fases 1–6, más una fila obsoleta *Fase 7*.
   2. Ordena las columnas: las 23 de `FIXED_COLUMNS` (l.14-38) y luego las CUP (`^\d+(-\d+)?$`).
   3. Determina la carpeta por fila (l.139-151):
      - FACTURADOR vacío → `SIN_FACTURADOR`.
