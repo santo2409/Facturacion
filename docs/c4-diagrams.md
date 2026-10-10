@@ -457,12 +457,16 @@ flowchart TD
 flowchart TD
     A[Leer pre-facturas/General sin factura] --> B[Agrupar por NIT]
     B --> C[Excluir NIT con estado OK en log_inyeccion.xlsx]
-    C --> D{Cliente: vat = NIT}
-    D -->|No| E{vat =like 'NIT%'}
-    E -->|No| F{name ilike sin sufijo societario}
+    C --> D{Cliente: ref_num = NIT}
+    D -->|No| E{ref_num =like 'NIT%'}
+    E -->|No| E2{vat = NIT}
+    E2 -->|No| E3{vat =like 'NIT%'}
+    E3 -->|No| F{name ilike sin sufijo societario}
     F -->|No| V["VERIFICAR (nunca se crea el cliente)"]
     D -->|Sí| L
     E -->|Sí| L
+    E2 -->|Sí| L
+    E3 -->|Sí| L
     F -->|Sí| L[Armar líneas: producto por CUP,<br/>cuenta analítica por ciudad, impuestos]
     L --> LL{¿Hay líneas válidas?}
     LL -->|No| ER[ERROR]
