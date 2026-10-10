@@ -223,40 +223,40 @@ class ImportRatesFromExcel:
                     if not contract_id:
                         self.logger.error(
                             f"Contrato no encontrado: '{row['CONTRATO']}'",
-                            user_msg=f"El contrato '{row['CONTRATO']}' no existe en el sistema.",
                         )
+                        self._add_finding("contrato_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not city_id:
                         self.logger.error(
                             f"Ciudad no encontrada: '{row['CIUDAD']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"La ciudad '{row['CIUDAD']}' no existe. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("ciudad_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not cup_id:
                         self.logger.error(
                             f"CUP no encontrado: '{row['CUP']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"El CUP '{row['CUP']}' no existe. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("cup_no_existe", row)
                         self.progress.advance()
                         continue
 
                     if not activity_id:
                         self.logger.error(
                             f"Actividad no encontrada: '{row['INTRA O EXTRA']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"La actividad '{row['INTRA O EXTRA']}' no es válida. Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("actividad_invalida", row)
                         self.progress.advance()
                         continue
 
                     if not rate_value:
                         self.logger.error(
                             f"Valor vacío para CUP '{row['CUP']}' en contrato '{row['CONTRATO']}'",
-                            user_msg=f"El valor de la tarifa está vacío. CUP: '{row['CUP']}', Contrato: '{row['CONTRATO']}'",
                         )
+                        self._add_finding("tarifa_vacia", row)
                         self.progress.advance()
                         continue
 
