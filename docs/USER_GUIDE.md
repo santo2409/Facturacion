@@ -23,10 +23,10 @@ El sistema automatiza la facturación mensual de exámenes médicos ocupacionale
 
 1. Verifica que el NIT y el nombre de cada empresa sean correctos (en Odoo/Avancys y en el RUES).
 2. Carga los facturadores, los paquetes y las tarifas.
-3. Asigna a cada examen de cada paciente la tarifa que le corresponde según la empresa, la ciudad, el paquete y el tipo de actividad (INTRA/EXTRA).
+3. Asigna a cada examen de cada paciente la tarifa que le corresponde: toma primero la **tarifa oficial de la empresa en Odoo** (tarifa especial y, si no, tarifa base) y, si Odoo no tiene precio, usa las tarifas cargadas en la base de datos según la empresa, la ciudad, el paquete y el tipo de actividad (INTRA/EXTRA).
 4. Genera el **CONSOLIDADO.xlsx** y las **pre-facturas** separadas por facturador y por empresa.
 
-**Principio clave: el sistema verifica, nunca crea.** Si no encuentra una empresa, no la inventa: la deja en un reporte para que la revises a mano.
+**Principio clave: el sistema verifica, nunca crea.** Si no encuentra una empresa, no la inventa: la deja en un reporte para que la revises a mano. De Odoo **solo lee**: nunca crea ni modifica nada allí.
 
 ## 2. Antes de empezar
 
