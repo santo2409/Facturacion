@@ -55,14 +55,15 @@ def test_save_many_persists_only_positive_results_with_name():
     assert nits == ["111"]
 
 
-def test_save_many_failure_does_not_raise():
+def test_save_many_failure_raises_nit_cache_save_error():
     class FailingCompanyRepo(FakeCompanyRepo):
         def save_batch(self, companies):
             raise ConnectionError("BD no disponible")
 
     repo = SaCompanyNitCacheRepository(FailingCompanyRepo(), logger=FakeLogger())
 
-    repo.save_many([NitResult("111", True, "EMPRESA UNO")])
+    with pytest.raises(NitCacheSaveError):
+        repo.save_many([NitResult("111", True, "EMPRESA UNO")])
 
 
 def test_save_many_truncates_nit_to_9_digits_before_persisting():
