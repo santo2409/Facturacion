@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from os import getenv
 
