@@ -142,8 +142,8 @@ def test_nit_correction_state_includes_both_nits(tmp_path):
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
-            "900111222", True, "EMPRESA A SAS", checked_bases="Odoo",
-            source="Odoo/nombre", nit_original="900111111",
+            "900111222", True, "EMPRESA A SAS", checked_bases="Odoo, RUES",
+            source="RUES/nombre", nit_original="900111111",
         )
     ]
 
