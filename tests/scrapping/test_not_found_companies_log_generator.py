@@ -247,8 +247,8 @@ def test_correction_row_disappears_on_clean_rerun(tmp_path):
     gen.generate(
         [
             NitResult(
-                "900111222", True, "EMPRESA A", checked_bases="Odoo",
-                source="Odoo/nombre", nit_original="900111111",
+                "900111222", True, "EMPRESA A", checked_bases="Odoo, RUES",
+                source="RUES/nombre", nit_original="900111111",
             )
         ],
         tmp_path,
