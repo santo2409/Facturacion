@@ -1,10 +1,15 @@
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.scrapping.domain.exceptions import NitCacheSaveError
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.text_normalizer import normalize_company_name, normalize_nit
 
 CONFLICT_DUPLICATE_NAME = "Nombre ya registrado en BD local con otro NIT"
+SAVE_ERROR = "No se pudo guardar en la BD local"
 DEFAULT_RUES_NAME_LIMIT = 200
+# `checked_bases` con el que `NotFoundCompaniesLogGenerator` lista una empresa
+# resuelta ("Existe en RUES, falta en Odoo"); debe mantenerse igual a su criterio.
+BOOK_LISTED_BASES = "Odoo, RUES"
 ODOO_UNAVAILABLE_MSG = "Odoo no disponible: se validó con la BD local y RUES."
 
 # Libro `bd_local_actualizada`: empresas que se agregaron o corrigieron en la BD
@@ -16,6 +21,7 @@ LOCAL_UPDATE_COLUMNS = {
 ACTION_ADDED = "Agregada"
 ACTION_UPDATED = "Actualizada"
 ACTION_NOT_UPDATED = "No actualizada: nombre duplicado en BD local"
+ACTION_NOT_UPDATED_ERROR = "No actualizada: error al guardar"
 
 
 class SearchNitsWithOdooFallbackUseCase:
@@ -88,13 +94,17 @@ class SearchNitsWithOdooFallbackUseCase:
         name_changed = self._names_differ(book_name, found_name)
 
         if corrected or name_changed:
+            # El aviso remite al libro solo si el libro la lista (spec 018).
+            notice = (
+                f"Se corrigieron datos de la empresa '{found_name}'; "
+                "revisa empresas_no_encontradas.xlsx."
+                if bases == BOOK_LISTED_BASES
+                else None
+            )
             self.logger.info(
                 f"[NOVEDAD] {key}: NIT '{key}' -> '{found_nit if corrected else key}', "
                 f"nombre '{book_name}' -> '{found_name}' [{source}]",
-                user_msg=(
-                    f"Se corrigieron datos de la empresa '{found_name}'; "
-                    "revisa empresas_no_encontradas.xlsx."
-                ),
+                user_msg=notice,
             )
 
         return NitResult(
@@ -311,11 +321,24 @@ class SearchNitsWithOdooFallbackUseCase:
                     to_save.append(r)
 
             if to_save:
-                omitted = self._safe(
-                    lambda: self.nit_cache_repo.save_many(to_save),
-                    [],
-                    "guardando caché local de NITs",
-                ) or []
+                try:
+                    omitted = self.nit_cache_repo.save_many(to_save) or []
+                except NitCacheSaveError as e:
+                    self.logger.warning(
+                        f"Fallo guardando caché local de NITs: {e}",
+                        user_msg=(
+                            f"No se pudieron guardar {len(to_save)} empresas en la BD local."
+                        ),
+                    )
+                    for result in to_save:
+                        result.save_error = SAVE_ERROR
+                        norm = normalize_nit(str(result.nit))
+                        if norm in odoo_changes:
+                            odoo_changes[norm]["Acción"] = ACTION_NOT_UPDATED_ERROR
+                    omitted = []
+                except Exception as e:
+                    self.logger.warning(f"Fallo guardando caché local de NITs: {e}")
+                    omitted = []
                 omitted_nits = {normalize_nit(str(o)) for o in omitted}
                 for result in to_save:
                     norm = normalize_nit(str(result.nit))

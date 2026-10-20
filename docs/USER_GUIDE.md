@@ -127,7 +127,7 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 |---|---|
 | *Odoo no disponible: se validó con la BD local y RUES.* | Revisa la conexión o las credenciales de Odoo y vuelve a ejecutar. Mientras tanto el proceso continúa con la base local y RUES, y **no** corrige la base local |
 | *N empresa(s) quedaron sin consulta por nombre en RUES por el límite configurado* | Vuelve a ejecutar la opción para procesar las restantes |
-| *Se corrigieron datos de la empresa '…'; revisa empresas_no_encontradas.xlsx.* | Confirma la corrección en el reporte |
+| *Se corrigieron datos de la empresa '…'; revisa empresas_no_encontradas.xlsx.* | Solo aparece para empresas que existen en RUES y **faltan en Odoo**: confirma la corrección en ese reporte. Si Odoo o la base local ya tienen la empresa, no se muestra aviso (el cambio en la base local queda en `bd_local_actualizada.xlsx`) |
 
 > Requiere Firefox instalado para Playwright (lo instala el equipo técnico) y puede tardar varios minutos.
 
@@ -402,7 +402,7 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 
 | Archivo | Lo genera | ¿Acumula? | Qué revisar |
 |---|---|---|---|
-| `empresas_no_encontradas.xlsx` | 1, 5, 6 | Sí. Solo la opción 1 retira las empresas ya resueltas; las opciones 5 y 6 solo agregan las que no encuentran | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar) · *NIT corregido* · *Nombre corregido* |
+| `empresas_no_encontradas.xlsx` | 1, 5, 6 | Sí. Solo la opción 1 retira las empresas ya resueltas; las opciones 5 y 6 solo agregan las que no encuentran | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar). En las filas de RUES puede sumarse *NIT corregido* o *Nombre corregido*. Solo lista empresas que **no existen en Odoo**: las que Odoo ya tiene no aparecen, aunque se hayan corregido o no se hayan podido guardar en la base local (eso va a `bd_local_actualizada.xlsx`) |
 | `novedades_cups.xlsx` | 3 | No | 🟩 corregido · 🟨 sugerencia o CUP/VALOR cruzados · 🟥 no se pudo corregir |
 | `empresas_no_vinculadas.xlsx` | 5 | No | Empresas que quedaron sin paquete y el motivo |
 | `empresas_tian.xlsx` | 6 | No | Empresas redirigidas a TIAN en esta corrida |
@@ -452,7 +452,10 @@ Todas las tarifas salieron de la base de datos. Revisa la conexión o las creden
 Las opciones 5 y 6 solo agregan empresas a ese reporte. Ejecuta la opción 1 con ese NIT para retirarla, o bórrala a mano.
 
 **Una empresa aparece con un NIT distinto al que escribí.**
-El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. La corrección queda registrada en `empresas_no_encontradas.xlsx` (como *NIT corregido*); la opción 1 además lo muestra en la consola.
+El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. Si la empresa viene de RUES (no existe en Odoo), la corrección queda en `empresas_no_encontradas.xlsx` como *NIT corregido*; si viene de Odoo, ya no se lista allí y la opción 1 solo la muestra en la consola.
+
+**Una empresa que sí existe en Odoo ya no aparece en `empresas_no_encontradas.xlsx`.**
+Es lo esperado: ese libro se entrega al área que crea empresas en Odoo y solo lista las que faltan allí. Si la base local no pudo actualizarse con los datos de Odoo, lo verás en `bd_local_actualizada.xlsx` (*No actualizada: nombre duplicado en BD local* o *No actualizada: error al guardar*) y en la consola, no en ese libro.
 
 **Una empresa sale con "(TIAN)" en el nombre.**
 Está en la lista TIAN y se factura al NIT de TIAN. Revisa `empresas_tian.xlsx`.

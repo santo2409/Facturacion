@@ -17,7 +17,6 @@ ESTADO_NO_ENCONTRADO = "No encontrado (ni Odoo ni RUES)"
 ESTADO_FALTA_ODOO = "Existe en RUES, falta en Odoo"
 ESTADO_NIT_CORREGIDO = "NIT corregido"
 ESTADO_NOMBRE_CORREGIDO = "Nombre corregido"
-ESTADO_CONFLICTO_BD_LOCAL = "Nombre duplicado en BD local con otro NIT"
 
 _SEPARADOR_ESTADO = " | "
 
@@ -98,6 +97,11 @@ class NotFoundCompaniesLogGenerator:
     def _estado_partes(r: NitResult) -> list[str]:
         """Compone el Estado como partes atómicas.
 
+        El libro lo recibe el área que crea empresas en Odoo (spec 017): solo
+        lista NIT que no existen allí. Un NIT resuelto en Odoo o en la BD local
+        devuelve [] y sale del libro, tenga o no novedades de NIT o nombre; los
+        problemas de la BD local van a `bd_local_actualizada`.
+
         Con una sola parte el texto resultante es idéntico al de las versiones
         anteriores, de modo que los consumidores que no producen campos de
         novedad conservan su comportamiento.
@@ -107,6 +111,8 @@ class NotFoundCompaniesLogGenerator:
             partes.append(ESTADO_NO_ENCONTRADO)
         elif r.checked_bases == "Odoo, RUES":
             partes.append(ESTADO_FALTA_ODOO)
+        else:
+            return partes
 
         if getattr(r, "nit_original", None):
             partes.append(f"{ESTADO_NIT_CORREGIDO} ({r.nit_original} → {r.nit})")
@@ -114,8 +120,6 @@ class NotFoundCompaniesLogGenerator:
             partes.append(
                 f"{ESTADO_NOMBRE_CORREGIDO} ('{r.name_original}' → '{r.name}')"
             )
-        if getattr(r, "conflict", ""):
-            partes.append(ESTADO_CONFLICTO_BD_LOCAL)
         return partes
 
     def generate(self, resultados: list[NitResult], output_dir: Path) -> Path:
@@ -170,7 +174,6 @@ class NotFoundCompaniesLogGenerator:
                     (
                         ESTADO_NIT_CORREGIDO,
                         ESTADO_NOMBRE_CORREGIDO,
-                        ESTADO_CONFLICTO_BD_LOCAL,
                     )
                 )
                 for p in partes

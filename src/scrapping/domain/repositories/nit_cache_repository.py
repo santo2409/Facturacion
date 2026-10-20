@@ -21,4 +21,7 @@ class NitCacheRepository(ABC):
     def save_many(self, results: list[NitResult]) -> list[str]:
         """Persiste los resultados positivos (is_company=True) en el caché y
         retorna los NITs que NO pudieron persistirse, para que el llamador
-        pueda reportarlos como novedad."""
+        pueda reportarlos como novedad (p. ej. nombre ya usado por otro NIT).
+
+        Lanza `NitCacheSaveError` si el guardado falla por un error técnico:
+        en ese caso ningún NIT debe reportarse como omitido por nombre."""

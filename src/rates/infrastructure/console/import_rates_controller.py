@@ -27,6 +27,7 @@ from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
     SaSpecialRepository,
 )
+from src.shared.utils.deprecated import deprecated
 
 
 def _build_use_case(session, logger, loader):
@@ -47,6 +48,7 @@ def _build_use_case(session, logger, loader):
     )
 
 
+@deprecated("Opción en desuso del menú")
 def import_rates(logger):
     path = ask_excel_path()
     loader = ExcelLoader()
