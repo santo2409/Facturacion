@@ -37,6 +37,7 @@ from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.special.infrastructure.persistence.sa_special_repository import (
     SaSpecialRepository,
 )
+from src.shared.utils.deprecated import deprecated
 
 
 def _load_dataframe():
