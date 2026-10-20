@@ -1,4 +1,7 @@
 """Tests para SaCompanyNitCacheRepository."""
+import pytest
+
+from src.scrapping.domain.exceptions import NitCacheSaveError
 from src.scrapping.infrastructure.persistence.sa_company_nit_cache_repository import (
     SaCompanyNitCacheRepository,
 )
