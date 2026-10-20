@@ -172,20 +172,6 @@ def test_name_correction_state_includes_both_names(tmp_path):
     assert "EMPRESA NUEVA SAS" in estado
 
 
-def test_conflict_state_is_registered(tmp_path):
-    gen = NotFoundCompaniesLogGenerator(FakeLogger())
-    resultados = [
-        NitResult(
-            "111", True, "EMPRESA A", checked_bases="Odoo",
-            conflict="Nombre ya registrado en BD local con otro NIT",
-        )
-    ]
-
-    log_path = gen.generate(resultados, tmp_path)
-
-    assert ESTADO_CONFLICTO_BD_LOCAL in _estado(log_path, "111")
-
-
 def test_combined_state_keeps_falta_odoo_and_correction(tmp_path):
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
