@@ -29,6 +29,7 @@ from src.rates.infrastructure.console.import_rates_controller import import_rate
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
 from src.shared.logging.config.logging_config import setup_logging
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.utils.deprecated import DEPRECATED_LABEL, is_deprecated
 
 console = Console()
 user_logger = setup_logging()
