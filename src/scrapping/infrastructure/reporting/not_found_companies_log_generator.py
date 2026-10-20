@@ -174,7 +174,6 @@ class NotFoundCompaniesLogGenerator:
                     (
                         ESTADO_NIT_CORREGIDO,
                         ESTADO_NOMBRE_CORREGIDO,
-                        ESTADO_CONFLICTO_BD_LOCAL,
                     )
                 )
                 for p in partes
