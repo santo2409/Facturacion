@@ -120,29 +120,22 @@ def safe_dispatch(option, logger) -> bool:
         return True
 
 
+def build_menu_table() -> Table:
+    table = Table(box=box.SIMPLE_HEAD)
+    table.add_column("Opción", justify="center")
+    table.add_column("Descripción")
+    for option, description, func in MENU_OPTIONS:
+        table.add_row(option, menu_label(description, func))
+    return table
+
+
 def console_app():
     console.clear()
     console.rule("[bold blue]Facturación SOANDES")
 
     while True:
         console.print("\n[bold cyan]Menú Principal[/bold cyan]")
-        table = Table(box=box.SIMPLE_HEAD)
-        table.add_column("Opción", justify="center")
-        table.add_column("Descripción")
-
-        table.add_row("1", "Web Scrapping")
-        table.add_row("2", "Facturadores")
-        table.add_row("3", "Tratamiento Información")
-        table.add_row("4", "Cargar Tarifas")
-        table.add_row("5", "Registrar Empresas - Paquetes")
-        table.add_row("6", "Asignar Tarifas")
-        table.add_row("7", "Generar Pre Facturas")
-        table.add_row("8", "Cargar Pre Facturas")
-        table.add_row("9", "Generar Faltantes")
-        table.add_row("10", "Detectar Empresas Duplicadas")
-        table.add_row("0", "Salir")
-
-        console.print(table)
+        console.print(build_menu_table())
 
         option = Prompt.ask("[bold yellow]Seleccione una opción", default="0")
 
