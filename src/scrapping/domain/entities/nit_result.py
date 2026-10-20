@@ -21,3 +21,4 @@ class NitResult:
     nit_original: str | None = None
     name_original: str | None = None
     conflict: str = ""
+    save_error: str = ""
