@@ -321,11 +321,24 @@ class SearchNitsWithOdooFallbackUseCase:
                     to_save.append(r)
 
             if to_save:
-                omitted = self._safe(
-                    lambda: self.nit_cache_repo.save_many(to_save),
-                    [],
-                    "guardando caché local de NITs",
-                ) or []
+                try:
+                    omitted = self.nit_cache_repo.save_many(to_save) or []
+                except NitCacheSaveError as e:
+                    self.logger.warning(
+                        f"Fallo guardando caché local de NITs: {e}",
+                        user_msg=(
+                            f"No se pudieron guardar {len(to_save)} empresas en la BD local."
+                        ),
+                    )
+                    for result in to_save:
+                        result.save_error = SAVE_ERROR
+                        norm = normalize_nit(str(result.nit))
+                        if norm in odoo_changes:
+                            odoo_changes[norm]["Acción"] = ACTION_NOT_UPDATED_ERROR
+                    omitted = []
+                except Exception as e:
+                    self.logger.warning(f"Fallo guardando caché local de NITs: {e}")
+                    omitted = []
                 omitted_nits = {normalize_nit(str(o)) for o in omitted}
                 for result in to_save:
                     norm = normalize_nit(str(result.nit))
