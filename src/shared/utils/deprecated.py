@@ -5,7 +5,7 @@ from typing import TypeVar
 
 F = TypeVar("F", bound=Callable)
 
-DEPRECATED_LABEL = "[red]**deprecated**[/red]"
+DEPRECATED_LABEL = "`Desuso`"
 
 
 def deprecated(reason: str | None = None) -> Callable[[F], F]:
