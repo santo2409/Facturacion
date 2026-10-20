@@ -1,8 +1,12 @@
+from src.scrapping.domain.exceptions import NitCacheSaveError
+
+
 class FakeNitCacheRepo:
-    def __init__(self, cached=None, cached_by_name=None, omit=None):
+    def __init__(self, cached=None, cached_by_name=None, omit=None, fail=False):
         self._cached = cached or {}
         self._cached_by_name = cached_by_name or {}
         self._omit = [str(o) for o in (omit or [])]
+        self._fail = fail
         self.saved = []
 
     def get_many(self, nits):
