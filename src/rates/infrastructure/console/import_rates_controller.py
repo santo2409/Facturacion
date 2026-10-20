@@ -48,6 +48,7 @@ def _build_use_case(session, logger, loader):
     )
 
 
+@deprecated("Opción en desuso del menú")
 def import_rates(logger):
     path = ask_excel_path()
     loader = ExcelLoader()
