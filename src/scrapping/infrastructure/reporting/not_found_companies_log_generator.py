@@ -17,7 +17,6 @@ ESTADO_NO_ENCONTRADO = "No encontrado (ni Odoo ni RUES)"
 ESTADO_FALTA_ODOO = "Existe en RUES, falta en Odoo"
 ESTADO_NIT_CORREGIDO = "NIT corregido"
 ESTADO_NOMBRE_CORREGIDO = "Nombre corregido"
-ESTADO_CONFLICTO_BD_LOCAL = "Nombre duplicado en BD local con otro NIT"
 
 _SEPARADOR_ESTADO = " | "
 
