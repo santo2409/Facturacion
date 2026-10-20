@@ -120,8 +120,6 @@ class NotFoundCompaniesLogGenerator:
             partes.append(
                 f"{ESTADO_NOMBRE_CORREGIDO} ('{r.name_original}' → '{r.name}')"
             )
-        if getattr(r, "conflict", ""):
-            partes.append(ESTADO_CONFLICTO_BD_LOCAL)
         return partes
 
     def generate(self, resultados: list[NitResult], output_dir: Path) -> Path:
