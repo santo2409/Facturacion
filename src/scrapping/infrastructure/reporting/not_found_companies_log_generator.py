@@ -111,6 +111,8 @@ class NotFoundCompaniesLogGenerator:
             partes.append(ESTADO_NO_ENCONTRADO)
         elif r.checked_bases == "Odoo, RUES":
             partes.append(ESTADO_FALTA_ODOO)
+        else:
+            return partes
 
         if getattr(r, "nit_original", None):
             partes.append(f"{ESTADO_NIT_CORREGIDO} ({r.nit_original} → {r.nit})")
