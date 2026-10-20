@@ -127,7 +127,7 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 |---|---|
 | *Odoo no disponible: se validó con la BD local y RUES.* | Revisa la conexión o las credenciales de Odoo y vuelve a ejecutar. Mientras tanto el proceso continúa con la base local y RUES, y **no** corrige la base local |
 | *N empresa(s) quedaron sin consulta por nombre en RUES por el límite configurado* | Vuelve a ejecutar la opción para procesar las restantes |
-| *Se corrigieron datos de la empresa '…'; revisa empresas_no_encontradas.xlsx.* | Confirma la corrección en el reporte |
+| *Se corrigieron datos de la empresa '…'; revisa empresas_no_encontradas.xlsx.* | Solo aparece para empresas que existen en RUES y **faltan en Odoo**: confirma la corrección en ese reporte. Si Odoo o la base local ya tienen la empresa, no se muestra aviso (el cambio en la base local queda en `bd_local_actualizada.xlsx`) |
 
 > Requiere Firefox instalado para Playwright (lo instala el equipo técnico) y puede tardar varios minutos.
 
