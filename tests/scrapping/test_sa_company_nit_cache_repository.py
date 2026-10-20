@@ -198,14 +198,15 @@ def test_save_many_returns_nits_omitted_by_duplicate_name():
     assert omitted == ["222"]
 
 
-def test_save_many_returns_all_when_save_batch_fails():
+def test_save_many_raises_when_save_batch_fails_instead_of_reporting_all_omitted():
     class FailingCompanyRepo(FakeCompanyRepo):
         def save_batch(self, companies):
             raise ConnectionError("BD no disponible")
 
     repo = SaCompanyNitCacheRepository(FailingCompanyRepo(), logger=FakeLogger())
 
-    assert repo.save_many([NitResult("111", True, "EMPRESA UNO")]) == ["111"]
+    with pytest.raises(NitCacheSaveError):
+        repo.save_many([NitResult("111", True, "EMPRESA UNO")])
 
 
 def test_save_many_returns_empty_when_nothing_to_persist():
