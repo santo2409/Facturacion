@@ -217,8 +217,8 @@ def test_not_found_with_name_correction_keeps_both_parts(tmp_path):
 # ── T23: ciclo de vida de la novedad ─────────────────────────────────────────
 
 
-def test_correction_row_persists_when_company_is_resolved(tmp_path):
-    """Una empresa resuelta pero corregida sigue requiriendo acción manual."""
+def test_corrected_company_resolved_in_odoo_is_not_listed(tmp_path):
+    """Spec 017: una empresa que ya existe en Odoo no se entrega al área que las crea."""
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
