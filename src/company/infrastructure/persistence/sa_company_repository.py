@@ -89,7 +89,7 @@ class SaCompanyRepository(CompanyRepository):
         except Exception as e:
             self.session.rollback()
             self.logger.error(f"Error saving batch companies: {e}", exc_info=True, user_msg="No se pudieron guardar las empresas.")
-            return []
+            return None
 
     def all(self):
         try:
