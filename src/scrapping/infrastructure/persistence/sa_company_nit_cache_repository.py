@@ -1,5 +1,6 @@
 from src.company.domain.entities.company import Company
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.scrapping.domain.exceptions import NitCacheSaveError
 from src.scrapping.domain.repositories.nit_cache_repository import NitCacheRepository
 from src.shared.utils.text_normalizer import normalize_company_name, normalize_nit
 
