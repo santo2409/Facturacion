@@ -94,13 +94,17 @@ class SearchNitsWithOdooFallbackUseCase:
         name_changed = self._names_differ(book_name, found_name)
 
         if corrected or name_changed:
+            # El aviso remite al libro solo si el libro la lista (spec 018).
+            notice = (
+                f"Se corrigieron datos de la empresa '{found_name}'; "
+                "revisa empresas_no_encontradas.xlsx."
+                if bases == BOOK_LISTED_BASES
+                else None
+            )
             self.logger.info(
                 f"[NOVEDAD] {key}: NIT '{key}' -> '{found_nit if corrected else key}', "
                 f"nombre '{book_name}' -> '{found_name}' [{source}]",
-                user_msg=(
-                    f"Se corrigieron datos de la empresa '{found_name}'; "
-                    "revisa empresas_no_encontradas.xlsx."
-                ),
+                user_msg=notice,
             )
 
         return NitResult(
