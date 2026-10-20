@@ -452,7 +452,10 @@ Todas las tarifas salieron de la base de datos. Revisa la conexión o las creden
 Las opciones 5 y 6 solo agregan empresas a ese reporte. Ejecuta la opción 1 con ese NIT para retirarla, o bórrala a mano.
 
 **Una empresa aparece con un NIT distinto al que escribí.**
-El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. La corrección queda registrada en `empresas_no_encontradas.xlsx` (como *NIT corregido*); la opción 1 además lo muestra en la consola.
+El sistema lo corrigió con Odoo, el RUES o la tabla i-medical. Si la empresa viene de RUES (no existe en Odoo), la corrección queda en `empresas_no_encontradas.xlsx` como *NIT corregido*; si viene de Odoo, ya no se lista allí y la opción 1 solo la muestra en la consola.
+
+**Una empresa que sí existe en Odoo ya no aparece en `empresas_no_encontradas.xlsx`.**
+Es lo esperado: ese libro se entrega al área que crea empresas en Odoo y solo lista las que faltan allí. Si la base local no pudo actualizarse con los datos de Odoo, lo verás en `bd_local_actualizada.xlsx` (*No actualizada: nombre duplicado en BD local* o *No actualizada: error al guardar*) y en la consola, no en ese libro.
 
 **Una empresa sale con "(TIAN)" en el nombre.**
 Está en la lista TIAN y se factura al NIT de TIAN. Revisa `empresas_tian.xlsx`.
