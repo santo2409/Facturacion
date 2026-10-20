@@ -21,6 +21,7 @@ LOCAL_UPDATE_COLUMNS = {
 ACTION_ADDED = "Agregada"
 ACTION_UPDATED = "Actualizada"
 ACTION_NOT_UPDATED = "No actualizada: nombre duplicado en BD local"
+ACTION_NOT_UPDATED_ERROR = "No actualizada: error al guardar"
 
 
 class SearchNitsWithOdooFallbackUseCase:
