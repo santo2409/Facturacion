@@ -159,8 +159,8 @@ def test_name_correction_state_includes_both_names(tmp_path):
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
-            "111", True, "EMPRESA NUEVA SAS", checked_bases="Odoo",
-            source="Odoo/NIT", name_original="EMPRESA VIEJA",
+            "111", True, "EMPRESA NUEVA SAS", checked_bases="Odoo, RUES",
+            source="RUES/NIT", name_original="EMPRESA VIEJA",
         )
     ]
 
