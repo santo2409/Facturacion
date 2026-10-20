@@ -229,7 +229,7 @@ def test_corrected_company_resolved_in_odoo_is_not_listed(tmp_path):
 
     log_path = gen.generate(resultados, tmp_path)
 
-    assert [r[1] for r in _rows(log_path)] == ["900111222"]
+    assert _rows(log_path) == []
 
 
 def test_resolved_without_novelty_is_removed(tmp_path):
