@@ -81,6 +81,7 @@ def _build_use_case(session, logger) -> ImportCompaniesFromExcel:
     )
 
 
+@deprecated("Opción en desuso del menú")
 def import_companies(logger):
     df = _load_dataframe()
 
