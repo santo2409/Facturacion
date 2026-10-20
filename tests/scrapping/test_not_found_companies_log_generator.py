@@ -3,7 +3,6 @@ import openpyxl
 
 from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.infrastructure.reporting.not_found_companies_log_generator import (
-    ESTADO_CONFLICTO_BD_LOCAL,
     ESTADO_FALTA_ODOO,
     ESTADO_NIT_CORREGIDO,
     ESTADO_NO_ENCONTRADO,
