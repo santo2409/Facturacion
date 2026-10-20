@@ -1,10 +1,15 @@
 from src.scrapping.application.use_cases.search_nits_use_case import SearchNitsUseCase
 from src.scrapping.domain.entities.nit_result import NitResult
+from src.scrapping.domain.exceptions import NitCacheSaveError
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.text_normalizer import normalize_company_name, normalize_nit
 
 CONFLICT_DUPLICATE_NAME = "Nombre ya registrado en BD local con otro NIT"
+SAVE_ERROR = "No se pudo guardar en la BD local"
 DEFAULT_RUES_NAME_LIMIT = 200
+# `checked_bases` con el que `NotFoundCompaniesLogGenerator` lista una empresa
+# resuelta ("Existe en RUES, falta en Odoo"); debe mantenerse igual a su criterio.
+BOOK_LISTED_BASES = "Odoo, RUES"
 ODOO_UNAVAILABLE_MSG = "Odoo no disponible: se validó con la BD local y RUES."
 
 # Libro `bd_local_actualizada`: empresas que se agregaron o corrigieron en la BD
