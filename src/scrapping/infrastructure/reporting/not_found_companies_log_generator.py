@@ -97,6 +97,11 @@ class NotFoundCompaniesLogGenerator:
     def _estado_partes(r: NitResult) -> list[str]:
         """Compone el Estado como partes atómicas.
 
+        El libro lo recibe el área que crea empresas en Odoo (spec 017): solo
+        lista NIT que no existen allí. Un NIT resuelto en Odoo o en la BD local
+        devuelve [] y sale del libro, tenga o no novedades de NIT o nombre; los
+        problemas de la BD local van a `bd_local_actualizada`.
+
         Con una sola parte el texto resultante es idéntico al de las versiones
         anteriores, de modo que los consumidores que no producen campos de
         novedad conservan su comportamiento.
