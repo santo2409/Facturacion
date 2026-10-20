@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import datetime
 from os import getenv
 
@@ -28,6 +29,7 @@ from src.rates.infrastructure.console.import_rates_controller import import_rate
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
 from src.shared.logging.config.logging_config import setup_logging
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
+from src.shared.utils.deprecated import DEPRECATED_LABEL, is_deprecated
 
 console = Console()
 user_logger = setup_logging()
@@ -35,12 +37,30 @@ tech_logger = LoggerAdapter("tech_logger")
 
 load_dotenv(override=True)
 
+# (opción, descripción, función). La función sirve para detectar @deprecated;
+# None cuando la opción no tiene controller (Salir) o está desconectada (8).
+MENU_OPTIONS: list[tuple[str, str, Callable | None]] = [
+    ("1", "Web Scrapping", execute_web_scrapping),
+    ("2", "Facturadores", import_billers),
+    ("3", "Tratamiento Información", import_information),
+    ("4", "Cargar Tarifas", import_rates),
+    ("5", "Registrar Empresas - Paquetes", import_companies),
+    ("6", "Asignar Tarifas", assign_rates),
+    ("7", "Generar Pre Facturas", generate_pre_invoices),
+    ("8", "Cargar Pre Facturas", None),
+    ("9", "Generar Faltantes", generate_missing_rates),
+    ("10", "Detectar Empresas Duplicadas", detect_duplicate_companies),
+    ("0", "Salir", None),
+]
+
+
+def menu_label(description: str, func: Callable | None) -> str:
+    if is_deprecated(func):
+        return f"{description} {DEPRECATED_LABEL}"
+    return description
+
 
 def dispatch_option(option, logger) -> bool:
-    """Ejecuta la opción seleccionada. Retorna False solo para "Salir"
-    (opción 0), True en cualquier otro caso — incluida una opción
-    inválida. No captura excepciones: eso es responsabilidad de
-    safe_dispatch (RF-09)."""
     if option == "1":
         console.print("[green]Ejecutando Web Scrapping...[/green]")
         execute_web_scrapping(logger)
@@ -100,29 +120,22 @@ def safe_dispatch(option, logger) -> bool:
         return True
 
 
+def build_menu_table() -> Table:
+    table = Table(box=box.SIMPLE_HEAD)
+    table.add_column("Opción", justify="center")
+    table.add_column("Descripción")
+    for option, description, func in MENU_OPTIONS:
+        table.add_row(option, menu_label(description, func))
+    return table
+
+
 def console_app():
     console.clear()
     console.rule("[bold blue]Facturación SOANDES")
 
     while True:
         console.print("\n[bold cyan]Menú Principal[/bold cyan]")
-        table = Table(box=box.SIMPLE_HEAD)
-        table.add_column("Opción", justify="center")
-        table.add_column("Descripción")
-
-        table.add_row("1", "Web Scrapping")
-        table.add_row("2", "Facturadores")
-        table.add_row("3", "Tratamiento Información")
-        table.add_row("4", "Cargar Tarifas")
-        table.add_row("5", "Registrar Empresas - Paquetes")
-        table.add_row("6", "Asignar Tarifas")
-        table.add_row("7", "Generar Pre Facturas")
-        table.add_row("8", "Cargar Pre Facturas")
-        table.add_row("9", "Generar Faltantes")
-        table.add_row("10", "Detectar Empresas Duplicadas")
-        table.add_row("0", "Salir")
-
-        console.print(table)
+        console.print(build_menu_table())
 
         option = Prompt.ask("[bold yellow]Seleccione una opción", default="0")
 

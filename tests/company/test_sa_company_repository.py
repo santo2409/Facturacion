@@ -54,7 +54,7 @@ def test_save_batch_rollback_on_error():
 
     repo = SaCompanyRepository(session, FakeLogger())
     result = repo.save_batch([Company("900111111", "A")])
-    assert result == []
+    assert result is None
     session.rollback.assert_called_once()
 
 

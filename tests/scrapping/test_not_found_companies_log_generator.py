@@ -3,7 +3,6 @@ import openpyxl
 
 from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.infrastructure.reporting.not_found_companies_log_generator import (
-    ESTADO_CONFLICTO_BD_LOCAL,
     ESTADO_FALTA_ODOO,
     ESTADO_NIT_CORREGIDO,
     ESTADO_NO_ENCONTRADO,
@@ -143,8 +142,8 @@ def test_nit_correction_state_includes_both_nits(tmp_path):
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
-            "900111222", True, "EMPRESA A SAS", checked_bases="Odoo",
-            source="Odoo/nombre", nit_original="900111111",
+            "900111222", True, "EMPRESA A SAS", checked_bases="Odoo, RUES",
+            source="RUES/nombre", nit_original="900111111",
         )
     ]
 
@@ -160,8 +159,8 @@ def test_name_correction_state_includes_both_names(tmp_path):
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
-            "111", True, "EMPRESA NUEVA SAS", checked_bases="Odoo",
-            source="Odoo/NIT", name_original="EMPRESA VIEJA",
+            "111", True, "EMPRESA NUEVA SAS", checked_bases="Odoo, RUES",
+            source="RUES/NIT", name_original="EMPRESA VIEJA",
         )
     ]
 
@@ -171,20 +170,6 @@ def test_name_correction_state_includes_both_names(tmp_path):
     assert ESTADO_NOMBRE_CORREGIDO in estado
     assert "EMPRESA VIEJA" in estado
     assert "EMPRESA NUEVA SAS" in estado
-
-
-def test_conflict_state_is_registered(tmp_path):
-    gen = NotFoundCompaniesLogGenerator(FakeLogger())
-    resultados = [
-        NitResult(
-            "111", True, "EMPRESA A", checked_bases="Odoo",
-            conflict="Nombre ya registrado en BD local con otro NIT",
-        )
-    ]
-
-    log_path = gen.generate(resultados, tmp_path)
-
-    assert ESTADO_CONFLICTO_BD_LOCAL in _estado(log_path, "111")
 
 
 def test_combined_state_keeps_falta_odoo_and_correction(tmp_path):
@@ -232,8 +217,8 @@ def test_not_found_with_name_correction_keeps_both_parts(tmp_path):
 # ── T23: ciclo de vida de la novedad ─────────────────────────────────────────
 
 
-def test_correction_row_persists_when_company_is_resolved(tmp_path):
-    """Una empresa resuelta pero corregida sigue requiriendo acción manual."""
+def test_corrected_company_resolved_in_odoo_is_not_listed(tmp_path):
+    """Spec 017: una empresa que ya existe en Odoo no se entrega al área que las crea."""
     gen = NotFoundCompaniesLogGenerator(FakeLogger())
     resultados = [
         NitResult(
@@ -244,7 +229,7 @@ def test_correction_row_persists_when_company_is_resolved(tmp_path):
 
     log_path = gen.generate(resultados, tmp_path)
 
-    assert [r[1] for r in _rows(log_path)] == ["900111222"]
+    assert _rows(log_path) == []
 
 
 def test_resolved_without_novelty_is_removed(tmp_path):
@@ -262,8 +247,8 @@ def test_correction_row_disappears_on_clean_rerun(tmp_path):
     gen.generate(
         [
             NitResult(
-                "900111222", True, "EMPRESA A", checked_bases="Odoo",
-                source="Odoo/nombre", nit_original="900111111",
+                "900111222", True, "EMPRESA A", checked_bases="Odoo, RUES",
+                source="RUES/nombre", nit_original="900111111",
             )
         ],
         tmp_path,
@@ -306,3 +291,49 @@ def test_read_previous_warns_instead_of_silently_returning_empty(tmp_path):
     rows = _rows(log_path)
     assert [r[1] for r in rows] == ["444"]
     assert logger.warnings
+
+
+# ── Spec 017: el libro solo lista lo que el área debe crear en Odoo ──────────
+
+
+def test_solo_lista_nits_que_faltan_en_odoo(tmp_path):
+    gen = NotFoundCompaniesLogGenerator(FakeLogger())
+    resultados = [
+        NitResult("111", True, "EXISTE EN ODOO A", checked_bases="Odoo",
+                  conflict="Nombre ya registrado en BD local con otro NIT"),
+        NitResult("222", True, "EXISTE EN ODOO B", checked_bases="Odoo",
+                  source="Odoo/NIT", name_original="NOMBRE DEL LIBRO"),
+        NitResult("333", True, "EXISTE EN ODOO C", checked_bases="Odoo",
+                  save_error="No se pudo guardar en la BD local"),
+        NitResult("444", True, "EXISTE EN ODOO D", checked_bases="Odoo",
+                  source="Odoo/nombre", nit_original="400"),
+        NitResult("900111222", True, "EMPRESA RUES", checked_bases="Odoo, RUES",
+                  source="RUES/nombre", nit_original="900111111"),
+        NitResult("555", False, checked_bases="Odoo, RUES"),
+    ]
+
+    log_path = gen.generate(resultados, tmp_path)
+
+    assert {r[1] for r in _rows(log_path)} == {"900111222", "555"}
+    assert ESTADO_NIT_CORREGIDO in _estado(log_path, "900111222")
+
+
+def test_nit_resuelto_en_odoo_sale_del_libro_previo(tmp_path):
+    """SKANDIA: estaba listado y una corrida posterior lo resuelve en Odoo."""
+    gen = NotFoundCompaniesLogGenerator(FakeLogger())
+    gen.generate([NitResult("800148514", False, checked_bases="Odoo, RUES")], tmp_path)
+
+    log_path = gen.generate(
+        [NitResult("800148514", True, "SKANDIA ADMINISTRADORA", checked_bases="Odoo",
+                   conflict="Nombre ya registrado en BD local con otro NIT")],
+        tmp_path,
+    )
+
+    assert _rows(log_path) == []
+
+
+def test_el_libro_no_define_estados_de_bd_local():
+    from src.scrapping.infrastructure.reporting import not_found_companies_log_generator as g
+
+    assert not hasattr(g, "ESTADO_CONFLICTO_BD_LOCAL")
+    assert not hasattr(g, "ESTADO_ERROR_GUARDADO")
