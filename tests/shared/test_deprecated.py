@@ -74,4 +74,4 @@ def test_non_deprecated_function_does_not_warn():
 
 
 def test_label_constant():
-    assert DEPRECATED_LABEL == "`Desuso`"
+    assert DEPRECATED_LABEL == "[red]**deprecated**[/red]"
