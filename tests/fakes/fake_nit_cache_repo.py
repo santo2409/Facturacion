@@ -18,6 +18,8 @@ class FakeNitCacheRepo:
         return {n: r for n, r in self._cached_by_name.items() if n in wanted}
 
     def save_many(self, results):
+        if self._fail:
+            raise NitCacheSaveError("fallo simulado del guardado")
         self.saved.extend(results)
         saved_nits = {str(r.nit) for r in results}
         return [nit for nit in self._omit if nit in saved_nits]
