@@ -25,8 +25,10 @@ from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 
 
 from src.shared.database.database import get_session
+from src.shared.utils.deprecated import deprecated
 
 
+@deprecated("Opción en desuso del menú")
 def import_information(logger):
     path = ask_excel_path()
     output = ask_directory_path()
