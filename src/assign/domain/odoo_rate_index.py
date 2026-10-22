@@ -1,16 +1,38 @@
+from dataclasses import dataclass
+from datetime import date
+
 from src.shared.utils.text_normalizer import normalize_text_key
 
 _ACTIVITY_TO_INTRA = {"INTRA": True, "EXTRA": False}
+
+
+@dataclass(frozen=True)
+class OdooRateHit:
+    price: int
+    rate_id: int
+    rate_name: str | None = None
+    start_date: date | None = None
+    finish_date: date | None = None
+    state: str | None = None
+
+
+def _to_date(value) -> date | None:
+    """Odoo devuelve las fechas vacías como False y las demás como 'AAAA-MM-DD'."""
+    if not value:
+        return None
+    return value if isinstance(value, date) else date.fromisoformat(value)
 
 
 class OdooRateIndex:
     """Índice de precios de líneas `account.base.rate.line` de Odoo.
 
     Clave: (tarifa, ciudad normalizada, CUP, intra). Los precios <= 0 se ignoran
-    y, ante claves duplicadas, gana la primera línea.
+    y, ante claves duplicadas, gana la primera línea. `rates_info` (opcional)
+    aporta nombre y vigencia de cada tarifa (`account.base.rate`).
     """
 
-    def __init__(self, lines: list[dict]):
+    def __init__(self, lines: list[dict], rates_info: list[dict] | None = None):
+        self._info = {info["rate_id"]: info for info in rates_info or []}
         self._prices: dict[tuple[int, str, str, bool], int] = {}
         for line in lines:
             price = line.get("price") or 0
