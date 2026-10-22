@@ -388,7 +388,7 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
 
 - **Orden:** Tarifa especial → Tarifa base → las 6 fases locales → `1`.
 - **Índice:** `OdooRateIndex` (`src/assign/domain/odoo_rate_index.py`). Clave `(tarifa, normalize_text_key(ciudad), CUP, intra)`; INTRA ↔ `intra=True`, EXTRA ↔ `intra=False`. Los precios ≤ 0 se ignoran y, ante claves repetidas, gana la primera línea.
-- **Ciudad:** solo por nombre normalizado exacto (sin fuzzy). No se valida el estado ni la vigencia de la tarifa (RF-06).
+- **Ciudad:** solo por nombre normalizado exacto (sin fuzzy). No se valida el estado de la tarifa; la vigencia vencida se asigna igual y se reporta (spec 020, RF-04).
 - **Consulta:** `find_rate_lines` lee las líneas en lotes de 50 tarifas, filtradas por los CUP del Excel, y lee `default_code` en un solo `read`.
 - **Color:** una celda resuelta por Odoo **no lleva color**.
 - **PAQUETE:** nombre de la tarifa especial, si no la base, si no el paquete local. La cascada local sigue leyendo `_PAQUETE_LOCAL`.
