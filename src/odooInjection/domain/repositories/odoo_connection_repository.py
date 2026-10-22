@@ -45,6 +45,13 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_rate_info(self, rate_ids: list[int]) -> list[dict]:
+        """Nombre y vigencia de las tarifas (`account.base.rate`) dadas.
+        [{'rate_id','name','state','start_date','finish_date'}]
+        Las fechas vacías llegan como False (convención de Odoo)."""
+        pass
+
+    @abstractmethod
     def get_nit(self, client_id: int) -> str | None:
         pass
 

@@ -71,3 +71,14 @@ def test_find_by_name_not_found():
     repo = SaRatesRepository(session, FakeLogger())
     rate = Rate(1, 1, 1, 5000, 1, "Package")
     assert repo.find_by_name(rate) is None
+
+
+def test_find_rate_by_cup_activity_returns_city_id():
+    session = _mock_session()
+    row = (10, 2, 5000, "Package", 7, 3)  # cup, activity, rate, type, rateable_id, city_id
+    session.query.return_value.filter.return_value.all.return_value = [row]
+
+    repo = SaRatesRepository(session, FakeLogger())
+    result = repo.find_rate_by_cup_activity([(10, 2)])
+
+    assert result == {(10, 2): (5000, "Package", 7, 3)}

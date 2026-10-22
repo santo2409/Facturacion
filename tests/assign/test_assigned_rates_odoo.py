@@ -1,5 +1,6 @@
 """Tests de la opción 6 con tarifas de Odoo (spec 010)."""
 import json
+from datetime import date
 from pathlib import Path
 
 import polars as pl
@@ -23,6 +24,8 @@ from tests.fakes.fake_provider_repo import FakeProviderRepo
 from tests.fakes.fake_rates_repo import FakeRatesRepo
 from tests.fakes.fake_special_repo import FakeSpecialRepo
 
+NOT_IN_ODOO = "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
+NO_RATES_IN_ODOO = "Sin tarifa especial ni base. Acción: asignar una tarifa especial o base a la empresa en Odoo."
 NIT = "830050228"
 SPECIAL = {"id": 17534, "name": "GRUPO ADECCO 2026"}
 BASE = {"id": 17235, "name": "Tarifa basica 2025"}
@@ -108,7 +111,7 @@ class TestLoadOdooRates:
 
         uc._load_odoo_rates(df)
 
-        assert odoo.calls == {"find_partner_rates_batch": 1, "find_rate_lines": 1}
+        assert odoo.calls == {"find_partner_rates_batch": 1, "find_rate_lines": 1, "find_rate_info": 1}
 
     def test_company_not_in_odoo_is_reported(self, deps):
         uc = _build(deps, odoo_repo=FakeOdooRepo())
@@ -116,7 +119,7 @@ class TestLoadOdooRates:
         uc._load_odoo_rates(_df(nits=["900111111"]))
 
         assert uc._company_findings == [
-            {"NIT": "900111111", "Empresa": "EMPRESA 900111111", "Motivo": "No encontrada en Odoo"}
+            {"NIT": "900111111", "Empresa": "EMPRESA 900111111", "Motivo": NOT_IN_ODOO}
         ]
 
     def test_partner_without_rates_is_reported(self, deps):
@@ -125,7 +128,7 @@ class TestLoadOdooRates:
 
         uc._load_odoo_rates(_df())
 
-        assert [f["Motivo"] for f in uc._company_findings] == ["Sin tarifa especial ni base"]
+        assert [f["Motivo"] for f in uc._company_findings] == [NO_RATES_IN_ODOO]
         assert odoo.calls["find_rate_lines"] == 0
 
     def test_company_with_rates_is_not_reported(self, deps):
@@ -367,6 +370,9 @@ class TestPhaseFindingsAndColors:
             "N° Identificación": None, "Ciudad": "BOGOTA, D.C.",
             "TIPO DE ACTIVIDAD": "INTRA", "CUP": "890201",
             "Precio asignado": 5000, "Origen": "PAQUETE BASICO",
+            "Fase": "Fase 1 — Paquete propio local", "Paquete original": "PAQUETE BASICO",
+            "Tipo de fuente": "Paquete", "Fuente": "PAQUETE BASICO",
+            "Ciudad efectiva": "BOGOTA, D.C.", "CUP efectivo": "890201",
         }]
 
     def test_phase2_reports_default_package(self, deps):
@@ -451,7 +457,7 @@ class TestPhaseFindingsAndColors:
         uc._publish_findings()
 
         assert reporter.companies == [
-            {"NIT": NIT, "Empresa": f"EMPRESA {NIT}", "Motivo": "No encontrada en Odoo"}
+            {"NIT": NIT, "Empresa": f"EMPRESA {NIT}", "Motivo": NOT_IN_ODOO}
         ]
 
     def test_no_findings_when_all_resolved_by_odoo(self, deps):
@@ -494,6 +500,7 @@ class TestPhaseFindingsAndColors:
         assert result.counts[PHASE2] == 0
         assert result.findings_dir == Path("fake")
         assert result.odoo_available is True
+        assert reporter.odoo_available is True
 
     def test_legend_includes_odoo_and_six_local_phases(self, deps, tmp_path):
         import openpyxl
@@ -606,3 +613,176 @@ class TestNoUserMsg:
         )
 
         assert logger.user_msgs == []
+
+
+# ── Spec 020: tarifas de Odoo vencidas ────────────────────────────────────
+
+EXPIRED = "odoo_tarifa_vencida"
+_TODAY = date(2026, 10, 20)
+
+
+def _info(rate_id, name, finish, start="2025-01-01", state="approved"):
+    return {
+        "rate_id": rate_id, "name": name, "state": state,
+        "start_date": start, "finish_date": finish,
+    }
+
+
+def _assign_with_info(deps, df, rate_info, lines, today=_TODAY):
+    repo = FakeOdooRepo(partner_rates=[_partner()], rate_lines=list(lines), rate_info=rate_info)
+    uc = _build(deps, odoo_repo=repo, today=lambda: today)
+    uc._load_odoo_rates(df)
+    lookups = uc._build_lookups()
+    result, colors = uc._assign_rates(uc._assign_paquete(df, lookups), lookups)
+    return uc, result, colors
+
+
+class TestExpiredOdooRates:
+    def test_expired_odoo_rate_is_assigned_and_reported(self, deps):
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+        info = [_info(SPECIAL["id"], SPECIAL["name"], finish="2025-12-31")]
+
+        uc, result, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert result["890201"][0] == 31100
+        assert _rows(uc, EXPIRED) == [{
+            "NIT": NIT, "Empresa": f"EMPRESA {NIT}", "Paciente": None,
+            "N° Identificación": None, "Ciudad": "BOGOTA, D.C.",
+            "TIPO DE ACTIVIDAD": "INTRA", "CUP": "890201",
+            "Tarifa Odoo": SPECIAL["name"], "Tipo de tarifa": "Especial",
+            "Inicio vigencia": "2025-01-01", "Fin vigencia": "2025-12-31",
+            "Estado Odoo": "approved", "Precio asignado": 31100,
+        }]
+
+    def test_base_rate_is_labeled_base(self, deps):
+        lines = [_line(BASE["id"], "890201", 32200.0)]
+        info = [_info(BASE["id"], BASE["name"], finish="2025-01-31")]
+
+        uc, _, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert [r["Tipo de tarifa"] for r in _rows(uc, EXPIRED)] == ["Base"]
+
+    def test_valid_odoo_rate_is_not_reported(self, deps):
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+        info = [_info(SPECIAL["id"], SPECIAL["name"], finish="2026-12-31")]
+
+        uc, _, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert _rows(uc, EXPIRED) == []
+
+    def test_rate_without_finish_date_is_not_expired(self, deps):
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+        info = [_info(SPECIAL["id"], SPECIAL["name"], finish=False, start=False)]
+
+        uc, _, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert _rows(uc, EXPIRED) == []
+
+    def test_rate_finishing_today_is_not_expired(self, deps):
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+        info = [_info(SPECIAL["id"], SPECIAL["name"], finish="2026-10-20")]
+
+        uc, _, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert _rows(uc, EXPIRED) == []
+
+    def test_rate_info_failure_keeps_odoo_prices(self, deps):
+        class FailingInfoRepo(FakeOdooRepo):
+            def find_rate_info(self, rate_ids):
+                raise RuntimeError("sin permiso")
+
+        repo = FailingInfoRepo(
+            partner_rates=[_partner()], rate_lines=[_line(SPECIAL["id"], "890201", 31100.0)]
+        )
+        uc = _build(deps, odoo_repo=repo, today=lambda: _TODAY)
+        df = _df()
+        uc._load_odoo_rates(df)
+        lookups = uc._build_lookups()
+        result, _ = uc._assign_rates(uc._assign_paquete(df, lookups), lookups)
+
+        assert uc.odoo_available is True
+        assert result["890201"][0] == 31100
+        assert _rows(uc, EXPIRED) == []
+
+    def test_expired_rates_are_counted_in_result(self, deps):
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+        info = [_info(SPECIAL["id"], SPECIAL["name"], finish="2025-12-31")]
+
+        uc, _, _ = _assign_with_info(deps, _df(), info, lines)
+
+        assert uc._publish_findings().counts[EXPIRED] == 1
+
+
+def _key(row):
+    return (
+        row["Fase"], row["Paquete original"], row["Ciudad"], row["CUP"],
+        row["Tipo de fuente"], row["Fuente"], row["Ciudad efectiva"], row["CUP efectivo"],
+    )
+
+
+class TestGranularFindingKey:
+    """Spec 020 RF-01/RF-02: llave original frente a fuente y valores efectivos."""
+
+    def test_phase2_source_is_default_package(self, deps):
+        _local_deps(deps, default_package=True)
+        deps["rates_repo"]._data[(9, 1, 1, 1, "Package")] = 7000
+
+        uc, _, _ = _assign(deps, _df(), odoo=False)
+
+        assert [_key(r) for r in _rows(uc, PHASE2)] == [(
+            "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)", "PAQUETE BASICO",
+            "BOGOTA, D.C.", "890201", "Paquete", "PAQUETE C 2025", "BOGOTA, D.C.", "890201",
+        )]
+
+    def test_phase3_source_type_and_name(self, deps):
+        _local_deps(deps)
+        deps["rates_repo"]._data[(2, 1, 1, 1, "Provider")] = 6000
+
+        uc, _, _ = _assign(deps, _df(), odoo=False)
+
+        assert [_key(r) for r in _rows(uc, PHASE3)] == [(
+            "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)", "PAQUETE BASICO",
+            "BOGOTA, D.C.", "890201", "Proveedor", "PROVEEDOR X", "BOGOTA, D.C.", "890201",
+        )]
+
+    def test_phase4_effective_cup_is_base_cup(self, deps):
+        _local_deps(deps, default_package=True, extra_cups=True)
+        deps["rates_repo"]._data[(9, 1, 1, 1, "Package")] = 4000
+
+        uc, _, _ = _assign(deps, _df(cups=("890201-1",)), odoo=False)
+
+        assert [_key(r) for r in _rows(uc, PHASE4)] == [(
+            "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)", "PAQUETE BASICO",
+            "BOGOTA, D.C.", "890201-1", "Paquete", "PAQUETE C 2025", "BOGOTA, D.C.", "890201",
+        )]
+
+    def test_phase5_effective_cup_is_base_cup(self, deps):
+        _local_deps(deps, extra_cups=True)
+        deps["rates_repo"]._data[(2, 1, 1, 1, "Provider")] = 6500
+
+        uc, _, _ = _assign(deps, _df(cups=("890201-1",)), odoo=False)
+
+        assert [_key(r) for r in _rows(uc, PHASE5)] == [(
+            "Fase 5 — Cualquier paquete (CUP base, misma ciudad)", "PAQUETE BASICO",
+            "BOGOTA, D.C.", "890201-1", "Proveedor", "PROVEEDOR X", "BOGOTA, D.C.", "890201",
+        )]
+
+    def test_phase6_finding_has_effective_city(self, deps):
+        _local_deps(deps, extra_city=True)
+        deps["rates_repo"]._data[(2, 1, 1, 1, "Provider")] = 7000  # solo BOGOTA
+        df = _df().with_columns(pl.lit("MEDELLIN").alias("Ciudad"))
+
+        uc, _, _ = _assign(deps, df, odoo=False)
+
+        assert [_key(r) for r in _rows(uc, PHASE6)] == [(
+            "Fase 6 — Cualquier paquete/ciudad (cup + actividad)", "PAQUETE BASICO",
+            "MEDELLIN", "890201", "Proveedor", "PROVEEDOR X", "BOGOTA, D.C.", "890201",
+        )]
+
+    def test_sin_resolver_has_original_key_and_no_source(self, deps):
+        uc, _, _ = _assign(deps, _df(), odoo=False)
+
+        assert [_key(r) for r in _rows(uc, SIN_RESOLVER)] == [(
+            "Sin resolver", "PAQUETE BASICO", "BOGOTA, D.C.", "890201",
+            None, "Sin tarifa", None, None,
+        )]
