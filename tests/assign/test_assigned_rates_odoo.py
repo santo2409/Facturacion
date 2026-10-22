@@ -457,7 +457,7 @@ class TestPhaseFindingsAndColors:
         uc._publish_findings()
 
         assert reporter.companies == [
-            {"NIT": NIT, "Empresa": f"EMPRESA {NIT}", "Motivo": "No encontrada en Odoo"}
+            {"NIT": NIT, "Empresa": f"EMPRESA {NIT}", "Motivo": NOT_IN_ODOO}
         ]
 
     def test_no_findings_when_all_resolved_by_odoo(self, deps):
