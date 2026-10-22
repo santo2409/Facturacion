@@ -1,4 +1,5 @@
 from tests.fakes.fake_odoo_repo import FakeOdooRepo
+from tests.odooInjection.test_odoo_partner_rates import HandlerOdooRepo
 
 _PARTNER = {
     "nit": "830050228", "partner_id": 1, "name": "ADECCO",
