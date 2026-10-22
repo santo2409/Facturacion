@@ -73,6 +73,7 @@ _SUMMARY_LABELS = {
     "fase_05_cup_base_cualquier_paquete": "Fase 5 — Cualquier paquete (CUP base, misma ciudad)",
     "fase_06_cualquier_ciudad": "Fase 6 — Cualquier paquete/ciudad (cup + actividad)",
     "sin_resolver": "Sin resolver (valor 1)",
+    "odoo_tarifa_vencida": "Tarifas Odoo vencidas (asignadas)",
 }
 
 
