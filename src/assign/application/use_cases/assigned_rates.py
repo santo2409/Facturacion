@@ -1141,6 +1141,23 @@ class AssignRatesFromExcel:
                         break
         return resolved
 
+    def _record_expired(self, row: dict, cup: str, hit, rate_type: str) -> None:
+        self._findings["odoo_tarifa_vencida"].append({
+            "NIT": row["NIT"],
+            "Empresa": row.get("Empresa"),
+            "Paciente": row.get("Paciente"),
+            "N° Identificación": row.get("N° Identificación"),
+            "Ciudad": row["Ciudad"],
+            "TIPO DE ACTIVIDAD": row["TIPO DE ACTIVIDAD"],
+            "CUP": cup,
+            "Tarifa Odoo": hit.rate_name,
+            "Tipo de tarifa": rate_type,
+            "Inicio vigencia": hit.start_date.isoformat() if hit.start_date else None,
+            "Fin vigencia": hit.finish_date.isoformat(),
+            "Estado Odoo": hit.state,
+            "Precio asignado": hit.price,
+        })
+
     # ── Assign rates with batch query ─────────────────────────────────────
 
     def _assign_rates(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
