@@ -52,3 +52,41 @@ def test_existing_fake_behavior_unchanged():
     assert repo.find_partner_rates_batch(["900"]) == []
     assert repo.find_rate_lines([], []) == []
     assert repo.write_attempts == []
+
+
+_INFO = {
+    "rate_id": 10, "name": "TARIFA 2025", "state": "approved",
+    "start_date": "2025-01-01", "finish_date": "2025-12-31",
+}
+
+
+def test_fake_filters_rate_info_by_rate_ids():
+    repo = FakeOdooRepo(rate_info=[_INFO, {**_INFO, "rate_id": 20}])
+
+    assert repo.find_rate_info([10, 99]) == [_INFO]
+    assert repo.calls["find_rate_info"] == 1
+
+
+def test_find_rate_info_returns_validity_fields():
+    rows = [{
+        "id": 10, "name": "TARIFA 2025", "state": "approved",
+        "start_date": "2025-01-01", "finish_date": "2025-12-31",
+    }]
+    repo = HandlerOdooRepo(lambda *a, **k: rows)
+
+    result = repo.find_rate_info([10, 10, 0])
+
+    assert result == [_INFO]
+    call = repo.calls[0]
+    assert (call["model"], call["method"]) == ("account.base.rate", "search_read")
+    assert call["args"][0] == [[["id", "in", [10]]]]
+    assert call["args"][1]["fields"] ==["name", "state", "start_date", "finish_date"]
+
+
+def test_find_rate_info_batches_requests_and_skips_empty():
+    repo = HandlerOdooRepo(lambda *a, **k: [])
+
+    assert repo.find_rate_info([]) == []
+    assert repo.calls == []
+    repo.find_rate_info(list(range(1, 121)))
+    assert len(repo.calls) == 3  # lotes de 50
