@@ -67,6 +67,11 @@ class FakeOdooRepo:
         rates, cups = set(rate_ids), set(cup_codes)
         return [l for l in self._rate_lines if l["rate_id"] in rates and l["cup"] in cups]
 
+    def find_rate_info(self, rate_ids):
+        self.calls["find_rate_info"] = self.calls.get("find_rate_info", 0) + 1
+        wanted = set(rate_ids)
+        return [i for i in self._rate_info if i["rate_id"] in wanted]
+
     def create_client(self, nit, name):
         self.write_attempts.append("create_client")
         cid = self._next_client_id
