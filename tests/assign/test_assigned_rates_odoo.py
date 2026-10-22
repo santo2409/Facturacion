@@ -24,6 +24,8 @@ from tests.fakes.fake_provider_repo import FakeProviderRepo
 from tests.fakes.fake_rates_repo import FakeRatesRepo
 from tests.fakes.fake_special_repo import FakeSpecialRepo
 
+NOT_IN_ODOO = "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
+NO_RATES_IN_ODOO = "Sin tarifa especial ni base. Acción: asignar una tarifa especial o base a la empresa en Odoo."
 NIT = "830050228"
 SPECIAL = {"id": 17534, "name": "GRUPO ADECCO 2026"}
 BASE = {"id": 17235, "name": "Tarifa basica 2025"}
