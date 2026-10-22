@@ -119,7 +119,7 @@ class TestLoadOdooRates:
         uc._load_odoo_rates(_df(nits=["900111111"]))
 
         assert uc._company_findings == [
-            {"NIT": "900111111", "Empresa": "EMPRESA 900111111", "Motivo": "No encontrada en Odoo"}
+            {"NIT": "900111111", "Empresa": "EMPRESA 900111111", "Motivo": NOT_IN_ODOO}
         ]
 
     def test_partner_without_rates_is_reported(self, deps):
