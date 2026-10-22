@@ -1514,7 +1514,7 @@ class AssignRatesFromExcel:
         for idx, row in enumerate(rows_data):
             for h in headers:
                 if row.get(str(h)) == 1 and (str(h), idx) not in resolved_cells:
-                    record(PHASE_FINDING_KEYS[6], idx, h, 1, "Sin tarifa")
+                    record(PHASE_FINDING_KEYS[6], idx, h, 1, "Sin tarifa", None, "Sin tarifa", None, None)
 
         if fallback_logs:
             unique_logs = sorted(set(fallback_logs))
