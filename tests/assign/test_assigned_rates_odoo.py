@@ -1,5 +1,6 @@
 """Tests de la opción 6 con tarifas de Odoo (spec 010)."""
 import json
+from datetime import date
 from pathlib import Path
 
 import polars as pl
