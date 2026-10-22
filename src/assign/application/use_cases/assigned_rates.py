@@ -1127,8 +1127,11 @@ class AssignRatesFromExcel:
             for h in headers:
                 if row.get(str(h)) != 1:
                     continue
-                for rate_id in (partner["special_id"], partner["base_id"]):
-                    price = self._odoo_index.price(
+                for rate_id, rate_type in (
+                    (partner["special_id"], "Especial"),
+                    (partner["base_id"], "Base"),
+                ):
+                    hit = self._odoo_index.lookup(
                         rate_id, row["Ciudad"], str(h).strip(), row["TIPO DE ACTIVIDAD"]
                     )
                     if price:
