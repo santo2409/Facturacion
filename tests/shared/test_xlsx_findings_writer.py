@@ -54,6 +54,36 @@ def test_columns_follow_declared_order(tmp_path):
     assert df.row(0) == ("P", 2, "890201")
 
 
+def test_writes_extra_sheet_and_header_autofilter(tmp_path):
+    from openpyxl import load_workbook
+
+    books = {"tarifa_vacia": [{"Hoja": "P", "Fila": 2, "CUP": "890201"}]}
+    legend = pl.DataFrame({"Columna": ["CUP"], "Significado": ["Código del examen"]})
+
+    folder = _writer(tmp_path).write(
+        books, _COLUMNS, extra_sheets={"tarifa_vacia": {"Leyenda": legend}}
+    )
+
+    wb = load_workbook(folder / "tarifa_vacia.xlsx")
+    assert wb.sheetnames == ["tarifa_vacia", "Leyenda"]
+    assert list(wb["tarifa_vacia"].tables)  # tabla de Excel: trae filtros en el encabezado
+    assert wb["tarifa_vacia"]["A1"].font.bold is True
+    assert pl.read_excel(folder / "tarifa_vacia.xlsx", sheet_name="Leyenda").row(0) == (
+        "CUP",
+        "Código del examen",
+    )
+
+
+def test_extra_sheets_ignored_for_empty_books(tmp_path):
+    legend = pl.DataFrame({"Columna": ["CUP"]})
+
+    result = _writer(tmp_path).write(
+        {"tarifa_vacia": []}, _COLUMNS, extra_sheets={"tarifa_vacia": {"Leyenda": legend}}
+    )
+
+    assert result is None
+
+
 def test_summarize_without_findings():
     assert summarize_findings({"tarifa_vacia": []}, None) == "Sin hallazgos."
 
