@@ -54,3 +54,10 @@ def test_summary_warns_when_odoo_unavailable():
     text = _render(_result(odoo_available=False))
 
     assert "Odoo no disponible" in text
+
+
+def test_summary_includes_expired_rates_count():
+    text = _render(_result())
+
+    assert "Tarifas Odoo vencidas" in text
+    assert "7" in text
