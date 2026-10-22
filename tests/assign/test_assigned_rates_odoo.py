@@ -370,6 +370,9 @@ class TestPhaseFindingsAndColors:
             "N° Identificación": None, "Ciudad": "BOGOTA, D.C.",
             "TIPO DE ACTIVIDAD": "INTRA", "CUP": "890201",
             "Precio asignado": 5000, "Origen": "PAQUETE BASICO",
+            "Fase": "Fase 1 — Paquete propio local", "Paquete original": "PAQUETE BASICO",
+            "Tipo de fuente": "Paquete", "Fuente": "PAQUETE BASICO",
+            "Ciudad efectiva": "BOGOTA, D.C.", "CUP efectivo": "890201",
         }]
 
     def test_phase2_reports_default_package(self, deps):
