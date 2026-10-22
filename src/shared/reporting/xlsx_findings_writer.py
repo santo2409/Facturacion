@@ -15,7 +15,13 @@ class XlsxFindingsWriter(FindingsWriter):
         self._base_dir = base_dir
         self._clock = clock
 
-    def write(self, books: dict[str, list[dict]], columns: dict[str, list[str]]) -> Path | None:
+    def write(
+        self,
+        books: dict[str, list[dict]],
+        columns: dict[str, list[str]],
+        extra_sheets: dict[str, dict[str, pl.DataFrame]] | None = None,
+    ) -> Path | None:
+        extra_sheets = extra_sheets or {}
         non_empty = {name: rows for name, rows in books.items() if rows}
         if not non_empty:
             return None
