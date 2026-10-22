@@ -70,12 +70,17 @@ def _reporter(tmp_path):
     return XlsxPhaseFindingsReporter(base_dir=tmp_path / "asignar_tarifas", clock=_CLOCK)
 
 
+def _read(folder, name, sheet=None):
+    kwargs = {"sheet_name": sheet} if sheet else {}
+    return pl.read_excel(folder / f"{name}.xlsx", **kwargs)
+
+
 class TestXlsxPhaseFindingsReporter:
     def test_writes_only_phases_with_rows(self, tmp_path):
         findings = {
             "fase_01_paquete_propio_local": [],
-            "fase_02_paquete_c_2025": [_finding()],
-            "sin_resolver": [_finding(price=1)],
+            PHASE2: [_finding()],
+            SIN_RESOLVER: [_unresolved()],
         }
 
         folder = _reporter(tmp_path).write(findings, [])
