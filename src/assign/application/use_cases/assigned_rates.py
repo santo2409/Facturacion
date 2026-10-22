@@ -204,6 +204,16 @@ class AssignRatesFromExcel:
             )
             return
 
+        rates_info: list[dict] = []
+        if rate_ids:
+            try:
+                rates_info = self.odoo_repo.find_rate_info(rate_ids)
+            except Exception as e:
+                self.logger.warning(
+                    f"No se pudo consultar la vigencia de las tarifas en Odoo; "
+                    f"no se reportarán tarifas vencidas: {e}"
+                )
+
         self._odoo_by_nit = {p["nit"]: p for p in partners}
         self._odoo_index = OdooRateIndex(lines)
         self.odoo_available = True
