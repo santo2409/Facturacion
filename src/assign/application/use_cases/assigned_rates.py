@@ -1112,7 +1112,11 @@ class AssignRatesFromExcel:
     # ── Tarifas de Odoo (especial → base) ─────────────────────────────────
 
     def _resolve_odoo_cells(self, rows_data: list[dict], headers: list) -> dict[tuple[str, int], int]:
-        """Precio de Odoo por celda (columna CUP, fila): tarifa especial y luego base."""
+        """Precio de Odoo por celda (columna CUP, fila): tarifa especial y luego base.
+
+        Una tarifa vencida (`finish_date` anterior a hoy) se asigna igual y se
+        registra en `odoo_tarifa_vencida` (spec 020, RF-04).
+        """
         resolved: dict[tuple[str, int], int] = {}
         if not self.odoo_available:
             return resolved
