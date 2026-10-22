@@ -1191,11 +1191,14 @@ class AssignRatesFromExcel:
             + report_cols
             + [str(h) for h in headers]
         ).to_dicts()
+        self._findings = {key: [] for key in PHASE_FINDING_KEYS}
         odoo_resolved = self._resolve_odoo_cells(rows_data, headers)
         self._odoo_cells = len(odoo_resolved)
-        self._findings = {key: [] for key in PHASE_FINDING_KEYS}
 
-        def record(phase_key: str, idx: int, h, price, origin: str) -> None:
+        def record(
+            phase_key: str, idx: int, h, price, origin: str,
+            source_type: str | None, source: str, city_eff: str | None, cup_eff: str | None,
+        ) -> None:
             row = rows_data[idx]
             self._findings[phase_key].append({
                 "NIT": row["NIT"],
