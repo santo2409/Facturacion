@@ -10,18 +10,59 @@ from tests.fakes.fake_phase_findings_reporter import FakePhaseFindingsReporter
 
 _CLOCK = lambda: datetime(2026, 10, 10, 14, 30)  # noqa: E731
 
+PHASE1 = "fase_01_paquete_propio_local"
+PHASE2 = "fase_02_paquete_c_2025"
+PHASE4 = "fase_04_cup_base_paquete_c"
+PHASE6 = "fase_06_cualquier_ciudad"
+SIN_RESOLVER = "sin_resolver"
+EXPIRED = "odoo_tarifa_vencida"
 
-def _finding(cup="890201", price=7500, patient="JUAN", origin="PAQUETE C 2025"):
+_PHASE_COLUMNS = [
+    "Fase", "Empresa", "NIT", "Paquete original", "Ciudad original", "CUP original",
+    "Actividad", "Tarifa asignada", "Fuente de la tarifa", "Ciudad efectiva",
+    "CUP efectivo", "Nº pacientes", "Qué debe hacer el área",
+]
+
+
+def _finding(
+    cup="890201", price=7500, patient="JUAN", phase="Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)",
+    source_type="Paquete", source="PAQUETE C 2025", city="BOGOTA, D.C.", city_eff="BOGOTA, D.C.",
+    cup_eff=None, package="PAQUETE BASICO",
+):
     return {
         "NIT": "900111111",
         "Empresa": "EMPRESA A",
         "Paciente": patient,
-        "N° Identificación": "123",
-        "Ciudad": "BOGOTA, D.C.",
+        "N° Identificación": f"id-{patient}",
+        "Ciudad": city,
         "TIPO DE ACTIVIDAD": "INTRA",
         "CUP": cup,
         "Precio asignado": price,
-        "Origen": origin,
+        "Origen": source,
+        "Fase": phase,
+        "Paquete original": package,
+        "Tipo de fuente": source_type,
+        "Fuente": source,
+        "Ciudad efectiva": city_eff,
+        "CUP efectivo": cup_eff or cup,
+    }
+
+
+def _unresolved(cup="890201", patient="JUAN"):
+    return _finding(
+        cup=cup, price=1, patient=patient, phase="Sin resolver",
+        source_type=None, source="Sin tarifa", city_eff=None, cup_eff="",
+    ) | {"CUP efectivo": None}
+
+
+def _expired(patient="JUAN", price=31100):
+    return {
+        "NIT": "900111111", "Empresa": "EMPRESA A", "Paciente": patient,
+        "N° Identificación": f"id-{patient}", "Ciudad": "BOGOTA, D.C.",
+        "TIPO DE ACTIVIDAD": "INTRA", "CUP": "890201",
+        "Tarifa Odoo": "GRUPO ADECCO 2026", "Tipo de tarifa": "Especial",
+        "Inicio vigencia": "2025-01-01", "Fin vigencia": "2025-12-31",
+        "Estado Odoo": "approved", "Precio asignado": price,
     }
 
 
