@@ -347,7 +347,9 @@ class AssignRatesFromExcel:
     def _publish_findings(self) -> AssignRatesResult:
         findings_dir = None
         if self.findings_reporter:
-            findings_dir = self.findings_reporter.write(self._findings, self._company_findings)
+            findings_dir = self.findings_reporter.write(
+                self._findings, self._company_findings, odoo_available=self.odoo_available
+            )
         counts = {"odoo": self._odoo_cells}
         counts.update({key: len(rows) for key, rows in self._findings.items()})
         return AssignRatesResult(
