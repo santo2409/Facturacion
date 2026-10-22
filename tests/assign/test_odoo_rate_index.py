@@ -1,3 +1,5 @@
+from datetime import date
+
 from src.assign.domain.odoo_rate_index import OdooRateIndex
 
 
