@@ -62,11 +62,11 @@ class SaRatesRepository:
             self.logger.error(f"Error in find_batch: {excep}", exc_info=True, user_msg="No se pudieron consultar las tarifas en lote.")
         return result
 
-    def find_rate_by_cup_activity(self, keys: list[tuple]) -> dict[tuple, tuple[int, str, int]]:
+    def find_rate_by_cup_activity(self, keys: list[tuple]) -> dict[tuple, tuple[int, str, int, int]]:
         """Find any rate matching (cup_id, activity_id) regardless of city or package.
 
         keys: list of (cup_id, activity_id)
-        Returns: dict mapping (cup_id, activity_id) → (rate, rateable_type, rateable_id)
+        Returns: dict mapping (cup_id, activity_id) → (rate, rateable_type, rateable_id, city_id)
         """
         if not keys:
             return {}
