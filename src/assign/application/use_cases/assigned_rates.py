@@ -158,6 +158,7 @@ class AssignRatesFromExcel:
         self.tian_repo = tian_repo
         self.tian_log_generator = tian_log_generator
         self.findings_reporter = findings_reporter
+        self._today = today
         self.odoo_available = False
         self._odoo_by_nit: dict[str, dict] = {}
         self._odoo_index = OdooRateIndex([])
