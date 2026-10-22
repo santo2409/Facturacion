@@ -1322,7 +1322,8 @@ class AssignRatesFromExcel:
                             if fallback_price:
                                 result_cols[str(h)][idx] = int(fallback_price)
                                 cell_colors[(str(h), idx)] = _COLOR_PHASE2
-                                record(PHASE_FINDING_KEYS[1], idx, h, fallback_price, default_package)
+                                record(PHASE_FINDING_KEYS[1], idx, h, fallback_price, default_package,
+                                       "Paquete", default_package, city, str(h))
                                 fallback_logs.append(
                                     f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                                     f"para la actividad '{activity}', se asignó tarifa del paquete '{default_package}'"
