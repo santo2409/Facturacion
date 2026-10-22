@@ -57,6 +57,9 @@ self.logger.info("Resumen de hallazgos", user_msg=summary)
 - Las ejecuciones en el mismo minuto comparten carpeta y la segunda sobrescribe los libros con el mismo nombre.
 - `Fila` en los hallazgos de la opción 4 depende de poder leer el `.xlsx` con `openpyxl`; con otros formatos se numera en secuencia.
 
+## Actualización (spec 020, opción 6)
+Los libros de la opción 6 se entregan al área de tarifas, así que agrupan por llave original (una fila por paquete, ciudad, CUP y actividad, con `Nº pacientes` en lugar de datos de paciente), indican la fuente de la tarifa asignada y la ciudad y CUP efectivos, sugieren la acción y traen una hoja `Leyenda`. Las tarifas de Odoo vencidas se asignan y se reportan en `odoo_tarifa_vencida.xlsx`. El escritor genérico acepta hojas extra (`extra_sheets`) sin cambiar a sus demás usuarios.
+
 ## Referencias
 - Specs 010 (opción 6) y 011 (resto del sistema).
 - [ADR-008](ADR-008-logging-dual.md) y [ADR-011](ADR-011-excel-audit-handler.md): reemplazados; se conservan como historia.
