@@ -1,9 +1,10 @@
 class FakeOdooRepo:
-    def __init__(self, products=None, clients=None, partner_rates=None, rate_lines=None):
+    def __init__(self, products=None, clients=None, partner_rates=None, rate_lines=None, rate_info=None):
         self._products = products or {}
         self._clients = clients or {}
         self._partner_rates = partner_rates or []
         self._rate_lines = rate_lines or []
+        self._rate_info = rate_info or []
         self.calls = {"find_partner_rates_batch": 0, "find_rate_lines": 0}
         self.write_attempts = []
         self._created_invoices = []
