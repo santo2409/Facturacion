@@ -111,7 +111,7 @@ class TestLoadOdooRates:
 
         uc._load_odoo_rates(df)
 
-        assert odoo.calls == {"find_partner_rates_batch": 1, "find_rate_lines": 1}
+        assert odoo.calls == {"find_partner_rates_batch": 1, "find_rate_lines": 1, "find_rate_info": 1}
 
     def test_company_not_in_odoo_is_reported(self, deps):
         uc = _build(deps, odoo_repo=FakeOdooRepo())
