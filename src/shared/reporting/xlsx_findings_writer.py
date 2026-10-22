@@ -30,5 +30,14 @@ class XlsxFindingsWriter(FindingsWriter):
         folder.mkdir(parents=True, exist_ok=True)
         for name, rows in non_empty.items():
             df = pl.DataFrame(rows).select(columns[name])
-            df.write_excel(folder / f"{name}.xlsx", worksheet=name[:31], autofit=True)
+            with Workbook(str(folder / f"{name}.xlsx")) as workbook:
+                df.write_excel(
+                    workbook, worksheet=name[:31], autofit=True,
+                    autofilter=True, header_format={"bold": True},
+                )
+                for sheet, sheet_df in extra_sheets.get(name, {}).items():
+                    sheet_df.write_excel(
+                        workbook, worksheet=sheet[:31], autofit=True,
+                        header_format={"bold": True},
+                    )
         return folder
