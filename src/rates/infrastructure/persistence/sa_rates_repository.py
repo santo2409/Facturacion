@@ -88,7 +88,7 @@ class SaRatesRepository:
                 for r in rows:
                     k = (r[0], r[1])
                     if k not in result:
-                        result[k] = (r[2], r[3], r[4])
+                        result[k] = (r[2], r[3], r[4], r[5])
         except Exception as excep:
             self.logger.error(f"Error in find_rate_by_cup_activity: {excep}", exc_info=True, user_msg="No se pudieron consultar tarifas por CUP.")
         return result
