@@ -218,15 +218,15 @@ class TestXlsxPhaseFindingsReporter:
 
         folder = _reporter(tmp_path).write({}, companies)
 
-        df = pl.read_excel(folder / "empresas_odoo.xlsx")
+        df = _read(folder, "empresas_odoo")
         assert df.columns == ["NIT", "Empresa", "Motivo"]
         assert df["Motivo"].to_list() == ["No encontrada en Odoo", "Sin tarifa especial ni base"]
 
     def test_fake_captures_findings(self):
         fake = FakePhaseFindingsReporter()
 
-        result = fake.write({"sin_resolver": [_finding()]}, [{"NIT": "1", "Empresa": "A", "Motivo": "x"}])
+        result = fake.write({SIN_RESOLVER: [_unresolved()]}, [{"NIT": "1", "Empresa": "A", "Motivo": "x"}])
 
         assert result == Path("fake")
-        assert fake.findings == {"sin_resolver": [_finding()]}
+        assert fake.findings == {SIN_RESOLVER: [_unresolved()]}
         assert fake.companies == [{"NIT": "1", "Empresa": "A", "Motivo": "x"}]
