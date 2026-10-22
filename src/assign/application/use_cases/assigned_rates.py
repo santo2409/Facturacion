@@ -101,6 +101,9 @@ _PHASE_LEGEND = [
     ("9DC3E6", "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"),
     ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
 ]
+_PHASE_LABELS = {key: label for key, (_, label) in zip(PHASE_FINDING_KEYS, _PHASE_LEGEND)}
+_PHASE_LABELS["sin_resolver"] = "Sin resolver"
+_SOURCE_TYPE_LABEL = {"Package": "Paquete", "Provider": "Proveedor", "Special": "Especial"}
 
 
 @dataclass
