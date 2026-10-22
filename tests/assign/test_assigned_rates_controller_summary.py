@@ -24,6 +24,7 @@ def _result(**overrides):
             "fase_05_cup_base_cualquier_paquete": 0,
             "fase_06_cualquier_ciudad": 1,
             "sin_resolver": 4,
+            "odoo_tarifa_vencida": 7,
         },
         "findings_dir": Path("logs/asignar_tarifas/2026-10-10_1430"),
         "odoo_available": True,
@@ -53,3 +54,10 @@ def test_summary_warns_when_odoo_unavailable():
     text = _render(_result(odoo_available=False))
 
     assert "Odoo no disponible" in text
+
+
+def test_summary_includes_expired_rates_count():
+    text = _render(_result())
+
+    assert "Tarifas Odoo vencidas" in text
+    assert "7" in text

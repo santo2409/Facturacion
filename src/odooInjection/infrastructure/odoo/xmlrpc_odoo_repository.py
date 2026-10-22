@@ -189,6 +189,28 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             })
         return lines
 
+    def find_rate_info(self, rate_ids: list[int]) -> list[dict]:
+        unique_rates = list(dict.fromkeys(r for r in rate_ids if r))
+        info: list[dict] = []
+        for i in range(0, len(unique_rates), self._RATE_BATCH_SIZE):
+            chunk = unique_rates[i : i + self._RATE_BATCH_SIZE]
+            rows = self._execute(
+                "account.base.rate", "search_read",
+                [[["id", "in", chunk]]],
+                {"fields": ["name", "state", "start_date", "finish_date"]},
+            )
+            info.extend(
+                {
+                    "rate_id": row["id"],
+                    "name": row.get("name"),
+                    "state": row.get("state"),
+                    "start_date": row.get("start_date"),
+                    "finish_date": row.get("finish_date"),
+                }
+                for row in rows
+            )
+        return info
+
     @staticmethod
     def _strip_suffix(name: str) -> str:
         """Quita el sufijo societario para una búsqueda por nombre más flexible."""

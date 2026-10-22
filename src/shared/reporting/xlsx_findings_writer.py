@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable
 
 import polars as pl
+from xlsxwriter import Workbook
 
 from src.shared.reporting.findings_writer import FindingsWriter
 
@@ -14,7 +15,13 @@ class XlsxFindingsWriter(FindingsWriter):
         self._base_dir = base_dir
         self._clock = clock
 
-    def write(self, books: dict[str, list[dict]], columns: dict[str, list[str]]) -> Path | None:
+    def write(
+        self,
+        books: dict[str, list[dict]],
+        columns: dict[str, list[str]],
+        extra_sheets: dict[str, dict[str, pl.DataFrame]] | None = None,
+    ) -> Path | None:
+        extra_sheets = extra_sheets or {}
         non_empty = {name: rows for name, rows in books.items() if rows}
         if not non_empty:
             return None
@@ -23,5 +30,14 @@ class XlsxFindingsWriter(FindingsWriter):
         folder.mkdir(parents=True, exist_ok=True)
         for name, rows in non_empty.items():
             df = pl.DataFrame(rows).select(columns[name])
-            df.write_excel(folder / f"{name}.xlsx", worksheet=name[:31], autofit=True)
+            with Workbook(str(folder / f"{name}.xlsx")) as workbook:
+                df.write_excel(
+                    workbook, worksheet=name[:31], autofit=True,
+                    autofilter=True, header_format={"bold": True},
+                )
+                for sheet, sheet_df in extra_sheets.get(name, {}).items():
+                    sheet_df.write_excel(
+                        workbook, worksheet=sheet[:31], autofit=True,
+                        header_format={"bold": True},
+                    )
         return folder

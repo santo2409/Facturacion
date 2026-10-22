@@ -219,7 +219,7 @@ Todo acceso a Odoo desde las opciones 1, 2, 5 y 6 usa `search_read` o `read`; ni
 | Modelo | Campos usados | Nota |
 |---|---|---|
 | `res.partner` | `ref_num` (*Número de identificación*: el **NIT**), `verification_code` (DV), `vat` (casi siempre vacío), `name`, `rate_base_special_id` (*Tarifa especial*), `rate_base_id` (*Tarifa base*) | La búsqueda por NIT usa `ref_num` y cae a `vat` (spec 012) |
-| `account.base.rate` | `name`, `state`, `start_date`, `finish_date` | Tarifa. El estado y la vigencia **no** se validan (spec 010, RF-06) |
+| `account.base.rate` | `name`, `state`, `start_date`, `finish_date` | Tarifa. El estado **no** se valida; la vigencia solo se reporta: una tarifa con `finish_date` anterior a hoy se asigna y queda en `odoo_tarifa_vencida.xlsx` (spec 020) |
 | `account.base.rate.line` | `base_rate_id`, `city_id` (→ `res.city`), `product_id` (`default_code` = CUP), `price_unit`, `intra` (bool) | Línea de precio por ciudad, CUP y actividad |
 | `product.product` | `default_code` | Se lee en un solo `read` para obtener el CUP de cada línea |
 
@@ -388,7 +388,7 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
 
 - **Orden:** Tarifa especial → Tarifa base → las 6 fases locales → `1`.
 - **Índice:** `OdooRateIndex` (`src/assign/domain/odoo_rate_index.py`). Clave `(tarifa, normalize_text_key(ciudad), CUP, intra)`; INTRA ↔ `intra=True`, EXTRA ↔ `intra=False`. Los precios ≤ 0 se ignoran y, ante claves repetidas, gana la primera línea.
-- **Ciudad:** solo por nombre normalizado exacto (sin fuzzy). No se valida el estado ni la vigencia de la tarifa (RF-06).
+- **Ciudad:** solo por nombre normalizado exacto (sin fuzzy). No se valida el estado de la tarifa; la vigencia vencida se asigna igual y se reporta (spec 020, RF-04).
 - **Consulta:** `find_rate_lines` lee las líneas en lotes de 50 tarifas, filtradas por los CUP del Excel, y lee `default_code` en un solo `read`.
 - **Color:** una celda resuelta por Odoo **no lleva color**.
 - **PAQUETE:** nombre de la tarifa especial, si no la base, si no el paquete local. La cascada local sigue leyendo `_PAQUETE_LOCAL`.
@@ -666,7 +666,7 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 | 16 | Arquitectura | `SaBillerRepository` / `SaBillerCompanyRepository` no heredan su ABC; `rates` no tiene ABC | `src/billers`, `src/rates` |
 | 17 | Opción 6 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |
 | 18 | Opción 6 | `render_summary` se imprime con un `Console()` nuevo y no con `USER_CONSOLE` | `assigned_rates_controller.py:156` |
-| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto y no se valida el estado ni la vigencia de la tarifa | `odoo_rate_index.py` |
+| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto ; no se valida el estado y la tarifa vencida se asigna y se reporta en `odoo_tarifa_vencida.xlsx` | `odoo_rate_index.py` |
 | 20 | Opción 5 | `paquetes_en_conflicto` se registra aunque la empresa se repita con el **mismo** paquete (la regla "mismo valor no es conflicto" de la spec 015 solo se aplicó a la opción 2) | `import_companies_from_excel.py:305-320` |
 | 21 | Odoo | `create_client` escribe solo `vat`, no `ref_num` (no se invoca) | `xmlrpc_odoo_repository.py:238-249` |
 | 22 | Datos Odoo | 54 partners duplicados creados solo con `vat` (2026-05-07 a 2026-06-02); el administrador de Odoo debe fusionarlos o archivarlos | Odoo, `res.partner` |

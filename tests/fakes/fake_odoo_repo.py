@@ -1,9 +1,10 @@
 class FakeOdooRepo:
-    def __init__(self, products=None, clients=None, partner_rates=None, rate_lines=None):
+    def __init__(self, products=None, clients=None, partner_rates=None, rate_lines=None, rate_info=None):
         self._products = products or {}
         self._clients = clients or {}
         self._partner_rates = partner_rates or []
         self._rate_lines = rate_lines or []
+        self._rate_info = rate_info or []
         self.calls = {"find_partner_rates_batch": 0, "find_rate_lines": 0}
         self.write_attempts = []
         self._created_invoices = []
@@ -65,6 +66,11 @@ class FakeOdooRepo:
         self.calls["find_rate_lines"] += 1
         rates, cups = set(rate_ids), set(cup_codes)
         return [l for l in self._rate_lines if l["rate_id"] in rates and l["cup"] in cups]
+
+    def find_rate_info(self, rate_ids):
+        self.calls["find_rate_info"] = self.calls.get("find_rate_info", 0) + 1
+        wanted = set(rate_ids)
+        return [i for i in self._rate_info if i["rate_id"] in wanted]
 
     def create_client(self, nit, name):
         self.write_attempts.append("create_client")

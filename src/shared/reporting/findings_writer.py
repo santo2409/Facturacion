@@ -1,13 +1,21 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import polars as pl
+
 
 class FindingsWriter(ABC):
     @abstractmethod
-    def write(self, books: dict[str, list[dict]], columns: dict[str, list[str]]) -> Path | None:
+    def write(
+        self,
+        books: dict[str, list[dict]],
+        columns: dict[str, list[str]],
+        extra_sheets: dict[str, dict[str, pl.DataFrame]] | None = None,
+    ) -> Path | None:
         """Escribe un libro por clave de `books` que tenga filas, con las columnas
-        en el orden de `columns[clave]`. Devuelve la carpeta de la ejecución, o
-        None si no había nada que escribir (no se crea carpeta)."""
+        en el orden de `columns[clave]`. `extra_sheets[clave]` agrega hojas
+        adicionales (nombre → tabla) al libro de esa clave. Devuelve la carpeta
+        de la ejecución, o None si no había nada que escribir (no se crea carpeta)."""
 
 
 def summarize_findings(books: dict[str, list[dict]], folder: Path | None) -> str:

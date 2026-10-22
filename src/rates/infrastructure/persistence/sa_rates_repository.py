@@ -62,11 +62,11 @@ class SaRatesRepository:
             self.logger.error(f"Error in find_batch: {excep}", exc_info=True, user_msg="No se pudieron consultar las tarifas en lote.")
         return result
 
-    def find_rate_by_cup_activity(self, keys: list[tuple]) -> dict[tuple, tuple[int, str, int]]:
+    def find_rate_by_cup_activity(self, keys: list[tuple]) -> dict[tuple, tuple[int, str, int, int]]:
         """Find any rate matching (cup_id, activity_id) regardless of city or package.
 
         keys: list of (cup_id, activity_id)
-        Returns: dict mapping (cup_id, activity_id) → (rate, rateable_type, rateable_id)
+        Returns: dict mapping (cup_id, activity_id) → (rate, rateable_type, rateable_id, city_id)
         """
         if not keys:
             return {}
@@ -78,6 +78,7 @@ class SaRatesRepository:
                     self.session.query(
                         RateModel.cup_id, RateModel.activity_id,
                         RateModel.rate, RateModel.rateable_type, RateModel.rateable_id,
+                        RateModel.city_id,
                     )
                     .filter(
                         tuple_(RateModel.cup_id, RateModel.activity_id).in_(chunk)
@@ -87,7 +88,7 @@ class SaRatesRepository:
                 for r in rows:
                     k = (r[0], r[1])
                     if k not in result:
-                        result[k] = (r[2], r[3], r[4])
+                        result[k] = (r[2], r[3], r[4], r[5])
         except Exception as excep:
             self.logger.error(f"Error in find_rate_by_cup_activity: {excep}", exc_info=True, user_msg="No se pudieron consultar tarifas por CUP.")
         return result
