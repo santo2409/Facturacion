@@ -225,7 +225,7 @@ class AssignRatesFromExcel:
         for nit in nits:
             partner = self._odoo_by_nit.get(nit)
             if partner is None:
-                reason = "No encontrada en Odoo"
+                reason = "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
             elif not partner["special_id"] and not partner["base_id"]:
                 reason = "Sin tarifa especial ni base"
             else:
