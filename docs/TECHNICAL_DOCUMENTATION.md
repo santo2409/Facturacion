@@ -666,7 +666,7 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 | 16 | Arquitectura | `SaBillerRepository` / `SaBillerCompanyRepository` no heredan su ABC; `rates` no tiene ABC | `src/billers`, `src/rates` |
 | 17 | Opción 6 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |
 | 18 | Opción 6 | `render_summary` se imprime con un `Console()` nuevo y no con `USER_CONSOLE` | `assigned_rates_controller.py:156` |
-| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto y no se valida el estado ni la vigencia de la tarifa | `odoo_rate_index.py` |
+| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto ; no se valida el estado y la tarifa vencida se asigna y se reporta en `odoo_tarifa_vencida.xlsx` | `odoo_rate_index.py` |
 | 20 | Opción 5 | `paquetes_en_conflicto` se registra aunque la empresa se repita con el **mismo** paquete (la regla "mismo valor no es conflicto" de la spec 015 solo se aplicó a la opción 2) | `import_companies_from_excel.py:305-320` |
 | 21 | Odoo | `create_client` escribe solo `vat`, no `ref_num` (no se invoca) | `xmlrpc_odoo_repository.py:238-249` |
 | 22 | Datos Odoo | 54 partners duplicados creados solo con `vat` (2026-05-07 a 2026-06-02); el administrador de Odoo debe fusionarlos o archivarlos | Odoo, `res.partner` |
