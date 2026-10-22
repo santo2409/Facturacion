@@ -227,7 +227,7 @@ class AssignRatesFromExcel:
             if partner is None:
                 reason = "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
             elif not partner["special_id"] and not partner["base_id"]:
-                reason = "Sin tarifa especial ni base"
+                reason = "Sin tarifa especial ni base. Acción: asignar una tarifa especial o base a la empresa en Odoo."
             else:
                 continue
             self._company_findings.append(
