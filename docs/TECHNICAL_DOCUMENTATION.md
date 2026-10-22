@@ -219,7 +219,7 @@ Todo acceso a Odoo desde las opciones 1, 2, 5 y 6 usa `search_read` o `read`; ni
 | Modelo | Campos usados | Nota |
 |---|---|---|
 | `res.partner` | `ref_num` (*Número de identificación*: el **NIT**), `verification_code` (DV), `vat` (casi siempre vacío), `name`, `rate_base_special_id` (*Tarifa especial*), `rate_base_id` (*Tarifa base*) | La búsqueda por NIT usa `ref_num` y cae a `vat` (spec 012) |
-| `account.base.rate` | `name`, `state`, `start_date`, `finish_date` | Tarifa. El estado y la vigencia **no** se validan (spec 010, RF-06) |
+| `account.base.rate` | `name`, `state`, `start_date`, `finish_date` | Tarifa. El estado **no** se valida; la vigencia solo se reporta: una tarifa con `finish_date` anterior a hoy se asigna y queda en `odoo_tarifa_vencida.xlsx` (spec 020) |
 | `account.base.rate.line` | `base_rate_id`, `city_id` (→ `res.city`), `product_id` (`default_code` = CUP), `price_unit`, `intra` (bool) | Línea de precio por ciudad, CUP y actividad |
 | `product.product` | `default_code` | Se lee en un solo `read` para obtener el CUP de cada línea |
 
