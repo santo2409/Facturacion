@@ -1210,6 +1210,12 @@ class AssignRatesFromExcel:
                 "CUP": str(h),
                 "Precio asignado": int(price),
                 "Origen": origin,
+                "Fase": _PHASE_LABELS[phase_key],
+                "Paquete original": row["PAQUETE"],
+                "Tipo de fuente": source_type,
+                "Fuente": source,
+                "Ciudad efectiva": city_eff,
+                "CUP efectivo": cup_eff,
             })
 
         with self.progress("Calculando tarifas", total=len(rows_data)):
