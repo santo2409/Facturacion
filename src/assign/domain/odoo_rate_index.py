@@ -46,8 +46,23 @@ class OdooRateIndex:
             )
             self._prices.setdefault(key, int(price))
 
-    def price(self, rate_id: int | None, city: str, cup: str, activity: str) -> int | None:
+    def lookup(self, rate_id: int | None, city: str, cup: str, activity: str) -> OdooRateHit | None:
         intra = _ACTIVITY_TO_INTRA.get(activity)
         if rate_id is None or intra is None:
             return None
-        return self._prices.get((rate_id, normalize_text_key(city), str(cup).strip(), intra))
+        price = self._prices.get((rate_id, normalize_text_key(city), str(cup).strip(), intra))
+        if price is None:
+            return None
+        info = self._info.get(rate_id, {})
+        return OdooRateHit(
+            price=price,
+            rate_id=rate_id,
+            rate_name=info.get("name"),
+            start_date=_to_date(info.get("start_date")),
+            finish_date=_to_date(info.get("finish_date")),
+            state=info.get("state") or None,
+        )
+
+    def price(self, rate_id: int | None, city: str, cup: str, activity: str) -> int | None:
+        hit = self.lookup(rate_id, city, cup, activity)
+        return hit.price if hit else None
