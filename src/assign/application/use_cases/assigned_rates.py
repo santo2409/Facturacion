@@ -1134,8 +1134,10 @@ class AssignRatesFromExcel:
                     hit = self._odoo_index.lookup(
                         rate_id, row["Ciudad"], str(h).strip(), row["TIPO DE ACTIVIDAD"]
                     )
-                    if price:
-                        resolved[(str(h), idx)] = price
+                    if hit:
+                        resolved[(str(h), idx)] = hit.price
+                        if hit.finish_date and hit.finish_date < self._today():
+                            self._record_expired(row, str(h), hit, rate_type)
                         break
         return resolved
 
