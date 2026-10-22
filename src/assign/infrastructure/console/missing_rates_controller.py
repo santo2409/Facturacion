@@ -4,8 +4,10 @@ from src.shared.console.file_output import ask_directory_path
 from src.shared.console.progress import RichProgress
 from src.shared.console.sheet_input import ask_sheet_name
 from src.shared.excel.excel_loader import ExcelLoader
+from src.shared.utils.deprecated import deprecated
 
 
+@deprecated("Opción en desuso del menú")
 def generate_missing_rates(logger):
     loader = ExcelLoader()
     path = ask_excel_path()
