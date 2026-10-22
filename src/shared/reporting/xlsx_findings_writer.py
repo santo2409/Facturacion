@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable
 
 import polars as pl
+from xlsxwriter import Workbook
 
 from src.shared.reporting.findings_writer import FindingsWriter
 
