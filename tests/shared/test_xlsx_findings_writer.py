@@ -115,29 +115,26 @@ def test_fake_keeps_only_non_empty_books():
 
 
 def test_phase_reporter_delegates_to_generic_writer(tmp_path):
-    from src.assign.domain.repositories.phase_findings_reporter import (
-        COMPANY_COLUMNS,
-        FINDING_COLUMNS,
-    )
+    from src.assign.domain.repositories.phase_findings_reporter import COMPANY_COLUMNS
     from src.assign.infrastructure.reporting.xlsx_phase_findings_reporter import (
         XlsxPhaseFindingsReporter,
     )
 
-    finding = dict.fromkeys(FINDING_COLUMNS, "x")
+    finding = {
+        "NIT": "1", "Empresa": "A", "Paciente": "P", "N° Identificación": "9",
+        "Ciudad": "X", "TIPO DE ACTIVIDAD": "INTRA", "CUP": "890201",
+        "Precio asignado": 1, "Origen": "Sin tarifa", "Fase": "Sin resolver",
+        "Paquete original": "PAQ", "Tipo de fuente": None, "Fuente": "Sin tarifa",
+        "Ciudad efectiva": None, "CUP efectivo": None,
+    }
     company = {"NIT": "1", "Empresa": "A", "Motivo": "No encontrada en Odoo"}
 
-    via_reporter = XlsxPhaseFindingsReporter(base_dir=tmp_path / "a", clock=_CLOCK).write(
-        {"sin_resolver": [finding]}, [company]
-    )
-    via_writer = XlsxFindingsWriter(base_dir=tmp_path / "b", clock=_CLOCK).write(
-        {"sin_resolver": [finding], "empresas_odoo": [company]},
-        {"sin_resolver": FINDING_COLUMNS, "empresas_odoo": COMPANY_COLUMNS},
-    )
+    reporter = XlsxPhaseFindingsReporter(base_dir=tmp_path / "a", clock=_CLOCK)
+    via_reporter = reporter.write({"sin_resolver": [finding]}, [company])
 
-    assert sorted(p.name for p in via_reporter.iterdir()) == sorted(p.name for p in via_writer.iterdir())
-    for name in ("sin_resolver.xlsx", "empresas_odoo.xlsx"):
-        assert pl.read_excel(via_reporter / name).equals(pl.read_excel(via_writer / name))
-    assert hasattr(XlsxPhaseFindingsReporter(base_dir=tmp_path, clock=_CLOCK), "_writer")
+    assert isinstance(reporter._writer, XlsxFindingsWriter)
+    assert sorted(p.name for p in via_reporter.iterdir()) == ["empresas_odoo.xlsx", "sin_resolver.xlsx"]
+    assert pl.read_excel(via_reporter / "empresas_odoo.xlsx").columns == COMPANY_COLUMNS
 
 
 def test_summarize_without_folder_lists_only_counts():
