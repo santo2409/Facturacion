@@ -78,6 +78,7 @@ class SaRatesRepository:
                     self.session.query(
                         RateModel.cup_id, RateModel.activity_id,
                         RateModel.rate, RateModel.rateable_type, RateModel.rateable_id,
+                        RateModel.city_id,
                     )
                     .filter(
                         tuple_(RateModel.cup_id, RateModel.activity_id).in_(chunk)
