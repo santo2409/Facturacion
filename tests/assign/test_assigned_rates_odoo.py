@@ -500,6 +500,7 @@ class TestPhaseFindingsAndColors:
         assert result.counts[PHASE2] == 0
         assert result.findings_dir == Path("fake")
         assert result.odoo_available is True
+        assert reporter.odoo_available is True
 
     def test_legend_includes_odoo_and_six_local_phases(self, deps, tmp_path):
         import openpyxl
