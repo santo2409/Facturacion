@@ -89,6 +89,7 @@ PHASE_FINDING_KEYS = (
     "fase_05_cup_base_cualquier_paquete",
     "fase_06_cualquier_ciudad",
     "sin_resolver",
+    "odoo_tarifa_vencida",
 )
 _COLOR_LOCAL_OWN = "E2EFDA"  # Verde claro — fase 1 local (paquete propio)
 
