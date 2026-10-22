@@ -128,7 +128,7 @@ class TestLoadOdooRates:
 
         uc._load_odoo_rates(_df())
 
-        assert [f["Motivo"] for f in uc._company_findings] == ["Sin tarifa especial ni base"]
+        assert [f["Motivo"] for f in uc._company_findings] == [NO_RATES_IN_ODOO]
         assert odoo.calls["find_rate_lines"] == 0
 
     def test_company_with_rates_is_not_reported(self, deps):
