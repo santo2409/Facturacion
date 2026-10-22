@@ -136,6 +136,7 @@ class AssignRatesFromExcel:
         tian_repo=None,
         tian_log_generator=None,
         findings_reporter=None,
+        today: Callable[[], date] = date.today,
     ):
         self.biller_repo = biller_repo
         self.company_repo = company_repo
