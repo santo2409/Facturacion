@@ -36,6 +36,6 @@ class FakeRatesRepo:
         for cup_id, activity_id in keys:
             for (rid, cid, cuid, aid, rtype), rate in self._data.items():
                 if cuid == cup_id and aid == activity_id:
-                    result[(cup_id, activity_id)] = (rate, rtype, rid)
+                    result[(cup_id, activity_id)] = (rate, rtype, rid, cid)
                     break
         return result
