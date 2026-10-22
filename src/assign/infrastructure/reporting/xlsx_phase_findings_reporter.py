@@ -132,10 +132,20 @@ class XlsxPhaseFindingsReporter(PhaseFindingsReporter):
     ):
         self._writer = XlsxFindingsWriter(base_dir=base_dir, clock=clock)
 
-    def write(self, findings: dict[str, list[dict]], companies: list[dict]) -> Path | None:
-        books = dict(findings)
-        columns = {key: FINDING_COLUMNS for key in findings}
+    def write(
+        self, findings: dict[str, list[dict]], companies: list[dict], odoo_available: bool = True
+    ) -> Path | None:
+        books: dict[str, list[dict]] = {}
+        columns: dict[str, list[str]] = {}
+        for key, rows in findings.items():
+            if not rows:
+                continue
+            if key == EXPIRED_KEY:
+                books[key], columns[key] = _expired_book(rows), EXPIRED_COLUMNS
+            else:
+                books[key], columns[key] = _phase_book(key, rows, odoo_available), FINDING_COLUMNS
         if companies:
             books[COMPANIES_FILENAME] = companies
             columns[COMPANIES_FILENAME] = COMPANY_COLUMNS
-        return self._writer.write(books, columns)
+        extra = {name: {"Leyenda": _legend(name, cols)} for name, cols in columns.items()}
+        return self._writer.write(books, columns, extra_sheets=extra)
