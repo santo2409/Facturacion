@@ -1486,7 +1486,7 @@ class AssignRatesFromExcel:
                 for idx, h, city_id, cup_id, activity_id, pkg_name, city, activity in still_unresolved_3:
                     result_tuple = cup_activity_cache.get((cup_id, activity_id))
                     if result_tuple:
-                        w_rate, w_type, w_id = result_tuple
+                        w_rate, w_type, w_id, w_city_id = result_tuple
                         result_cols[str(h)][idx] = int(w_rate)
                         cell_colors[(str(h), idx)] = _COLOR_PHASE6
                         if w_type == "Package":
