@@ -1452,7 +1452,8 @@ class AssignRatesFromExcel:
                             source = prov_id_to_name.get(w_id, str(w_id))
                         else:
                             source = spec_id_to_name.get(w_id, str(w_id))
-                        record(PHASE_FINDING_KEYS[4], idx, h, w_rate, f"{source} (CUP {base_code})")
+                        record(PHASE_FINDING_KEYS[4], idx, h, w_rate, f"{source} (CUP {base_code})",
+                               _SOURCE_TYPE_LABEL.get(w_type, w_type), source, city, base_code)
                         wildcard2_logs.append(
                             f"'{pkg_name}' no cuenta con tarifa para CUP '{h}' en la ciudad '{city}' "
                             f"para la actividad '{activity}', se homologó al CUP '{base_code}' "
