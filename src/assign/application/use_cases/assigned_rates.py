@@ -215,7 +215,7 @@ class AssignRatesFromExcel:
                 )
 
         self._odoo_by_nit = {p["nit"]: p for p in partners}
-        self._odoo_index = OdooRateIndex(lines)
+        self._odoo_index = OdooRateIndex(lines, rates_info)
         self.odoo_available = True
 
         names: dict[str, str] = {}
