@@ -118,18 +118,17 @@ python main.py
 
 ### 4.2 Variables de entorno (`.env`, plantilla en `.env.example`)
 
-**Base de datos.** La aplicación y Alembic usan la misma URL, `build_database_url()` en `src/shared/database/database.py` (AUD-45):
+**Base de datos.** La aplicación arma la URL con `build_database_url()` en `src/shared/database/database.py` (AUD-45); Alembic usa `DATABASE_URL` si existe y, si no, esa misma función:
 
 | Variable | Defecto | Nota |
 |---|---|---|
-| `DATABASE_URL` | — | Si existe, se usa tal cual (app y Alembic) |
+| `DATABASE_URL` | — | Solo Alembic: si existe, se usa tal cual; la app la ignora |
 | `SUPABASE_DB_USER` / `SUPABASE_DB_PASSWORD` | — | Escapados con `quote_plus` |
 | `SUPABASE_DB_HOST` | — | |
 | `SUPABASE_DB_PORT` | `5432` | |
 | `SUPABASE_DB_NAME` | `postgres` | |
-| `DB_CONNECT_TIMEOUT_SECONDS` | `30` | Solo PostgreSQL |
 
-Sin `DATABASE_URL`, la URL es `postgresql+psycopg2://…?sslmode=require`; la app crea el engine con `pool_pre_ping=True`. `migrations/env.py` usa la misma función (escapando `%` para ConfigParser), así que las migraciones van a la misma BD que la app.
+La URL es `postgresql+psycopg2://…?sslmode=require`; la app crea el engine con `pool_pre_ping=True` y sin `connect_timeout` (AUD-83). `migrations/env.py`, sin `DATABASE_URL`, usa la misma función (escapando `%` para ConfigParser), así que las migraciones van a la misma BD que la app; con `DATABASE_URL`, van a esa URL.
 
 **Rutas y negocio:**
 
@@ -665,7 +664,7 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 | 11 | Opción 6 | Las fases comodín (3, 5, 6) no son deterministas (sin `ORDER BY`) | `sa_rates_repository.py:89,122` |
 | 12 | Opción 6 | `DAY_INITIAL`/`DAY_FINAL` vacíos → `int()` falla (lo captura `safe_dispatch`) | `main.py:59-65` |
 | 13 | Opción 7 | El mensaje de consolidado faltante usa `print` y muestra `[red]` literal | `pre_invoice_controller.py:19-21` |
-| 14 | BD | ~~La app ignora `DATABASE_URL`; Alembic la usa (puertos por defecto 5432 vs 6543)~~ Resuelto en AUD-45: una sola regla de URL | `database.py`, `migrations/env.py` |
+| 14 | BD | La app ignora `DATABASE_URL`; Alembic la usa. Sin ella, ambas usan la misma URL (5432 y `sslmode=require`, AUD-45) | `database.py`, `migrations/env.py` |
 | 15 | BD | Los controllers de las opciones 4 y 10 no cierran la sesión | spec 007, no-objetivos |
 | 16 | Arquitectura | `SaBillerRepository` / `SaBillerCompanyRepository` no heredan su ABC; `rates` no tiene ABC | `src/billers`, `src/rates` |
 | 17 | Opción 6 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |

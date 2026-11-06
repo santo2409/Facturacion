@@ -1,14 +1,16 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from src.shared.database.database import Base, build_database_url, database_connect_args
+from src.shared.database.database import Base, build_database_url
 from src.shared.database.models import *  # noqa: F401,F403 - register all models
 
 # El .env ya lo cargó src.shared.database.database (load_env) al importarse.
-# La URL es la misma que usa la app (AUD-45).
-_url = build_database_url()
+# DATABASE_URL, si existe, solo la usa Alembic (como antes); si no, la misma URL
+# que la app (AUD-45).
+_url = os.getenv("DATABASE_URL") or build_database_url()
 
 config = context.config
 # ConfigParser interpreta '%': la contraseña escapada (p. ej. %40) debe ir como %%.
@@ -55,7 +57,6 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args=database_connect_args(_url),
     )
 
     with connectable.connect() as connection:
