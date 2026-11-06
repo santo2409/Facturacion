@@ -11,6 +11,7 @@ from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.domain.repositories.nit_scraper_repository import (
     NitScraperRepository,
 )
+from src.shared.config import get_int_env
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.console import console
 
@@ -36,10 +37,8 @@ class RuesPlaywrightScraper(NitScraperRepository):
         env_value = os.getenv("RUES_SCRAPER_CONCURRENCY")
         raw = concurrency if concurrency is not None else (int(env_value) if env_value else DEFAULT_CONCURRENCY)
         self.concurrency = max(1, min(raw, MAX_CONCURRENCY))
-        self._result_timeout_ms = int(os.getenv("RUES_RESULT_TIMEOUT_MS", "10000"))
-        self._request_delay_ms = int(
-            os.getenv("RUES_REQUEST_DELAY_MS", str(DEFAULT_REQUEST_DELAY_MS))
-        )
+        self._result_timeout_ms = get_int_env("RUES_RESULT_TIMEOUT_MS", 10000)
+        self._request_delay_ms = get_int_env("RUES_REQUEST_DELAY_MS", DEFAULT_REQUEST_DELAY_MS)
         self._browser_factory = browser_factory or async_playwright
 
     def _prepare_nits(self, nits: list) -> list[int]:

@@ -26,7 +26,7 @@ from src.scrapping.infrastructure.reporting.not_found_companies_log_generator im
 from src.scrapping.infrastructure.scrapers.rues_selenium_scraper import (
     RuesPlaywrightScraper,
 )
-from src.shared.config import get_paths_config
+from src.shared.config import get_book_config, get_int_env, get_paths_config
 from src.shared.database.database import get_session
 from src.shared.reporting.findings_writer import FindingsWriter, summarize_findings
 from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
@@ -69,6 +69,14 @@ def publish_local_updates(use_case, writer: FindingsWriter, logger) -> Path | No
 
 
 def execute_web_scrapping(logger):
+    book = get_book_config()
+    if book["route"] is None or book["name"] is None:
+        logger.error(
+            "BOOK_ROUTE o BOOK_NAME no configuradas",
+            user_msg="Configura BOOK_ROUTE y BOOK_NAME en el archivo .env para ejecutar el Web Scrapping.",
+        )
+        return
+
     scraper = RuesPlaywrightScraper(logger=logger)
 
     config = get_odoo_config()
@@ -90,9 +98,7 @@ def execute_web_scrapping(logger):
 
         name_matcher = CompanyNameMatcher(
             RapidFuzzBiller(logger),
-            threshold=int(
-                os.getenv("COMPANY_NAME_MATCH_THRESHOLD", str(DEFAULT_NAME_MATCH_THRESHOLD))
-            ),
+            threshold=get_int_env("COMPANY_NAME_MATCH_THRESHOLD", DEFAULT_NAME_MATCH_THRESHOLD),
         )
 
         use_case = SearchNitsWithOdooFallbackUseCase(
@@ -102,12 +108,10 @@ def execute_web_scrapping(logger):
             logger=logger,
             name_matcher=name_matcher,
             local_name_lookup=os.getenv("LOCAL_NAME_LOOKUP", "true").lower() != "false",
-            rues_name_limit=int(
-                os.getenv("RUES_NAME_LOOKUP_LIMIT", str(DEFAULT_RUES_NAME_LOOKUP_LIMIT))
-            ),
+            rues_name_limit=get_int_env("RUES_NAME_LOOKUP_LIMIT", DEFAULT_RUES_NAME_LOOKUP_LIMIT),
         )
 
-        route_book = os.path.join(os.getenv("BOOK_ROUTE"), os.getenv("BOOK_NAME"))
+        route_book = os.path.join(book["route"], book["name"])
         file_path = os.path.join(get_paths_config()["directory"], "data.json")
 
         book_df = pl.read_excel(

@@ -44,3 +44,23 @@ def test_import_rues_nits_no_usa_os_getenv_directory_directo():
 
     assert 'os.getenv("DIRECTORY")' not in source
     assert "get_paths_config" in source
+
+
+def test_execute_web_scrapping_sin_book_route_avisa_y_no_abre_sesion(monkeypatch):
+    """AUD-68: sin BOOK_ROUTE la opción 1 termina con un mensaje claro, sin excepción."""
+    from src.scrapping.infrastructure.console import import_rues_nits as controller
+
+    class _Logger:
+        def __init__(self):
+            self.errors = []
+
+        def error(self, message, exc_info=None, *, user_msg=None):
+            self.errors.append(user_msg)
+
+    monkeypatch.delenv("BOOK_ROUTE", raising=False)
+    monkeypatch.setenv("BOOK_NAME", "libro.xlsx")
+    monkeypatch.setattr(controller, "get_session", lambda: (_ for _ in ()).throw(AssertionError("no debe abrir sesión")))
+    logger = _Logger()
+
+    assert controller.execute_web_scrapping(logger) is None
+    assert logger.errors == ["Configura BOOK_ROUTE y BOOK_NAME en el archivo .env para ejecutar el Web Scrapping."]
