@@ -114,6 +114,8 @@ alembic upgrade head
 python main.py
 ```
 
+> **No usar `alembic revision --autogenerate`.** `src/shared/database/models.py` no declara `deleted_at` en 11 tablas, 7 claves foráneas ni las tablas RBAC (`roles`, `permissions`, `role_permissions`, `users`), así que autogenerate propondría borrarlas (AUD-44). Las migraciones se escriben a mano. `tests/shared/test_models_vs_migrations.py` compara offline el DDL de las migraciones con los modelos y falla ante cualquier diferencia nueva.
+
 ### 4.2 Variables de entorno (`.env`, plantilla en `.env.example`)
 
 **Base de datos.** La aplicación y Alembic usan la misma URL, `build_database_url()` en `src/shared/database/database.py` (AUD-45):
