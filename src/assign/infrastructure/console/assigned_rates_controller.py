@@ -39,6 +39,7 @@ from src.cup.infrastructure.persistence.sa_cup_repository import SaCupRepository
 from src.odooInjection.config import get_odoo_config
 from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
     XmlRpcOdooRepository,
+    odoo_timeout_seconds,
 )
 from src.package.infrastructure.persistence.sa_package_repository import (
     SaPackageRepository,
@@ -99,6 +100,14 @@ def render_summary(result: AssignRatesResult) -> Table:
 
 
 def assign_rates(logger, with_invoices=False):
+    # AUD-11: un ODOO_TIMEOUT_SECONDS inválido detiene la opción con un mensaje que
+    # nombra la variable, en vez de seguir sin Odoo en silencio.
+    try:
+        odoo_timeout_seconds()
+    except ValueError as e:
+        logger.error(str(e), user_msg=str(e))
+        return
+
     loader = ExcelLoader()
 
     # Libro consolidado (tarifas)

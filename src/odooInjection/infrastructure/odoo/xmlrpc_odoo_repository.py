@@ -11,6 +11,12 @@ from src.shared.utils.text_normalizer import normalize_nit
 DEFAULT_ODOO_TIMEOUT_SECONDS = 180  # mismo valor que usa ETL-Avancys para Odoo
 
 
+def odoo_timeout_seconds() -> int:
+    """Timeout de socket para Odoo (AUD-11). Sin la variable, 180 s; con un valor
+    no entero, ValueError que nombra ODOO_TIMEOUT_SECONDS."""
+    return get_int_env("ODOO_TIMEOUT_SECONDS", DEFAULT_ODOO_TIMEOUT_SECONDS)
+
+
 class _TimeoutTransport(xmlrpc.client.Transport):
     """Transporte XML-RPC (http) con timeout de socket (AUD-11)."""
 
@@ -65,7 +71,7 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         self._cache_uom = {}
 
     def connect(self) -> None:
-        timeout = get_int_env("ODOO_TIMEOUT_SECONDS", DEFAULT_ODOO_TIMEOUT_SECONDS)
+        timeout = odoo_timeout_seconds()
         for attempt in range(3):
             try:
                 common = xmlrpc.client.ServerProxy(

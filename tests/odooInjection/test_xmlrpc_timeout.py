@@ -13,6 +13,7 @@ from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import (
     _TimeoutSafeTransport,
     _TimeoutTransport,
     _transport_for,
+    odoo_timeout_seconds,
 )
 
 
@@ -85,3 +86,8 @@ def test_silent_server_raises_timeout_instead_of_hanging():
         for conn, _ in conexiones:
             conn.close()
         servidor.close()
+
+
+def test_odoo_timeout_seconds_defaults_to_180_without_variable(monkeypatch):
+    monkeypatch.delenv("ODOO_TIMEOUT_SECONDS", raising=False)
+    assert odoo_timeout_seconds() == 180
