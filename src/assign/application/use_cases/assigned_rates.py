@@ -141,6 +141,7 @@ class AssignRatesResult:
     counts: dict[str, int] = field(default_factory=dict)
     findings_dir: Path | None = None
     odoo_available: bool = False
+    rates_query_failed: bool = False
 
 
 class AssignRatesFromExcel:
@@ -383,7 +384,8 @@ class AssignRatesFromExcel:
         counts = {"odoo": self._odoo_cells}
         counts.update({key: len(rows) for key, rows in self._findings.items()})
         return AssignRatesResult(
-            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available
+            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available,
+            rates_query_failed=self.rates_repo.query_failed,
         )
 
     def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:

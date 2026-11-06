@@ -85,6 +85,11 @@ def render_summary(result: AssignRatesResult) -> Table:
     )
     if not result.odoo_available:
         caption += "\n[yellow]Odoo no disponible: todas las tarifas salieron de la cascada local.[/yellow]"
+    if result.rates_query_failed:
+        caption += (
+            "\n[yellow]⚠ Falló la consulta de tarifas en la base de datos: las celdas sin resolver "
+            "pueden deberse a ese error. Revisa logs.log.[/yellow]"
+        )
     table = Table(title="Asignación de tarifas", caption=caption)
     table.add_column("Origen del precio")
     table.add_column("Celdas", justify="right")

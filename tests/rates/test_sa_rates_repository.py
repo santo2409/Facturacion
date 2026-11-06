@@ -1,6 +1,8 @@
 """Tests para SaRatesRepository con mock de Session."""
 from unittest.mock import MagicMock
 
+import pytest
+
 from src.rates.domain.entities.rate import Rate
 from src.rates.infrastructure.persistence.sa_rates_repository import SaRatesRepository
 from tests.fakes.fake_logger import FakeLogger
@@ -82,3 +84,20 @@ def test_find_rate_by_cup_activity_returns_city_id():
     result = repo.find_rate_by_cup_activity([(10, 2)])
 
     assert result == {(10, 2): (5000, "Package", 7, 3)}
+
+
+# ── AUD-32: fallo de consulta → rollback y marca query_failed ──────────────
+@pytest.mark.parametrize("metodo, llaves", [
+    ("find_batch", [(1, 1, 1, 1, "Package")]),
+    ("find_any_rate", [(1, 1, 1)]),
+    ("find_rate_by_cup_activity", [(1, 1)]),
+])
+def test_rates_query_failure_rolls_back_and_flags(metodo, llaves):
+    session = _mock_session()
+    session.query.side_effect = Exception("DB caída")
+    repo = SaRatesRepository(session, FakeLogger())
+    assert repo.query_failed is False
+
+    assert getattr(repo, metodo)(llaves) == {}
+    session.rollback.assert_called_once()
+    assert repo.query_failed is True

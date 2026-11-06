@@ -1,6 +1,7 @@
 class FakeRatesRepo:
     def __init__(self):
         self._data = {}
+        self.query_failed = False
 
     def save_batch(self, rates):
         for r in rates:
