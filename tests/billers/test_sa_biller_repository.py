@@ -3,6 +3,9 @@ from unittest.mock import MagicMock
 from types import SimpleNamespace
 
 from src.billers.domain.entities.biller import Biller
+from src.billers.infrastructure.persistence.sa_biller_company_repository import (
+    SaBillerCompanyRepository,
+)
 from src.billers.infrastructure.persistence.sa_biller_repository import SaBillerRepository
 from tests.fakes.fake_logger import FakeLogger
 
@@ -72,3 +75,28 @@ def test_all_returns_none_on_error():
 
     repo = SaBillerRepository(session, FakeLogger())
     assert repo.all() is None
+
+
+# AUD-42: una lectura fallida deja la sesión compartida usable (rollback) y devuelve None.
+def test_all_rolls_back_on_error():
+    session = _mock_session()
+    session.query.side_effect = Exception("DB error")
+
+    assert SaBillerRepository(session, FakeLogger()).all() is None
+    session.rollback.assert_called_once()
+
+
+def test_find_by_name_rolls_back_on_error():
+    session = _mock_session()
+    session.query.side_effect = Exception("DB error")
+
+    assert SaBillerRepository(session, FakeLogger()).find_by_name("ALFA") is None
+    session.rollback.assert_called_once()
+
+
+def test_biller_company_all_rolls_back_on_error():
+    session = _mock_session()
+    session.query.side_effect = Exception("DB error")
+
+    assert SaBillerCompanyRepository(session, FakeLogger()).all() is None
+    session.rollback.assert_called_once()

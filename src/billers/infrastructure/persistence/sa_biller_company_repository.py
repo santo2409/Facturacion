@@ -28,5 +28,6 @@ class SaBillerCompanyRepository:
             rows = self.session.query(CompanyBillerModel).all()
             return [{"biller": r.biller_id, "company": r.company_id} for r in rows]
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving biller-company links: {e}", exc_info=True, user_msg="No se pudo obtener las vinculaciones.")
             return None
