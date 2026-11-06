@@ -233,3 +233,7 @@ graphify-out/
 .eonignore
 .env.start
 data/
+# Local: configuración del editor, tarifarios reales (datos sensibles) y kit original ya instalado
+.vscode/
+Fuente/
+kit-claude-facturacion/
