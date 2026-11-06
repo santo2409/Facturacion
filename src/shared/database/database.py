@@ -1,5 +1,5 @@
 import os
-import urllib
+from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -12,7 +12,7 @@ load_dotenv(override=True)
 
 def _build_url():
     user = os.getenv("SUPABASE_DB_USER")
-    password = urllib.parse.quote_plus(os.getenv("SUPABASE_DB_PASSWORD", ""))
+    password = quote_plus(os.getenv("SUPABASE_DB_PASSWORD", ""))
     host = os.getenv("SUPABASE_DB_HOST")
     port = os.getenv("SUPABASE_DB_PORT", 5432)
     name = os.getenv("SUPABASE_DB_NAME", "postgres")

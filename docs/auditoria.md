@@ -250,7 +250,7 @@ Estados: pendiente · aprobado · descartado · después · hecho · revisar
 | AUD-76 | split_by_nit.py:263-269 | bug | baja | no | Desduplicar nombres de hoja puede chocar con otra empresa (Excel no distingue mayúsculas) | revisar |
 | AUD-77 | migrations/versions/6f0ab654aacd_*.py:4; bc1d152a1ddb_*.py:4 | legibilidad | baja | no | El docstring "Revises:" no coincide con `down_revision` (la cadena real es correcta) | hecho |
 | AUD-78 | src/shared/console/sheet_input.py:10; import_billers_from_excel.py:1-3, 28; import_companies_from_excel.py:1, 29 | legibilidad | baja | no | `print()` sin Rich, imports sin uso, herencia de un "repositorio" ABC innecesaria | hecho (sin import_companies, opción 5) |
-| AUD-79 | src/shared/database/database.py:2, 24 | legibilidad | baja | no | `import urllib` sin `urllib.parse`; el engine se crea al importar (cualquier import de modelos arma la URL) | revisar |
+| AUD-79 | src/shared/database/database.py:2, 24 | legibilidad | baja | no | `import urllib` sin `urllib.parse`; el engine se crea al importar (cualquier import de modelos arma la URL) | hecho (solo el import; el engine diferido queda pendiente como estructura) |
 
 ### Hallazgos de la caracterización (golden master, 2026-11-05)
 Se detectaron al construir `tests/golden/` y se verificaron ejecutando el sistema con distintos `PYTHONHASHSEED`.
