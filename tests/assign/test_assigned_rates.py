@@ -2255,3 +2255,33 @@ def test_match_companies_odoo_batch_duplicate_partners_go_per_nit(monkeypatch, t
     assert lote == individual
     assert ("600000001", "DUP MENOR") in lote[0]
     assert por_find_client == ["600000001"]  # el normal se resolvió en el lote
+
+
+def test_match_companies_odoo_batch_failed_stage_goes_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 10, "name": "VAT-B", "ref_num": False, "vat": "900111222"},
+        {"id": 20, "name": "REF-A", "ref_num": "900111222 ", "vat": False},
+        {"id": 30, "name": "OTRA", "ref_num": "800000001", "vat": False},
+    ]
+    nits = ["900111222", "800000001"]
+    resultados = []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        real_execute = uc.odoo_repo._execute
+
+        def execute_que_falla_en_lote(model, method, args, *rest, _real=real_execute):
+            dominio = args[0]
+            if model == "res.partner" and any(isinstance(t, list) and t[0] == "ref_num" for t in dominio):
+                cantidad = sum(len(t[2]) if t[1] == "in" else 1 for t in dominio if isinstance(t, list))
+                if cantidad > 1:
+                    raise TimeoutError("timed out")  # solo falla la consulta con varios NIT
+            return _real(model, method, args, *rest)
+
+        uc.odoo_repo._execute = execute_que_falla_en_lote
+        df = pl.DataFrame({"NIT": nits, "Empresa": ["E0", "E1"], "Base": ["OCT"] * 2})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+
+    assert resultados[1] == resultados[0]
+    assert ("900111222", "REF-A") in resultados[1][0] and ("800000001", "OTRA") in resultados[1][0]

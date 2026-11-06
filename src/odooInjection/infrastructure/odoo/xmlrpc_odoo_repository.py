@@ -147,7 +147,8 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
 
         Si se pasa `ambiguous`, se anotan ahí los NIT cuyo resultado en lote podría
         diferir de la consulta individual (AUD-34): les llegó una fila por la
-        condición de otro NIT, o más de un partner distinto coincide con ellos."""
+        condición de otro NIT, más de un partner distinto coincide con ellos, o
+        falló la consulta de su bloque en alguna etapa."""
         unique_nits = list(dict.fromkeys(n for n in nits if n))
         fields = list(dict.fromkeys([*fields, "ref_num", "vat"]))
         found: dict[str, dict] = {}
@@ -168,6 +169,8 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
                     self._logger.warning(
                         f"Fallo consultando Odoo ({field}, {mode}) para {len(chunk)} NIT(s): {e}"
                     )
+                    if ambiguous is not None:
+                        ambiguous.update(chunk)  # se resuelven uno a uno, como antes del lote
                     continue
                 wanted = set(chunk)
                 for row in rows:
