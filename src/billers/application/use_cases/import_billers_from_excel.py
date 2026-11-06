@@ -1,13 +1,8 @@
-import json
 import os
-from pathlib import Path
 
 import polars as pl
 
 from src.billers.domain.entities.biller import Biller
-from src.billers.domain.repositories.import_biller_from_excel_repository import (
-    ImportBillerFromExcelRepository,
-)
 from src.company.domain.entities.company import Company
 from src.scrapping.application.use_cases.search_nits_with_odoo_fallback_use_case import (
     LOCAL_UPDATE_BOOK,
@@ -25,7 +20,7 @@ BILLER_FINDING_COLUMNS = {
 }
 
 
-class ImportBillersFromExcel(ImportBillerFromExcelRepository):
+class ImportBillersFromExcel:
     def __init__(
         self,
         biller_repo,

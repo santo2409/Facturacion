@@ -7,6 +7,6 @@ def ask_sheet_name(sheets: list[str]) -> str:
     console.print("Hojas disponibles:")
 
     for s in sheets:
-        print(f" - {s}")
+        console.print(f" - {s}", markup=False, highlight=False)
 
     return Prompt.ask("Nombre de la hoja a procesar")
