@@ -1,0 +1,6 @@
+# Dependencias de desarrollo y pruebas.
+-r requirements.txt
+iniconfig==2.3.0
+packaging==26.1
+pluggy==1.6.0
+pytest==8.2.2

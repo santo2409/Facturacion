@@ -108,7 +108,7 @@ Reglas (constitución v1.1.0):
 
 ```bash
 python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt          # requirements-dev.txt para correr las pruebas
 playwright install firefox
 alembic upgrade head
 python main.py
