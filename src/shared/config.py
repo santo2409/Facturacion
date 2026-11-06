@@ -12,8 +12,12 @@ normalizarla.
 """
 
 import os
+from pathlib import Path
 
 DEFAULT_DIRECTORY = "."
+
+# Libro que escribe la opción 6 y lee la opción 7, relativo al directorio de trabajo.
+CONSOLIDADO_PATH = Path("CONSOLIDADO.xlsx")
 
 
 def get_paths_config() -> dict:

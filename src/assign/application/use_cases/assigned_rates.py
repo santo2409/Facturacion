@@ -14,7 +14,7 @@ from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
-from src.shared.config import get_paths_config, get_tian_config
+from src.shared.config import CONSOLIDADO_PATH, get_paths_config, get_tian_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.text_normalizer import (
@@ -265,7 +265,7 @@ class AssignRatesFromExcel:
 
         with self.progress("Exportando consolidado", total=1):
             import xlsxwriter as _xlsxwriter
-            workbook = _xlsxwriter.Workbook("CONSOLIDADO.xlsx")
+            workbook = _xlsxwriter.Workbook(str(CONSOLIDADO_PATH))
             df.write_excel(
                 workbook,
                 worksheet="Consolidado",
