@@ -225,7 +225,7 @@ Estados: pendiente · aprobado · descartado · después · hecho · revisar
 ### Severidad baja
 | ID | Archivo:línea | Tipo | Severidad | ¿Toca lógica? | Propuesta | Estado |
 |----|---------------|------|-----------|---------------|-----------|--------|
-| AUD-54 | tests/test_main_menu.py:22-40; tests/docs/test_user_audit_docs.py:43-64 | falta de pruebas | baja | no | 4 fallas de base. (a) La opción 9 se deprecó a propósito (a196be6, 2026-10-21) después de la prueba (52ddf9c): la prueba está desactualizada, y USER_GUIDE.md:97, 344, 395 y 440 aún recomienda la opción 9. (b) Las pruebas de docs exigen `.claude/rules/*.md`, que están ignorados por git. Actualizar según P-01 | revisar |
+| AUD-54 | tests/test_main_menu.py:22-40; tests/docs/test_user_audit_docs.py:43-64 | falta de pruebas | baja | no | 4 fallas de base. (a) La opción 9 se deprecó a propósito (a196be6, 2026-10-21) después de la prueba (52ddf9c): la prueba está desactualizada, y USER_GUIDE.md:97, 344, 395 y 440 aún recomienda la opción 9. (b) Las pruebas de docs exigen `.claude/rules/*.md`, que están ignorados por git. Actualizar según P-01 | hecho |
 | AUD-55 | src/preInvoice/infrastructure/console/pre_invoice_controller.py:19-21 | legibilidad | baja | no | `print()` con marcado Rich (sale literal) y duplica el `user_msg` | revisar |
 | AUD-56 ✔ | split_by_nit.py:50, 54 | legibilidad | baja | sí (Leyenda) | La Leyenda muestra una "Fase 7" que ya no existe; `_PHASE_COLORS_ARGB` no se usa; los colores están duplicados con assigned_rates.py:94-103 (P-17) | revisar |
 | AUD-57 | assigned_rates.py:1480 | legibilidad | baja | no | `if 'pkg_id_to_name' not in dir()`: frágil. Inicializar los mapas antes de la fase 3 | revisar |
