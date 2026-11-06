@@ -1593,24 +1593,24 @@ class AssignRatesFromExcel:
             if nit not in excluidos
         }
 
-        # Check mismatches
-        mismatches = 0
-        for row in df.iter_rows(named=True):
-            nit = row["NIT"]
-            if nit and nit in db_nit_to_name and row["Empresa"] != db_nit_to_name[nit]:
-                mismatches += 1
+        # Vectorizado (AUD-74): equivale a dict.get(NIT, Empresa) fila a fila.
+        en_bd = pl.col("NIT").is_in(list(db_nit_to_name))
+        nombre_bd = pl.col("NIT").replace_strict(db_nit_to_name, default=None, return_dtype=pl.Utf8)
+
+        # Check mismatches (NIT no vacío, en BD y con Empresa distinta; None cuenta como distinta)
+        mismatches = df.select(
+            (
+                pl.col("NIT").is_not_null() & (pl.col("NIT") != "") & en_bd
+                & pl.col("Empresa").ne_missing(nombre_bd)
+            ).sum()
+        ).item()
 
         if mismatches:
             self.logger.warning(
                 f"{mismatches} empresas no coinciden con BD. Corrigiendo.",
             )
             df = df.with_columns(
-                pl.struct(["NIT", "Empresa"])
-                .map_elements(
-                    lambda s: db_nit_to_name.get(s["NIT"], s["Empresa"]),
-                    return_dtype=pl.Utf8,
-                )
-                .alias("Empresa")
+                pl.when(en_bd).then(nombre_bd).otherwise(pl.col("Empresa")).alias("Empresa")
             )
 
         return df

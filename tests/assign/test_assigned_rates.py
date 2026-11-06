@@ -2030,3 +2030,42 @@ def test_cup_cells_valid_pass_check():
 
     df = pl.DataFrame({"890201": ["1", None, "2"]}, schema={"890201": pl.Utf8})
     _check_cup_cells_castable(df, ["890201"])  # no lanza
+
+
+# ── AUD-74: _validate_empresa vectorizado equivale a la versión fila a fila ──
+def _validate_empresa_anterior(df, db_nit_to_name):
+    mismatches = sum(
+        1 for row in df.iter_rows(named=True)
+        if row["NIT"] and row["NIT"] in db_nit_to_name and row["Empresa"] != db_nit_to_name[row["NIT"]]
+    )
+    if mismatches:
+        df = df.with_columns(
+            pl.struct(["NIT", "Empresa"]).map_elements(
+                lambda s: db_nit_to_name.get(s["NIT"], s["Empresa"]), return_dtype=pl.Utf8
+            ).alias("Empresa")
+        )
+    return df, mismatches
+
+
+@pytest.mark.parametrize("companies, nits, empresas", [
+    ({"1": "A SAS", "": "VACIO"}, ["1", "1", None, "", "2", "1"], ["a sas", "A SAS", "X", "Y", "Z", None]),
+    ({}, ["1", None], ["A", "B"]),
+    ({"1": "A"}, [None, None], ["A", None]),
+    ({"1": "A"}, ["1", "1"], ["A", "A"]),
+])
+def test_validate_empresa_vectorized_matches_previous(companies, nits, empresas):
+    from src.shared.utils.text_normalizer import normalize_name
+
+    df = pl.DataFrame({"NIT": nits, "Empresa": empresas}, schema={"NIT": pl.Utf8, "Empresa": pl.Utf8})
+    lookups = {"nit_to_company": {nit: {"name": name} for nit, name in companies.items()}}
+    db_nit_to_name = {nit: normalize_name(name) for nit, name in companies.items()}
+    esperado_df, esperado_n = _validate_empresa_anterior(df, db_nit_to_name)
+
+    logger = FakeLogger()
+    uc = AssignRatesFromExcel.__new__(AssignRatesFromExcel)
+    uc.logger = logger
+    resultado = uc._validate_empresa(df, lookups)
+
+    assert resultado["Empresa"].to_list() == esperado_df["Empresa"].to_list()
+    assert resultado.dtypes == esperado_df.dtypes
+    assert logger.warnings == ([f"{esperado_n} empresas no coinciden con BD. Corrigiendo."] if esperado_n else [])
