@@ -2069,3 +2069,69 @@ def test_validate_empresa_vectorized_matches_previous(companies, nits, empresas)
     assert resultado["Empresa"].to_list() == esperado_df["Empresa"].to_list()
     assert resultado.dtypes == esperado_df.dtypes
     assert logger.warnings == ([f"{esperado_n} empresas no coinciden con BD. Corrigiendo."] if esperado_n else [])
+
+
+# ── AUD-33: mapas id→nombre una sola vez en _assign_paquete ─────────────────
+class _CountingRepo:
+    def __init__(self, rows):
+        self.rows, self.calls = rows, 0
+
+    def all(self):
+        self.calls += 1
+        return None if self.rows is None else [dict(r) for r in self.rows]
+
+
+def _paquete_anterior(nit_to_company, company_to_package, packages_all, provider_repo, special_repo):
+    out = {}
+    for nit, comp in nit_to_company.items():
+        pkg_tuple = company_to_package.get(comp["id"])
+        if pkg_tuple:
+            pkg_id, model = pkg_tuple
+            if model == "Package":
+                name = next((p["name"] for p in packages_all if p["id"] == pkg_id), None)
+            elif model == "Provider":
+                name = next((p["name"] for p in provider_repo.all() if p["id"] == pkg_id), None)
+            elif model == "Special":
+                name = next((p["name"] for p in special_repo.all() if p["id"] == pkg_id), None)
+            else:
+                name = None
+            out[nit] = name or "PAQUETE C 2025"
+        else:
+            out[nit] = "PAQUETE C 2025"
+    return out
+
+
+def _uc_paquete(provider_rows, special_rows):
+    uc = AssignRatesFromExcel.__new__(AssignRatesFromExcel)
+    uc.provider_repo, uc.special_repo = _CountingRepo(provider_rows), _CountingRepo(special_rows)
+    uc._odoo_by_nit = {}
+    return uc
+
+
+def test_assign_paquete_one_query_per_source_and_same_names():
+    companies = {f"90000000{i}": {"id": i} for i in range(1, 8)}
+    company_to_package = {1: (1, "Package"), 2: (9, "Package"), 3: (1, "Provider"), 4: (1, "Provider"),
+                          5: (2, "Special"), 6: (1, "Otro")}  # 7: sin paquete
+    packages = [{"id": 1, "name": "PAQ 1"}]
+    providers = [{"id": 1, "name": "PROV 1"}]
+    specials = [{"id": 1, "name": "ESP 1"}, {"id": 2, "name": "ESP 2"}]
+    lookups = {"nit_to_company": companies, "company_to_package": company_to_package, "packages_all": packages}
+    esperado = _paquete_anterior(companies, company_to_package, packages,
+                                 _CountingRepo(providers), _CountingRepo(specials))
+
+    uc = _uc_paquete(providers, specials)
+    df = uc._assign_paquete(pl.DataFrame({"NIT": list(companies)}), lookups)
+
+    assert dict(zip(df["NIT"], df["PAQUETE"])) == esperado
+    assert (uc.provider_repo.calls, uc.special_repo.calls) == (1, 1)
+
+
+def test_assign_paquete_skips_unused_source_and_keeps_type_error_on_failed_repo():
+    companies = {"900000001": {"id": 1}, "900000002": {"id": 2}}
+    lookups = {"nit_to_company": companies, "company_to_package": {1: (1, "Package"), 2: (1, "Special")},
+               "packages_all": [{"id": 1, "name": "PAQ 1"}]}
+
+    uc = _uc_paquete(provider_rows=[], special_rows=None)  # special_repo.all() falla → None
+    with pytest.raises(TypeError):
+        uc._assign_paquete(pl.DataFrame({"NIT": list(companies)}), lookups)
+    assert uc.provider_repo.calls == 0  # ninguna empresa es Provider: no se consulta

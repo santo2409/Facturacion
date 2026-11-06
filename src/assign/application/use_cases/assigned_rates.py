@@ -1091,20 +1091,32 @@ class AssignRatesFromExcel:
 
         default_package = "PAQUETE C 2025"
 
+        # Mapas id → nombre por tipo de fuente, construidos una sola vez y solo
+        # si alguna empresa los necesita (AUD-33: antes, una consulta por empresa).
+        sources = {
+            Package.__name__: lambda: packages_all,
+            Provider.__name__: self.provider_repo.all,
+            Special.__name__: self.special_repo.all,
+        }
+        id_to_name: dict[str, dict] = {}
+
+        def source_name(model, pkg_id):
+            if model not in sources:
+                return None
+            if model not in id_to_name:
+                names: dict = {}
+                for p in sources[model]():
+                    names.setdefault(p["id"], p["name"])  # como next(): gana el primero
+                id_to_name[model] = names
+            return id_to_name[model].get(pkg_id)
+
         # Build NIT → package_name mapping
         nit_to_pkg = {}
         for nit, comp in nit_to_company.items():
             pkg_tuple = company_to_package.get(comp["id"])
             if pkg_tuple:
                 pkg_id, model = pkg_tuple
-                if model == Package.__name__:
-                    name = next((p["name"] for p in packages_all if p["id"] == pkg_id), None)
-                elif model == Provider.__name__:
-                    name = next((p["name"] for p in self.provider_repo.all() if p["id"] == pkg_id), None)
-                elif model == Special.__name__:
-                    name = next((p["name"] for p in self.special_repo.all() if p["id"] == pkg_id), None)
-                else:
-                    name = None
+                name = source_name(model, pkg_id)
                 nit_to_pkg[nit] = name or default_package
             else:
                 nit_to_pkg[nit] = default_package
