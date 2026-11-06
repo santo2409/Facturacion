@@ -1334,6 +1334,8 @@ class AssignRatesFromExcel:
                             unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
 
         # Fase 3: cualquier paquete con el mismo CUP, ciudad y actividad
+        # Mapas id → nombre de la fuente; se construyen en la fase 3 o 5 (o, si no, en la 6).
+        pkg_id_to_name = prov_id_to_name = spec_id_to_name = None
         still_unresolved = []
         if unresolved:
             wildcard_keys = list({(city_id, cup_id, act_id) for _, _, city_id, cup_id, act_id, _, _, _ in unresolved})
@@ -1477,7 +1479,7 @@ class AssignRatesFromExcel:
             cup_activity_cache = self.rates_repo.find_rate_by_cup_activity(cup_activity_keys)
 
             if cup_activity_cache:
-                if 'pkg_id_to_name' not in dir():
+                if pkg_id_to_name is None:
                     pkg_id_to_name = {p["id"]: p["name"] for p in packages_all}
                     prov_id_to_name = {p["id"]: p["name"] for p in self.provider_repo.all()}
                     spec_id_to_name = {p["id"]: p["name"] for p in self.special_repo.all()}
