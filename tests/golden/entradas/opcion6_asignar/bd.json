@@ -1,0 +1,228 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "nit": "900111111",
+      "name": "EMPRESA ALFA SAS"
+    },
+    {
+      "id": 2,
+      "nit": "800222222",
+      "name": "EMPRESA BETA LTDA"
+    },
+    {
+      "id": 3,
+      "nit": "860000001",
+      "name": "TIAN SAS"
+    },
+    {
+      "id": 5,
+      "nit": "830050228",
+      "name": "GRUPO ADECCO"
+    }
+  ],
+  "companies_packages": [
+    {
+      "company": 1,
+      "package": 1,
+      "model": "Package"
+    },
+    {
+      "company": 2,
+      "package": 1,
+      "model": "Provider"
+    },
+    {
+      "company": 3,
+      "package": 1,
+      "model": "Package"
+    },
+    {
+      "company": 5,
+      "package": 1,
+      "model": "Special"
+    }
+  ],
+  "billers": [
+    {
+      "id": 1,
+      "name": "ALFA"
+    },
+    {
+      "id": 2,
+      "name": "BETA"
+    }
+  ],
+  "biller_companies": [
+    {
+      "company": 1,
+      "biller": 1
+    },
+    {
+      "company": 5,
+      "biller": 2
+    }
+  ],
+  "packages": [
+    {
+      "id": 1,
+      "name": "PAQUETE A 2025"
+    },
+    {
+      "id": 2,
+      "name": "PAQUETE C 2025"
+    },
+    {
+      "id": 3,
+      "name": "PAQUETE Z"
+    }
+  ],
+  "providers": [
+    {
+      "id": 1,
+      "name": "PROVEEDOR ALFA"
+    }
+  ],
+  "specials": [
+    {
+      "id": 1,
+      "name": "ESPECIAL ADECCO"
+    }
+  ],
+  "cities": [
+    {
+      "id": 1,
+      "name": "BOGOTA, D.C."
+    },
+    {
+      "id": 2,
+      "name": "MEDELLIN"
+    },
+    {
+      "id": 3,
+      "name": "CALI"
+    }
+  ],
+  "activities": [
+    {
+      "id": 1,
+      "name": "INTRA"
+    },
+    {
+      "id": 2,
+      "name": "EXTRA"
+    }
+  ],
+  "cups": [
+    {
+      "id": 1,
+      "code": "890201",
+      "name": "CONSULTA MEDICINA GENERAL"
+    },
+    {
+      "id": 2,
+      "code": "890202",
+      "name": "CONSULTA ESPECIALISTA"
+    },
+    {
+      "id": 3,
+      "code": "903810",
+      "name": "COLESTEROL TOTAL"
+    },
+    {
+      "id": 4,
+      "code": "903810-01",
+      "name": "COLESTEROL TOTAL SUERO"
+    },
+    {
+      "id": 5,
+      "code": "871121",
+      "name": "RX TORAX"
+    },
+    {
+      "id": 6,
+      "code": "990101",
+      "name": "EXAMEN SIN TARIFA"
+    }
+  ],
+  "rates": [
+    {
+      "rateable_id": 1,
+      "city_id": 1,
+      "cup_id": 2,
+      "activity_id": 1,
+      "rateable_type": "Package",
+      "rate": 55000
+    },
+    {
+      "rateable_id": 2,
+      "city_id": 1,
+      "cup_id": 5,
+      "activity_id": 1,
+      "rateable_type": "Package",
+      "rate": 30000
+    },
+    {
+      "rateable_id": 3,
+      "city_id": 3,
+      "cup_id": 1,
+      "activity_id": 1,
+      "rateable_type": "Package",
+      "rate": 41000
+    },
+    {
+      "rateable_id": 1,
+      "city_id": 3,
+      "cup_id": 1,
+      "activity_id": 1,
+      "rateable_type": "Provider",
+      "rate": 42000
+    },
+    {
+      "rateable_id": 2,
+      "city_id": 1,
+      "cup_id": 3,
+      "activity_id": 1,
+      "rateable_type": "Package",
+      "rate": 12000
+    },
+    {
+      "rateable_id": 3,
+      "city_id": 2,
+      "cup_id": 3,
+      "activity_id": 1,
+      "rateable_type": "Package",
+      "rate": 13000
+    },
+    {
+      "rateable_id": 3,
+      "city_id": 1,
+      "cup_id": 5,
+      "activity_id": 2,
+      "rateable_type": "Package",
+      "rate": 33000
+    },
+    {
+      "rateable_id": 1,
+      "city_id": 1,
+      "cup_id": 1,
+      "activity_id": 1,
+      "rateable_type": "Special",
+      "rate": 0
+    }
+  ],
+  "imedical": [
+    {
+      "nit_error": "901999999",
+      "name": "EMPRESA ALFA SAS",
+      "nit_success": "900111111",
+      "name_error": "ALFA MAL"
+    }
+  ],
+  "tian": [
+    {
+      "nit_error": "811000000",
+      "name": "CLIENTE TIAN"
+    }
+  ]
+}

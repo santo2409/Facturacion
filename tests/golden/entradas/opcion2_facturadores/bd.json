@@ -1,0 +1,15 @@
+{
+  "billers": [
+    {
+      "id": 1,
+      "name": "ALFA"
+    }
+  ],
+  "companies": [
+    {
+      "id": 1,
+      "nit": "830050228",
+      "name": "GRUPO ADECCO SA"
+    }
+  ]
+}

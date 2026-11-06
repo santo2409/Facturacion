@@ -1,0 +1,70 @@
+{
+ "ventana": {
+  "DAY_INITIAL": "5",
+  "DAY_FINAL": "29"
+ },
+ "pide_libro_facturas": [
+  [
+   1,
+   true
+  ],
+  [
+   4,
+   true
+  ],
+  [
+   5,
+   false
+  ],
+  [
+   6,
+   false
+  ],
+  [
+   28,
+   false
+  ],
+  [
+   29,
+   false
+  ],
+  [
+   30,
+   true
+  ],
+  [
+   31,
+   true
+  ]
+ ],
+ "configuraciones_invalidas": [
+  {
+   "config": {
+    "DAY_INITIAL": "",
+    "DAY_FINAL": "29"
+   },
+   "menu_continua": true,
+   "llamo_asignar": false,
+   "mensajes_usuario": [
+    {
+     "nivel": "ERROR",
+     "mensaje": "Ocurrió un error ejecutando la opción seleccionada."
+    }
+   ]
+  },
+  {
+   "config": {
+    "DAY_INITIAL": null,
+    "DAY_FINAL": "29"
+   },
+   "menu_continua": true,
+   "llamo_asignar": false,
+   "mensajes_usuario": [
+    {
+     "nivel": "ERROR",
+     "mensaje": "Ocurrió un error ejecutando la opción seleccionada."
+    }
+   ]
+  }
+ ]
+}

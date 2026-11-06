@@ -1,0 +1,12 @@
+{
+  "res.partner": [
+    {
+      "id": 10,
+      "name": "EMPRESA ALFA S.A.S.",
+      "ref_num": "900111111",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    }
+  ]
+}

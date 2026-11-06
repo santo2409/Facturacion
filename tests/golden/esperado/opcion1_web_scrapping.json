@@ -1,0 +1,339 @@
+{
+ "archivos": {
+  "data.json": [
+   {
+    "nit": "900111111",
+    "is_company": true,
+    "name": "EMPRESA ALFA S.A.S.",
+    "checked_bases": "Odoo",
+    "source": "Odoo/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "900.111.111-7",
+    "is_company": true,
+    "name": "EMPRESA ALFA S.A.S.",
+    "checked_bases": "Odoo",
+    "source": "Odoo/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "None",
+    "is_company": false,
+    "name": "SIN NIT SAS",
+    "checked_bases": "Odoo, RUES",
+    "source": "",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "830050228",
+    "is_company": true,
+    "name": "GRUPO ADECCO S.A.",
+    "checked_bases": "Odoo",
+    "source": "Odoo/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "912345678",
+    "is_company": true,
+    "name": "EMPRESA RUES SAS",
+    "checked_bases": "Odoo, RUES",
+    "source": "RUES/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "777888999",
+    "is_company": true,
+    "name": "ACME INDUSTRIAL S.A.S.",
+    "checked_bases": "Odoo",
+    "source": "Odoo/nombre",
+    "nit_original": "555555555",
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "444444444",
+    "is_company": false,
+    "name": "FALLA RUES SAS",
+    "checked_bases": "Odoo, RUES",
+    "source": "",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "1012345678",
+    "is_company": false,
+    "name": "PERSONA NATURAL",
+    "checked_bases": "Odoo, RUES",
+    "source": "",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "333333333",
+    "is_company": true,
+    "name": "SOLO BD LOCAL",
+    "checked_bases": "BD local",
+    "source": "BD local/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   }
+  ],
+  "logs/empresas_no_encontradas.xlsx": {
+   "hojas": [
+    {
+     "nombre": "No Encontradas",
+     "filas": [
+      [
+       "#",
+       "NIT",
+       "Empresa",
+       "Estado",
+       "Base Consultada",
+       "Fecha/Hora"
+      ],
+      [
+       1,
+       "1012345678",
+       "PERSONA NATURAL",
+       "No encontrado (ni Odoo ni RUES)",
+       "Odoo, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       2,
+       "444444444",
+       "FALLA RUES SAS",
+       "No encontrado (ni Odoo ni RUES)",
+       "Odoo, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       3,
+       "912345678",
+       "EMPRESA RUES SAS",
+       "Existe en RUES, falta en Odoo",
+       "Odoo, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       4,
+       "None",
+       "SIN NIT SAS",
+       "No encontrado (ni Odoo ni RUES)",
+       "Odoo, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       null,
+       null,
+       "TOTAL PENDIENTES",
+       4
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFEB9C"
+      },
+      "B2": {
+       "relleno": "FFEB9C"
+      },
+      "C2": {
+       "relleno": "FFEB9C"
+      },
+      "D2": {
+       "relleno": "FFEB9C"
+      },
+      "E2": {
+       "relleno": "FFEB9C"
+      },
+      "F2": {
+       "relleno": "FFEB9C"
+      },
+      "A3": {
+       "relleno": "FFEB9C"
+      },
+      "B3": {
+       "relleno": "FFEB9C"
+      },
+      "C3": {
+       "relleno": "FFEB9C"
+      },
+      "D3": {
+       "relleno": "FFEB9C"
+      },
+      "E3": {
+       "relleno": "FFEB9C"
+      },
+      "F3": {
+       "relleno": "FFEB9C"
+      },
+      "A4": {
+       "relleno": "FFD966"
+      },
+      "B4": {
+       "relleno": "FFD966"
+      },
+      "C4": {
+       "relleno": "FFD966"
+      },
+      "D4": {
+       "relleno": "FFD966"
+      },
+      "E4": {
+       "relleno": "FFD966"
+      },
+      "F4": {
+       "relleno": "FFD966"
+      },
+      "A5": {
+       "relleno": "FFEB9C"
+      },
+      "B5": {
+       "relleno": "FFEB9C"
+      },
+      "C5": {
+       "relleno": "FFEB9C"
+      },
+      "D5": {
+       "relleno": "FFEB9C"
+      },
+      "E5": {
+       "relleno": "FFEB9C"
+      },
+      "F5": {
+       "relleno": "FFEB9C"
+      },
+      "C6": {
+       "negrita": true
+      },
+      "D6": {
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A2"
+    }
+   ]
+  },
+  "logs/web_scrapping/2026-11-05_1030/bd_local_actualizada.xlsx": {
+   "hojas": [
+    {
+     "nombre": "bd_local_actualizada",
+     "filas": [
+      [
+       "NIT",
+       "Nombre en BD local",
+       "Nombre en Odoo",
+       "Acción"
+      ],
+      [
+       "900111111",
+       null,
+       "EMPRESA ALFA S.A.S.",
+       "Agregada"
+      ],
+      [
+       "777888999",
+       null,
+       "ACME INDUSTRIAL S.A.S.",
+       "Agregada"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  }
+ },
+ "bd_companies": [
+  {
+   "nit": "333333333",
+   "name": "SOLO BD LOCAL"
+  },
+  {
+   "nit": "777888999",
+   "name": "ACME INDUSTRIAL S.A.S."
+  },
+  {
+   "nit": "830050228",
+   "name": "GRUPO ADECCO SA"
+  },
+  {
+   "nit": "900111111",
+   "name": "EMPRESA ALFA S.A.S."
+  },
+  {
+   "nit": "912345678",
+   "name": "EMPRESA RUES SAS"
+  }
+ ],
+ "consola": "Archivo JSON guardado en: <TMP>/data.json\n",
+ "mensajes_usuario": [
+  {
+   "nivel": "INFO",
+   "mensaje": "4 empresa(s) pendientes de verificación manual (1 existen en RUES pero faltan en Odoo, 0 con datos corregidos que debes ajustar en el libro); revisa empresas_no_encontradas.xlsx."
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Hallazgos en logs/web_scrapping/2026-11-05_1030: bd_local_actualizada=2."
+  }
+ ]
+}

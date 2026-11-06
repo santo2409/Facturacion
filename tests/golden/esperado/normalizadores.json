@@ -1,0 +1,372 @@
+{
+ "normalize_nit": [
+  [
+   "900123456",
+   "900123456"
+  ],
+  [
+   "900.123.456-7",
+   "900123456"
+  ],
+  [
+   "9001234567",
+   "900123456"
+  ],
+  [
+   "1012345678",
+   "101234567"
+  ],
+  [
+   "80012345-6",
+   "800123456"
+  ],
+  [
+   "12345",
+   "12345"
+  ],
+  [
+   "",
+   ""
+  ],
+  [
+   "None",
+   ""
+  ],
+  [
+   " 900 123 456 ",
+   "900123456"
+  ],
+  [
+   "NIT 900123456",
+   "900123456"
+  ]
+ ],
+ "normalize_document": [
+  [
+   "900123456",
+   {
+    "value": "900123456",
+    "kind": "NIT",
+    "original": "900123456",
+    "truncated": false,
+    "dv_valid": null
+   }
+  ],
+  [
+   "9001234567",
+   {
+    "value": "900123456",
+    "kind": "NIT",
+    "original": "9001234567",
+    "truncated": true,
+    "dv_valid": false
+   }
+  ],
+  [
+   "9001234560",
+   {
+    "value": "900123456",
+    "kind": "NIT",
+    "original": "9001234560",
+    "truncated": true,
+    "dv_valid": false
+   }
+  ],
+  [
+   "1012345678",
+   {
+    "value": "1012345678",
+    "kind": "CEDULA",
+    "original": "1012345678",
+    "truncated": false,
+    "dv_valid": null
+   }
+  ],
+  [
+   "52123456",
+   {
+    "value": "52123456",
+    "kind": "CEDULA",
+    "original": "52123456",
+    "truncated": false,
+    "dv_valid": null
+   }
+  ],
+  [
+   "800.123.456-7",
+   {
+    "value": "800123456",
+    "kind": "NIT",
+    "original": "8001234567",
+    "truncated": true,
+    "dv_valid": false
+   }
+  ],
+  [
+   "8001234567",
+   {
+    "value": "800123456",
+    "kind": "NIT",
+    "original": "8001234567",
+    "truncated": true,
+    "dv_valid": false
+   }
+  ],
+  [
+   "",
+   {
+    "value": "",
+    "kind": "CEDULA",
+    "original": "",
+    "truncated": false,
+    "dv_valid": null
+   }
+  ]
+ ],
+ "valor_opcion3": [
+  [
+   "150000",
+   150000
+  ],
+  [
+   "150.000",
+   150
+  ],
+  [
+   "$ 150.000",
+   150
+  ],
+  [
+   "1.234.567",
+   1
+  ],
+  [
+   "1500.5",
+   15005
+  ],
+  [
+   "150,000",
+   null
+  ],
+  [
+   "150000.5",
+   150000
+  ],
+  [
+   "5.000",
+   5000
+  ],
+  [
+   "  25 000 ",
+   25000
+  ],
+  [
+   "abc",
+   null
+  ],
+  [
+   null,
+   null
+  ],
+  [
+   "0",
+   0
+  ]
+ ],
+ "fuzz_property": [
+  [
+   {
+    "nombre": "ACME",
+    "catalogo": [
+     "ACME INDUSTRIAL S.A.S.",
+     "OTRA"
+    ],
+    "umbral": 90
+   },
+   "ACME INDUSTRIAL S.A.S."
+  ],
+  [
+   {
+    "nombre": "CLINICA SAN JOSE",
+    "catalogo": [
+     "CLINICA SAN JOSE DE CUCUTA SA"
+    ],
+    "umbral": 90
+   },
+   "CLINICA SAN JOSE DE CUCUTA SA"
+  ],
+  [
+   {
+    "nombre": "ESPECIAL ADECCO 2",
+    "catalogo": [
+     "ESPECIAL ADECCO"
+    ],
+    "umbral": 95
+   },
+   "ESPECIAL ADECCO"
+  ],
+  [
+   {
+    "nombre": "PAQUETE A-2025",
+    "catalogo": [
+     "PAQUETE A 2025"
+    ],
+    "umbral": 95
+   },
+   null
+  ],
+  [
+   {
+    "nombre": "BOGOTA D.C",
+    "catalogo": [
+     "BOGOTA",
+     "MEDELLIN"
+    ],
+    "umbral": 95
+   },
+   "BOGOTA"
+  ],
+  [
+   {
+    "nombre": "XYZ",
+    "catalogo": [],
+    "umbral": 90
+   },
+   null
+  ]
+ ],
+ "cuenta_analitica": [
+  [
+   "BOGOTA",
+   [
+    "AA8638",
+    "BOGOTA",
+    100
+   ]
+  ],
+  [
+   "Bogotá D.C.",
+   [
+    "AA8638",
+    "Bogotá D.C.",
+    100
+   ]
+  ],
+  [
+   "MEDELLIN",
+   [
+    "AA8641",
+    "MEDELLIN",
+    100
+   ]
+  ],
+  [
+   "MEDELIN",
+   [
+    "AA8641",
+    "MEDELLIN",
+    93.33333333333333
+   ]
+  ],
+  [
+   "BELLO",
+   [
+    "AA10801",
+    "BELLO",
+    100
+   ]
+  ],
+  [
+   "ITAGUI",
+   [
+    "AA10801",
+    "ITAGUI",
+    100
+   ]
+  ],
+  [
+   "LIBANO",
+   [
+    "AA10010",
+    "LIBANO",
+    100
+   ]
+  ],
+  [
+   "PALMIRA",
+   [
+    "AA10010",
+    "PALMIRA",
+    100
+   ]
+  ],
+  [
+   "CIUDAD INEXISTENTE",
+   [
+    "AA8638",
+    null,
+    0
+   ]
+  ],
+  [
+   "",
+   [
+    "AA8638",
+    null,
+    0
+   ]
+  ],
+  [
+   null,
+   [
+    "AA8638",
+    null,
+    0
+   ]
+  ]
+ ],
+ "claves_texto": [
+  [
+   "Clínica San José",
+   {
+    "normalize_name": "CLNICA SAN JOS",
+    "normalize_text_key": "CLINICA SAN JOSE",
+    "normalize_company_name": "CLINICA SAN JOSE",
+    "normalize_upper_spaces": "CLÍNICA SAN JOSÉ"
+   }
+  ],
+  [
+   "EMPRESA ALFA S.A.S.",
+   {
+    "normalize_name": "EMPRESA ALFA SAS",
+    "normalize_text_key": "EMPRESA ALFA SAS",
+    "normalize_company_name": "EMPRESA ALFA SAS",
+    "normalize_upper_spaces": "EMPRESA ALFA S.A.S."
+   }
+  ],
+  [
+   "  Bogotá, D.C. ",
+   {
+    "normalize_name": "BOGOT DC",
+    "normalize_text_key": "BOGOTA DC",
+    "normalize_company_name": "BOGOTA DC",
+    "normalize_upper_spaces": "BOGOTÁ, D.C."
+   }
+  ],
+  [
+   "Ñandú & Cía",
+   {
+    "normalize_name": "ÑAND & CA",
+    "normalize_text_key": "NANDU & CIA",
+    "normalize_company_name": "NANDU & CIA",
+    "normalize_upper_spaces": "ÑANDÚ & CÍA"
+   }
+  ]
+ ],
+ "mensajes_usuario": [
+  {
+   "nivel": "ERROR",
+   "mensaje": "Error al buscar coincidencias. El proceso continuará sin esta validación."
+  }
+ ]
+}
