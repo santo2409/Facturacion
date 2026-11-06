@@ -134,9 +134,10 @@ class ImportBillersFromExcel:
             self.progress.advance()
 
         # Build maps for linking (by NIT and by normalized name)
-        all_companies_by_nit = {c["nit"]: c["id"] for c in self.company_repo.all()}
+        companies = self.company_repo.all()
+        all_companies_by_nit = {c["nit"]: c["id"] for c in companies}
         all_companies_by_name = {
-            c["name"].strip().upper(): c["id"] for c in self.company_repo.all()
+            c["name"].strip().upper(): c["id"] for c in companies
         }
         all_billers = {b["name"]: b["id"] for b in self.biller_repo.all()}
 
