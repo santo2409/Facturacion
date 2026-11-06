@@ -586,6 +586,20 @@ class AssignRatesFromExcel:
         cambios = []
         not_found_by_nit: dict[str, NitResult] = {}
 
+        # Odoo por NIT en lote (AUD-34): find_client(nit) equivale a
+        # find_clients_batch([nit]).get(nit); se consultan todos los NIT de una vez
+        # y el bucle lee del caché. Si el lote falla, el bucle consulta NIT a NIT.
+        if self.odoo_repo:
+            unique_nits = list(dict.fromkeys(n for n in df["NIT"].to_list() if n))
+            try:
+                found = self.odoo_repo.find_clients_batch(unique_nits) if unique_nits else {}
+            except Exception as e:
+                self.logger.warning(f"Fallo consultando Odoo por NIT en lote; se consulta uno a uno: {e}")
+            else:
+                for n in unique_nits:
+                    cid, cname, _ = found.get(n, (None, None, None))
+                    _odoo_nit_cache[n] = (cid, cname)
+
         with self.progress("Validando empresas", total=df.height):
             for row in df.iter_rows(named=True):
                 nit = row["NIT"]

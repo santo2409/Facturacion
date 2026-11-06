@@ -2135,3 +2135,59 @@ def test_assign_paquete_skips_unused_source_and_keeps_type_error_on_failed_repo(
     with pytest.raises(TypeError):
         uc._assign_paquete(pl.DataFrame({"NIT": list(companies)}), lookups)
     assert uc.provider_repo.calls == 0  # ninguna empresa es Provider: no se consulta
+
+
+# ── AUD-34: Odoo por NIT en lote equivale a la consulta NIT a NIT ──────────
+def _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla):
+    import xmlrpc.client
+    from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import XmlRpcOdooRepository
+    from tests.golden._odoo_simulado import OdooSimulado, ServerProxySimulado
+
+    odoo = OdooSimulado({"res.partner": partners})
+    monkeypatch.setattr(xmlrpc.client, "ServerProxy", ServerProxySimulado(odoo))
+    monkeypatch.setenv("DIRECTORY", str(tmp_path))
+    repo = XmlRpcOdooRepository("http://odoo.simulado", "db", "u", "k", FakeLogger(), {})
+    repo.connect()
+    if lote_falla:
+        real = repo.find_clients_batch
+        llamadas = {"n": 0}
+
+        def batch_que_falla_la_primera_vez(nits):
+            llamadas["n"] += 1
+            if llamadas["n"] == 1:
+                raise ConnectionError("lote caído")
+            return real(nits)
+
+        repo.find_clients_batch = batch_que_falla_la_primera_vez
+    repo.find_client_by_name = lambda name: (None, None, None)
+    uc = AssignRatesFromExcel(
+        biller_repo=FakeBillerRepo(), company_repo=FakeCompanyRepo(), biller_company_repo=FakeBillerCompanyRepo(),
+        package_repo=FakePackageRepo(), provider_repo=FakeProviderRepo(), special_repo=FakeSpecialRepo(),
+        city_repo=FakeCityRepo(), activities_repo=FakeActivityRepo(), rates_repo=FakeRatesRepo(),
+        cup_repo=FakeCupRepo(), fuzz=FakeFuzz(), progress=FakeProgress(), logger=FakeLogger(), odoo_repo=repo,
+    )
+    return uc
+
+
+def test_match_companies_odoo_batch_equals_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 10, "name": "EXACTO", "ref_num": "800000001", "vat": False},
+        {"id": 11, "name": "CON DV EN VAT", "ref_num": False, "vat": "800000002-7"},
+        {"id": 13, "name": "DUP MAYOR", "ref_num": "800000003", "vat": False},
+        {"id": 12, "name": "DUP MENOR", "ref_num": "800000003", "vat": False},
+        {"id": 14, "name": "REF CON ESPACIO", "ref_num": "800000004 ", "vat": False},
+    ]
+    df = pl.DataFrame({
+        "NIT": ["800000001", "800000002", "800000003", "800000004", "899999999", None, "800000001"],
+        "Empresa": ["A", "B", "C", "D", "E", "F", "G"],
+        "Base": ["OCT"] * 7,
+    })
+    resultados = []
+    for lote_falla in (True, False):  # True = ruta anterior (NIT a NIT)
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+
+    assert resultados[0] == resultados[1]
+    assert ("800000003", "DUP MENOR") in resultados[1][0]
