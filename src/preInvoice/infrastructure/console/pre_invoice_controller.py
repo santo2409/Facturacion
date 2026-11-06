@@ -30,11 +30,21 @@ def generate_pre_invoices(logger):
             f"Iniciando separación por NIT desde {CONSOLIDADO_PATH}",
             user_msg="Iniciando generación de archivos por NIT...",
         )
-        SplitByNit(logger, cup_repo, RichProgress()).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
-        logger.info(
-            "Cadena completa ejecutada: assign_rates → split por NIT.",
-            user_msg="Pre-facturas generadas exitosamente.",
-        )
+        result = SplitByNit(logger, cup_repo, RichProgress()).execute(CONSOLIDADO_PATH, OUTPUT_DIR)
+        if result.failed_files or result.failed_sheets:
+            # El detalle por NIT ya quedó en el log técnico (ADR-014: un resumen en consola).
+            logger.warning(
+                f"Split por NIT con errores: archivos {result.failed_files}, hojas {result.failed_sheets}.",
+                user_msg=(
+                    f"Pre-facturas generadas con errores: {len(result.failed_files)} pre-factura(s) y "
+                    f"{len(result.failed_sheets)} hoja(s) del consolidado no se generaron. Revisa logs.log."
+                ),
+            )
+        else:
+            logger.info(
+                "Cadena completa ejecutada: assign_rates → split por NIT.",
+                user_msg="Pre-facturas generadas exitosamente.",
+            )
     except Exception as e:
         logger.error(
             f"Error generando pre-facturas: {e}",

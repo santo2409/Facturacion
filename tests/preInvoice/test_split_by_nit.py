@@ -419,3 +419,28 @@ def test_nombres_de_hoja_del_consolidado_no_chocan(consolidado_nombres_en_choque
     ]
     assert all(len(t) <= 31 for t in titles)
     assert len({t.upper() for t in titles}) == len(titles)
+
+
+# ── AUD-31: execute informa qué NIT no se pudieron escribir ────────────────
+
+def test_execute_sin_fallos_devuelve_listas_vacias(consolidado, logger, cup_repo):
+    path, output_dir = consolidado
+    result = SplitByNit(logger, cup_repo).execute(path, output_dir)
+    assert result.failed_files == [] and result.failed_sheets == []
+
+
+def test_execute_reporta_nit_que_falla_en_ambos_procesos(consolidado, logger, cup_repo, monkeypatch):
+    path, output_dir = consolidado
+    uc = SplitByNit(logger, cup_repo)
+    original = uc._extract_empresa
+
+    def falla_para_b(rows, idx):
+        if any(r[idx] == "EMPRESA B" for r in rows):
+            raise ValueError("falla simulada")
+        return original(rows, idx)
+
+    monkeypatch.setattr(uc, "_extract_empresa", falla_para_b)
+    result = uc.execute(path, output_dir)
+
+    assert result.failed_files == ["900222222"]
+    assert result.failed_sheets == ["900222222"]

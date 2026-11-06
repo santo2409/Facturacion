@@ -76,6 +76,12 @@ class _PreparedNit(NamedTuple):
     empresa_nombre: str
 
 
+class SplitResult(NamedTuple):
+    """NITs que no se pudieron escribir (AUD-31): pre-factura individual y hoja del consolidado."""
+    failed_files: list
+    failed_sheets: list
+
+
 class SplitByNit:
     def __init__(self, logger, cup_repo: CupRepository | None = None, progress=None):
         self.logger = logger
@@ -183,6 +189,9 @@ class SplitByNit:
                 cups_name_map, cell_colors, empresa_idx,
             )
 
+        failed_files: list = []
+        failed_sheets: list = []
+
         # Lo calculado por NIT en el proceso 1 se reutiliza en el proceso 2.
         prepared: dict[tuple, _PreparedNit] = {}
 
@@ -213,6 +222,7 @@ class SplitByNit:
                             f"[{facturador}] Generado: {filename}.xlsx ({len(p.rows_only)} filas)",
                         )
                     except Exception as e:
+                        failed_files.append(nit)
                         self.logger.error(
                             f"Error procesando NIT {nit} (facturador {facturador}): {e}",
                             exc_info=True,
@@ -263,6 +273,7 @@ class SplitByNit:
                             p.cups_positions, p.row_colors
                         )
                     except Exception as e:
+                        failed_sheets.append(nit)
                         self.logger.error(
                             f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
                         )
@@ -275,6 +286,7 @@ class SplitByNit:
             f"Proceso 2 completado: libro consolidado en {consolidado_path}",
             user_msg=f"Libro consolidado generado en {consolidado_path}",
         )
+        return SplitResult(failed_files, failed_sheets)
 
     # ── Helpers ────────────────────────────────────────────────────────────
 
