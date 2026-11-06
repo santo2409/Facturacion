@@ -2000,3 +2000,33 @@ def test_execute_es_idempotente_en_segunda_corrida_sobre_el_mismo_excel(deps, mo
 
     assert rows1 == rows2
     assert len(deps["imedical_repo"].saved_batches) == 0
+
+
+# ── AUD-60: celdas CUP no enteras ─────────────────────────────────────────
+def test_cup_cells_not_integer_raise_descriptive_invalid_operation_error():
+    from src.assign.application.use_cases.assigned_rates import (
+        CupCellValueError,
+        _check_cup_cells_castable,
+    )
+
+    df = pl.DataFrame(
+        {"Paciente": ["ANA", "LUIS", "EVA", "SOL"], "N° Identificación": ["1", "2", "3", "4"],
+         "890201": ["1", " 1", None, "x"], "903810-01": ["1.0", None, "1", None]},
+        schema={c: pl.Utf8 for c in ("Paciente", "N° Identificación", "890201", "903810-01")},
+    )
+
+    with pytest.raises(pl.exceptions.InvalidOperationError) as info:
+        _check_cup_cells_castable(df, ["890201", "903810-01"])
+
+    assert isinstance(info.value, CupCellValueError)
+    msg = str(info.value)
+    assert msg.startswith("3 celda(s) CUP con valor no entero")
+    assert "columna 890201: valor ' 1' (Paciente='LUIS', N° Identificación='2')" in msg
+    assert "columna 890201: valor 'x'" in msg and "columna 903810-01: valor '1.0'" in msg
+
+
+def test_cup_cells_valid_pass_check():
+    from src.assign.application.use_cases.assigned_rates import _check_cup_cells_castable
+
+    df = pl.DataFrame({"890201": ["1", None, "2"]}, schema={"890201": pl.Utf8})
+    _check_cup_cells_castable(df, ["890201"])  # no lanza

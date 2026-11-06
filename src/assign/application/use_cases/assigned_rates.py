@@ -81,6 +81,36 @@ def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) ->
     return df
 
 
+class CupCellValueError(pl.exceptions.InvalidOperationError):
+    """Celdas CUP no convertibles a entero. Subclase de la excepción que Polars
+    lanzaba antes en el mismo punto, con un mensaje que dice qué celdas son (AUD-60)."""
+
+
+_MAX_INVALID_CUP_CELLS = 10
+
+
+def _check_cup_cells_castable(df: pl.DataFrame, headers: list) -> None:
+    """Lanza CupCellValueError si alguna celda CUP no vacía no se puede convertir a Int64
+    con la misma regla estricta que `cast(pl.Int64)`. No modifica `df`."""
+    who = [c for c in ("Paciente", "N° Identificación") if c in df.columns]
+    invalid: list[str] = []
+    total = 0
+    for h in headers:
+        col = pl.col(str(h))
+        bad = df.filter(col.is_not_null() & col.cast(pl.Int64, strict=False).is_null())
+        total += bad.height
+        for row in bad.select([str(h), *who]).head(_MAX_INVALID_CUP_CELLS).iter_rows(named=True):
+            if len(invalid) < _MAX_INVALID_CUP_CELLS:
+                person = ", ".join(f"{c}={row[c]!r}" for c in who)
+                invalid.append(f"columna {h}: valor {row[str(h)]!r} ({person})")
+    if total:
+        raise CupCellValueError(
+            f"{total} celda(s) CUP con valor no entero; deben ser números enteros o estar vacías. "
+            + "; ".join(invalid)
+            + (" ..." if total > len(invalid) else "")
+        )
+
+
 PHASE_FINDING_KEYS = (
     "fase_01_paquete_propio_local",
     "fase_02_paquete_c_2025",
@@ -1179,6 +1209,7 @@ class AssignRatesFromExcel:
         headers = [h for h in df.columns if str(h).replace("-", "").isdigit()]
 
         # Cast CUP columns to Int64
+        _check_cup_cells_castable(df, headers)
         for h in headers:
             df = df.with_columns(pl.col(str(h)).cast(pl.Int64))
 
