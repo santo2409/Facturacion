@@ -83,44 +83,48 @@ def execute_web_scrapping(logger):
             config=config,
         )
 
-    company_repo = SaCompanyRepository(get_session(), logger)
-    nit_cache_repo = SaCompanyNitCacheRepository(company_repo, logger=logger)
+    session = get_session()
+    try:
+        company_repo = SaCompanyRepository(session, logger)
+        nit_cache_repo = SaCompanyNitCacheRepository(company_repo, logger=logger)
 
-    name_matcher = CompanyNameMatcher(
-        RapidFuzzBiller(logger),
-        threshold=int(
-            os.getenv("COMPANY_NAME_MATCH_THRESHOLD", str(DEFAULT_NAME_MATCH_THRESHOLD))
-        ),
-    )
+        name_matcher = CompanyNameMatcher(
+            RapidFuzzBiller(logger),
+            threshold=int(
+                os.getenv("COMPANY_NAME_MATCH_THRESHOLD", str(DEFAULT_NAME_MATCH_THRESHOLD))
+            ),
+        )
 
-    use_case = SearchNitsWithOdooFallbackUseCase(
-        SearchNitsUseCase(scraper),
-        odoo_repo=odoo_repo,
-        nit_cache_repo=nit_cache_repo,
-        logger=logger,
-        name_matcher=name_matcher,
-        local_name_lookup=os.getenv("LOCAL_NAME_LOOKUP", "true").lower() != "false",
-        rues_name_limit=int(
-            os.getenv("RUES_NAME_LOOKUP_LIMIT", str(DEFAULT_RUES_NAME_LOOKUP_LIMIT))
-        ),
-    )
+        use_case = SearchNitsWithOdooFallbackUseCase(
+            SearchNitsUseCase(scraper),
+            odoo_repo=odoo_repo,
+            nit_cache_repo=nit_cache_repo,
+            logger=logger,
+            name_matcher=name_matcher,
+            local_name_lookup=os.getenv("LOCAL_NAME_LOOKUP", "true").lower() != "false",
+            rues_name_limit=int(
+                os.getenv("RUES_NAME_LOOKUP_LIMIT", str(DEFAULT_RUES_NAME_LOOKUP_LIMIT))
+            ),
+        )
 
-    route_book = os.path.join(os.getenv("BOOK_ROUTE"), os.getenv("BOOK_NAME"))
-    file_path = os.path.join(get_paths_config()["directory"], "data.json")
+        route_book = os.path.join(os.getenv("BOOK_ROUTE"), os.getenv("BOOK_NAME"))
+        file_path = os.path.join(get_paths_config()["directory"], "data.json")
 
-    book_df = pl.read_excel(
-        route_book, sheet_name="nits", engine="calamine", infer_schema_length=0
-    )
-    nits = book_df.select("nits").to_series().to_list()
+        book_df = pl.read_excel(
+            route_book, sheet_name="nits", engine="calamine", infer_schema_length=0
+        )
+        nits = book_df.select("nits").to_series().to_list()
 
-    book_names = build_book_names(book_df, logger)
+        book_names = build_book_names(book_df, logger)
 
-    data = use_case.execute(nits, show_progress=True, book_names=book_names)
+        data = use_case.execute(nits, show_progress=True, book_names=book_names)
 
-    NotFoundCompaniesLogGenerator(logger).generate(data, LOGS_DIR)
-    publish_local_updates(use_case, XlsxFindingsWriter(Path("logs/web_scrapping")), logger)
+        NotFoundCompaniesLogGenerator(logger).generate(data, LOGS_DIR)
+        publish_local_updates(use_case, XlsxFindingsWriter(Path("logs/web_scrapping")), logger)
 
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump([d.__dict__ for d in data], file, ensure_ascii=False, indent=2)
+        with open(file_path, "w", encoding="utf-8") as file:
+            json.dump([d.__dict__ for d in data], file, ensure_ascii=False, indent=2)
 
-    console.print(f"[green]Archivo JSON guardado en: {file_path}[/green]")
+        console.print(f"[green]Archivo JSON guardado en: {file_path}[/green]")
+    finally:
+        session.close()

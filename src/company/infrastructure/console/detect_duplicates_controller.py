@@ -18,14 +18,18 @@ LOGS_DIR = Path("logs")
 
 
 def detect_duplicate_companies(logger):
-    company_repo = SaCompanyRepository(get_session(), logger)
+    session = get_session()
+    try:
+        company_repo = SaCompanyRepository(session, logger)
 
-    use_case = DetectDuplicateCompanies(
-        company_repo=company_repo,
-        detector=DuplicateCompanyDetector(RapidFuzzBiller(logger)),
-        log_generator=DuplicateCompaniesLogGenerator(logger),
-        progress=RichProgress(),
-        logger=logger,
-    )
+        use_case = DetectDuplicateCompanies(
+            company_repo=company_repo,
+            detector=DuplicateCompanyDetector(RapidFuzzBiller(logger)),
+            log_generator=DuplicateCompaniesLogGenerator(logger),
+            progress=RichProgress(),
+            logger=logger,
+        )
 
-    use_case.execute(LOGS_DIR)
+        use_case.execute(LOGS_DIR)
+    finally:
+        session.close()

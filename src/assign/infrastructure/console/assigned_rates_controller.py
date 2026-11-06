@@ -120,38 +120,41 @@ def assign_rates(logger, with_invoices=False):
     # spec 010): sus dependencias reciben un logger que descarta user_msg.
     logger = TechOnlyLogger(logger)
     session = get_session()
-    config = get_odoo_config()
-    odoo_repo = XmlRpcOdooRepository(
-        url=config["url"],
-        db=config["db"],
-        username=config["username"],
-        api_key=config["api_key"],
-        logger=logger,
-        config=config,
-    )
+    try:
+        config = get_odoo_config()
+        odoo_repo = XmlRpcOdooRepository(
+            url=config["url"],
+            db=config["db"],
+            username=config["username"],
+            api_key=config["api_key"],
+            logger=logger,
+            config=config,
+        )
 
-    use_case = AssignRatesFromExcel(
-        biller_repo=SaBillerRepository(session, logger),
-        company_repo=SaCompanyRepository(session, logger),
-        biller_company_repo=SaBillerCompanyRepository(session, logger),
-        package_repo=SaPackageRepository(session, logger),
-        provider_repo=SaProviderRepository(session, logger),
-        special_repo=SaSpecialRepository(session, logger),
-        city_repo=SaCityRepository(session, logger),
-        activities_repo=SaActivityRepository(session, logger),
-        rates_repo=SaRatesRepository(session, logger),
-        cup_repo=SaCupRepository(session),
-        fuzz=RapidFuzzBiller(logger),
-        progress=RichProgress(),
-        logger=logger,
-        odoo_repo=odoo_repo,
-        not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
-        logs_dir=Path("logs"),
-        imedical_repo=SaImedicalRepository(session, logger),
-        tian_repo=SaTianRepository(session, logger),
-        tian_log_generator=TianCompaniesLogGenerator(logger),
-        findings_reporter=XlsxPhaseFindingsReporter(),
-    )
+        use_case = AssignRatesFromExcel(
+            biller_repo=SaBillerRepository(session, logger),
+            company_repo=SaCompanyRepository(session, logger),
+            biller_company_repo=SaBillerCompanyRepository(session, logger),
+            package_repo=SaPackageRepository(session, logger),
+            provider_repo=SaProviderRepository(session, logger),
+            special_repo=SaSpecialRepository(session, logger),
+            city_repo=SaCityRepository(session, logger),
+            activities_repo=SaActivityRepository(session, logger),
+            rates_repo=SaRatesRepository(session, logger),
+            cup_repo=SaCupRepository(session),
+            fuzz=RapidFuzzBiller(logger),
+            progress=RichProgress(),
+            logger=logger,
+            odoo_repo=odoo_repo,
+            not_found_log_generator=NotFoundCompaniesLogGenerator(logger),
+            logs_dir=Path("logs"),
+            imedical_repo=SaImedicalRepository(session, logger),
+            tian_repo=SaTianRepository(session, logger),
+            tian_log_generator=TianCompaniesLogGenerator(logger),
+            findings_reporter=XlsxPhaseFindingsReporter(),
+        )
 
-    result = use_case.execute(df, df_facture)
-    Console().print(render_summary(result))
+        result = use_case.execute(df, df_facture)
+        Console().print(render_summary(result))
+    finally:
+        session.close()

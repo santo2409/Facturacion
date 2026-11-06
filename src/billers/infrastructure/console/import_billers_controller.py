@@ -68,5 +68,8 @@ def import_billers(logger):
     df = loader.load_sheet(excel, sheet)
 
     session = get_session()
-    use_case = _build_use_case(session, logger)
-    use_case.execute(df)
+    try:
+        use_case = _build_use_case(session, logger)
+        use_case.execute(df)
+    finally:
+        session.close()
