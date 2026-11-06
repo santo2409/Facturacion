@@ -2285,3 +2285,84 @@ def test_match_companies_odoo_batch_failed_stage_goes_per_nit(monkeypatch, tmp_p
 
     assert resultados[1] == resultados[0]
     assert ("900111222", "REF-A") in resultados[1][0] and ("800000001", "OTRA") in resultados[1][0]
+
+
+def _lote_con_fallos_vs_individual(monkeypatch, tmp_path, partners, nits, falla):
+    """Como _lote_vs_individual, con bloques de 2 NIT y `falla(field, mode, nits)`
+    decidiendo qué consultas de res.partner fallan (solo si llevan más de un NIT,
+    así que la consulta individual nunca falla)."""
+    resultados, individuales = [], []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        repo = uc.odoo_repo
+        repo._BATCH_SIZE = repo._LIKE_BATCH_SIZE = 2
+        real_execute = repo._execute
+
+        def execute_con_fallos(model, method, args, *rest, _real=real_execute):
+            terminos = [t for t in args[0] if isinstance(t, list)] if model == "res.partner" else []
+            if terminos and terminos[0][0] in ("ref_num", "vat"):
+                field, op = terminos[0][0], terminos[0][1]
+                consultados = terminos[0][2] if op == "in" else [t[2][:-1] for t in terminos]
+                mode = "in" if op == "in" else "like"
+                if len(consultados) > 1 and falla(field, mode, consultados):
+                    raise TimeoutError("timed out")
+            return _real(model, method, args, *rest)
+
+        repo._execute = execute_con_fallos
+        llamados: list[str] = []
+        real_find_client = repo.find_client
+
+        def find_client_contado(nit, name, _real=real_find_client, _llamados=llamados):
+            _llamados.append(nit)
+            return _real(nit, name)
+
+        repo.find_client = find_client_contado
+        df = pl.DataFrame({"NIT": nits, "Empresa": [f"E{i}" for i in range(len(nits))], "Base": ["OCT"] * len(nits)})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+        individuales.append(llamados)
+    return resultados[0], resultados[1], individuales[1]
+
+
+def test_match_companies_odoo_batch_only_one_block_of_stage_fails(monkeypatch, tmp_path):
+    partners = [
+        {"id": 50, "name": "N3 REF", "ref_num": "500000003", "vat": False},
+        {"id": 40, "name": "N3 VAT", "ref_num": False, "vat": "500000003"},
+        {"id": 51, "name": "N1", "ref_num": "500000001", "vat": False},
+        {"id": 52, "name": "N2", "ref_num": "500000002", "vat": False},
+        {"id": 54, "name": "N4", "ref_num": "500000004", "vat": False},
+        {"id": 55, "name": "N5", "ref_num": "500000005", "vat": False},
+    ]
+    nits = ["500000001", "500000002", "500000003", "500000004", "500000005"]
+    # Etapa ref_num exacta: bloques [1,2] [3,4] [5]; falla solo [3,4], también en
+    # ref_num =like (donde es el único bloque pendiente). Los demás bloques responden.
+    bloque_caido = {"500000003", "500000004"}
+
+    individual, lote, por_find_client = _lote_con_fallos_vs_individual(
+        monkeypatch, tmp_path, partners, nits,
+        lambda field, mode, consultados: field == "ref_num" and set(consultados) == bloque_caido,
+    )
+
+    assert lote == individual
+    assert ("500000003", "N3 REF") in lote[0]  # sin la corrección saldría N3 VAT (etapa vat)
+    assert sorted(por_find_client) == sorted(bloque_caido)  # los otros bloques se resolvieron en lote
+
+
+def test_match_companies_odoo_batch_only_like_stages_fail(monkeypatch, tmp_path):
+    partners = [
+        {"id": 61, "name": "REF CON ESPACIO", "ref_num": "600000001 ", "vat": False},
+        {"id": 62, "name": "VAT CON DV", "ref_num": False, "vat": "600000002-5"},
+        {"id": 63, "name": "EXACTO", "ref_num": "600000003", "vat": False},
+    ]
+    nits = ["600000001", "600000002", "600000003", "600000009"]
+
+    individual, lote, por_find_client = _lote_con_fallos_vs_individual(
+        monkeypatch, tmp_path, partners, nits,
+        lambda field, mode, consultados: mode == "like",
+    )
+
+    assert lote == individual
+    assert ("600000001", "REF CON ESPACIO") in lote[0] and ("600000002", "VAT CON DV") in lote[0]
+    assert ("600000003", "EXACTO") in lote[0]
+    assert sorted(por_find_client) == ["600000001", "600000002"]  # el exacto no pasó por like
