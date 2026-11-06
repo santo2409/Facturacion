@@ -1,7 +1,9 @@
 import os
 import re
 from collections import defaultdict
+from contextlib import nullcontext
 from pathlib import Path
+from typing import NamedTuple
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -62,6 +64,16 @@ _PHASE_LEGEND = [
     ("D5A6E6", "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"),
     ("FFB6C1", "Fase 7 — Cualquier paquete, otra ciudad"),
 ]
+
+
+class _PreparedNit(NamedTuple):
+    rows_only: list
+    final_indices: list
+    cups_positions: set
+    header_out: list
+    names_row: list
+    row_colors: dict
+    empresa_nombre: str
 
 
 class SplitByNit:
@@ -165,62 +177,48 @@ class SplitByNit:
         all_cups_codes = [str(header[i]) for i in cups_indices]
         cups_name_map = self._build_cups_name_map(all_cups_codes)
 
+        def prepare(indexed_rows):
+            return self._prepare_nit(
+                indexed_rows, header, fixed_indices, cups_indices,
+                cups_name_map, cell_colors, empresa_idx,
+            )
+
+        # Lo calculado por NIT en el proceso 1 se reutiliza en el proceso 2.
+        prepared: dict[tuple, _PreparedNit] = {}
+
         # Proceso 1: subcarpeta por facturador, un archivo por NIT dentro
         for facturador, nit_groups in groups.items():
             fact_dir = output_dir / self._sanitize_filename(facturador)
             os.makedirs(fact_dir, exist_ok=True)
 
-            if self.progress:
-                ctx = self.progress(f"Generando pre-facturas: {facturador}", total=len(nit_groups))
-                ctx.__enter__()
+            with self._progress_bar(f"Generando pre-facturas: {facturador}", len(nit_groups)):
+                for nit, indexed_rows in nit_groups.items():
+                    try:
+                        p = prepared[(facturador, nit)] = prepare(indexed_rows)
+                        filename = self._sanitize_filename(
+                            f"pre_factura_{nit}_{p.empresa_nombre}"
+                        )
 
-            for nit, indexed_rows in nit_groups.items():
-                try:
-                    rows_only = [row for _, row in indexed_rows]
-                    active_cups = self._get_active_cups_indices(rows_only, cups_indices)
-                    final_indices = fixed_indices + active_cups
-                    cups_positions = set(range(len(fixed_indices), len(final_indices)))
+                        wb = openpyxl.Workbook()
+                        ws = wb.active
+                        ws.title = "BASE GENERAL"
+                        self._write_sheet(
+                            ws, p.names_row, p.header_out, p.rows_only, p.final_indices,
+                            p.cups_positions, p.row_colors
+                        )
+                        self._write_legend(wb)
 
-                    header_out = [
-                        header[i] if i < len(header) else None for i in final_indices
-                    ]
-                    names_row = self._build_names_row(
-                        header_out, cups_positions, cups_name_map
-                    )
-
-                    # Construir mapa de colores para este archivo
-                    row_colors = self._build_row_colors(
-                        indexed_rows, final_indices, cell_colors
-                    )
-
-                    empresa_nombre = self._extract_empresa(rows_only, empresa_idx)
-                    filename = self._sanitize_filename(
-                        f"pre_factura_{nit}_{empresa_nombre}"
-                    )
-
-                    wb = openpyxl.Workbook()
-                    ws = wb.active
-                    ws.title = "BASE GENERAL"
-                    self._write_sheet(
-                        ws, names_row, header_out, rows_only, final_indices,
-                        cups_positions, row_colors
-                    )
-                    self._write_legend(wb)
-
-                    wb.save(fact_dir / f"{filename}.xlsx")
-                    self.logger.info(
-                        f"[{facturador}] Generado: {filename}.xlsx ({len(rows_only)} filas)",
-                    )
-                except Exception as e:
-                    self.logger.error(
-                        f"Error procesando NIT {nit} (facturador {facturador}): {e}",
-                        exc_info=True,
-                    )
-                if self.progress:
-                    self.progress.advance()
-
-            if self.progress:
-                ctx.__exit__(None, None, None)
+                        wb.save(fact_dir / f"{filename}.xlsx")
+                        self.logger.info(
+                            f"[{facturador}] Generado: {filename}.xlsx ({len(p.rows_only)} filas)",
+                        )
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error procesando NIT {nit} (facturador {facturador}): {e}",
+                            exc_info=True,
+                        )
+                    if self.progress:
+                        self.progress.advance()
 
         self.logger.info(
             f"Proceso 1 completado: archivos por facturador en {output_dir}",
@@ -234,54 +232,34 @@ class SplitByNit:
         wb.remove(wb.active)
         sheet_names_used = {}
 
-        if self.progress:
-            ctx2 = self.progress("Generando consolidado por NIT", total=total_nits)
-            ctx2.__enter__()
+        with self._progress_bar("Generando consolidado por NIT", total_nits):
+            for facturador, nit_groups in groups.items():
+                for nit, indexed_rows in nit_groups.items():
+                    try:
+                        # Si la preparación falló en el proceso 1, se reintenta aquí
+                        # (mismo error, registrado con el mensaje de este proceso).
+                        p = prepared.get((facturador, nit)) or prepare(indexed_rows)
+                        sheet_name = self._sanitize_sheetname(p.empresa_nombre)
 
-        for facturador, nit_groups in groups.items():
-            for nit, indexed_rows in nit_groups.items():
-                try:
-                    rows_only = [row for _, row in indexed_rows]
-                    active_cups = self._get_active_cups_indices(rows_only, cups_indices)
-                    final_indices = fixed_indices + active_cups
-                    cups_positions = set(range(len(fixed_indices), len(final_indices)))
+                        base_name = sheet_name
+                        if base_name in sheet_names_used:
+                            sheet_names_used[base_name] += 1
+                            suffix = f"_{sheet_names_used[base_name]}"
+                            sheet_name = base_name[: 31 - len(suffix)] + suffix
+                        else:
+                            sheet_names_used[base_name] = 0
 
-                    header_out = [
-                        header[i] if i < len(header) else None for i in final_indices
-                    ]
-                    names_row = self._build_names_row(
-                        header_out, cups_positions, cups_name_map
-                    )
-
-                    row_colors = self._build_row_colors(
-                        indexed_rows, final_indices, cell_colors
-                    )
-
-                    empresa_nombre = self._extract_empresa(rows_only, empresa_idx)
-                    sheet_name = self._sanitize_sheetname(empresa_nombre)
-
-                    base_name = sheet_name
-                    if base_name in sheet_names_used:
-                        sheet_names_used[base_name] += 1
-                        suffix = f"_{sheet_names_used[base_name]}"
-                        sheet_name = base_name[: 31 - len(suffix)] + suffix
-                    else:
-                        sheet_names_used[base_name] = 0
-
-                    ws = wb.create_sheet(title=sheet_name)
-                    self._write_sheet(
-                        ws, names_row, header_out, rows_only, final_indices,
-                        cups_positions, row_colors
-                    )
-                except Exception as e:
-                    self.logger.error(
-                        f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
-                    )
-                if self.progress:
-                    self.progress.advance()
-
-        if self.progress:
-            ctx2.__exit__(None, None, None)
+                        ws = wb.create_sheet(title=sheet_name)
+                        self._write_sheet(
+                            ws, p.names_row, p.header_out, p.rows_only, p.final_indices,
+                            p.cups_positions, p.row_colors
+                        )
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error en hoja consolidada NIT {nit}: {e}", exc_info=True
+                        )
+                    if self.progress:
+                        self.progress.advance()
 
         self._write_legend(wb)
         wb.save(consolidado_path)
@@ -291,6 +269,38 @@ class SplitByNit:
         )
 
     # ── Helpers ────────────────────────────────────────────────────────────
+
+    def _progress_bar(self, description: str, total: int):
+        """Barra de progreso como context manager; sin barra si no hay `progress`."""
+        return self.progress(description, total=total) if self.progress else nullcontext()
+
+    def _prepare_nit(
+        self, indexed_rows, header, fixed_indices, cups_indices,
+        cups_name_map, cell_colors, empresa_idx,
+    ) -> "_PreparedNit":
+        """Lo que necesitan los procesos 1 y 2 para escribir la hoja de un NIT."""
+        rows_only = [row for _, row in indexed_rows]
+        active_cups = self._get_active_cups_indices(rows_only, cups_indices)
+        final_indices = fixed_indices + active_cups
+        cups_positions = set(range(len(fixed_indices), len(final_indices)))
+
+        header_out = [
+            header[i] if i < len(header) else None for i in final_indices
+        ]
+        names_row = self._build_names_row(
+            header_out, cups_positions, cups_name_map
+        )
+
+        # Construir mapa de colores para este archivo
+        row_colors = self._build_row_colors(
+            indexed_rows, final_indices, cell_colors
+        )
+
+        empresa_nombre = self._extract_empresa(rows_only, empresa_idx)
+        return _PreparedNit(
+            rows_only, final_indices, cups_positions, header_out,
+            names_row, row_colors, empresa_nombre,
+        )
 
     @staticmethod
     def _extract_phase_color(cell) -> str | None:

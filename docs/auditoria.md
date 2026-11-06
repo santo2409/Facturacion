@@ -246,7 +246,7 @@ Estados: pendiente · aprobado · descartado · después · hecho · revisar
 | AUD-72 | import_rues_nits.py:114; search_nits use case:132 | bug | baja | no | Una celda vacía en `nits` aparece como NIT "None" no encontrado. Filtrar nulos | descartar |
 | AUD-73 | import_rates_from_excel.py:99, 112, 185-187; import_information_controller.py:42-44 | rendimiento | baja | no | Pertenencia sobre listas O(n·m); los catálogos se consultan 3 veces | revisar |
 | AUD-74 | excel_provider/special_normalize_repository.py:62-65; cup_column_validator.py:191; assigned_rates.py:1572-1578; import_companies_from_excel.py:244-265 | rendimiento | baja | no | `map_elements` fila a fila; aplicarlo sobre `unique()` y luego unir | revisar |
-| AUD-75 | split_by_nit.py:172-175, 220-223, 236-239, 283-284; 178-210 vs 244-273 | legibilidad | baja | no | `__enter__`/`__exit__` manuales y el mismo cálculo repetido por NIT en los dos procesos | aprobar |
+| AUD-75 | split_by_nit.py:172-175, 220-223, 236-239, 283-284; 178-210 vs 244-273 | legibilidad | baja | no | `__enter__`/`__exit__` manuales y el mismo cálculo repetido por NIT en los dos procesos | hecho |
 | AUD-76 | split_by_nit.py:263-269 | bug | baja | no | Desduplicar nombres de hoja puede chocar con otra empresa (Excel no distingue mayúsculas) | revisar |
 | AUD-77 | migrations/versions/6f0ab654aacd_*.py:4; bc1d152a1ddb_*.py:4 | legibilidad | baja | no | El docstring "Revises:" no coincide con `down_revision` (la cadena real es correcta) | hecho |
 | AUD-78 | src/shared/console/sheet_input.py:10; import_billers_from_excel.py:1-3, 28; import_companies_from_excel.py:1, 29 | legibilidad | baja | no | `print()` sin Rich, imports sin uso, herencia de un "repositorio" ABC innecesaria | hecho (sin import_companies, opción 5) |
