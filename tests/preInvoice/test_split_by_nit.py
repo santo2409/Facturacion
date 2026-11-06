@@ -376,3 +376,71 @@ def test_leyenda_distingue_tarifa_odoo_y_fase1_local(consolidado_con_colores, lo
     assert ("00E2EFDA", "Fase 1 — Paquete propio local") in filas
     assert not any("sin fallback" in (label or "") for _, label in filas)
     wb.close()
+
+
+# ── AUD-76: nombres de hoja únicos (Excel no distingue mayúsculas, máx. 31) ──
+
+LARGO = "COMPANIA DE SERVICIOS TEMPORALE"  # 31 caracteres
+
+
+@pytest.fixture
+def consolidado_nombres_en_choque(tmp_path):
+    path = tmp_path / "CONSOLIDADO.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Consolidado"
+    ws.append(list(FIXED_COLUMNS) + ["890201"])
+    empresas = [
+        ("900000001", "EMPRESA GAMMA"),
+        ("900000002", "EMPRESA GAMMA"),      # repetida → EMPRESA GAMMA_1 (como hoy)
+        ("900000003", "Empresa Gamma"),      # choca sin distinguir mayúsculas
+        ("900000004", "EMPRESA GAMMA_1"),    # choca con el sufijo generado
+        ("900000005", LARGO),
+        ("900000006", LARGO.lower()),        # 31 caracteres, choca en mayúsculas
+        ("900000007", "Leyenda"),            # choca con la hoja de leyenda
+    ]
+    for nit, empresa in empresas:
+        fila = {c: None for c in FIXED_COLUMNS}
+        fila.update({"FACTURADOR": "ALFA", "NIT": nit, "Empresa": empresa})
+        ws.append([fila[c] for c in FIXED_COLUMNS] + [1])
+    wb.save(path)
+    return path
+
+
+def test_nombres_de_hoja_del_consolidado_no_chocan(consolidado_nombres_en_choque, logger, cup_repo, tmp_path):
+    out = tmp_path / "pre-facturas"
+    SplitByNit(logger, cup_repo).execute(consolidado_nombres_en_choque, out)
+
+    titles = openpyxl.load_workbook(out / "NITs_consolidado.xlsx").sheetnames
+
+    assert titles == [
+        "EMPRESA GAMMA", "EMPRESA GAMMA_1", "Empresa Gamma_2", "EMPRESA GAMMA_1_1",
+        LARGO, LARGO.lower()[:29] + "_1", "Leyenda_1", "Leyenda",
+    ]
+    assert all(len(t) <= 31 for t in titles)
+    assert len({t.upper() for t in titles}) == len(titles)
+
+
+# ── AUD-31: execute informa qué NIT no se pudieron escribir ────────────────
+
+def test_execute_sin_fallos_devuelve_listas_vacias(consolidado, logger, cup_repo):
+    path, output_dir = consolidado
+    result = SplitByNit(logger, cup_repo).execute(path, output_dir)
+    assert result.failed_files == [] and result.failed_sheets == []
+
+
+def test_execute_reporta_nit_que_falla_en_ambos_procesos(consolidado, logger, cup_repo, monkeypatch):
+    path, output_dir = consolidado
+    uc = SplitByNit(logger, cup_repo)
+    original = uc._extract_empresa
+
+    def falla_para_b(rows, idx):
+        if any(r[idx] == "EMPRESA B" for r in rows):
+            raise ValueError("falla simulada")
+        return original(rows, idx)
+
+    monkeypatch.setattr(uc, "_extract_empresa", falla_para_b)
+    result = uc.execute(path, output_dir)
+
+    assert result.failed_files == ["900222222"]
+    assert result.failed_sheets == ["900222222"]

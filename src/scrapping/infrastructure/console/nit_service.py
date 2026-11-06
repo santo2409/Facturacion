@@ -48,17 +48,6 @@ class RUESNitService:
                     self.logger.error(f"Error searching NIT {nits}: {excep}", exc_info=True)
                     return None
 
-    def search_by_name(self, name: str):
-        for attempt in range(_MAX_RETRIES + 1):
-            try:
-                return self._scraper.search_by_name(name)
-            except Exception as excep:
-                if attempt < _MAX_RETRIES:
-                    time.sleep(_RETRY_DELAY)
-                else:
-                    self.logger.error(f"Error buscando por nombre '{name}': {excep}", exc_info=True)
-                    return None
-
     def writer(self, data, file_path):
         try:
             with open(file_path, "w", encoding="utf-8") as file:

@@ -1,7 +1,7 @@
 """create table rates
 
 Revision ID: bc1d152a1ddb
-Revises: 9d05527f843e
+Revises: 5eb12ce1caee
 Create Date: 2026-02-21 13:51:04.506406
 
 """

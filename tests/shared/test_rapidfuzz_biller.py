@@ -65,3 +65,20 @@ def test_similarity_returns_int():
 def test_similarity_returns_zero_on_error():
     fuzz = RapidFuzzBiller(FakeLogger())
     assert fuzz.similarity(None, "EMPRESA A") == 0
+
+
+def test_fuzz_empty_catalog_warns_user_once_per_instance():
+    """AUD-66: con catálogo vacío el aviso al usuario sale una vez, no una por fila."""
+
+    class _Logger:
+        def __init__(self):
+            self.user_msgs = []
+
+        def error(self, message, exc_info=None, *, user_msg=None):
+            self.user_msgs.append(user_msg)
+
+    logger = _Logger()
+    fuzz = RapidFuzzBiller(logger)
+
+    assert [fuzz.fuzz_property(n, []) for n in ("A", "B", "C")] == [None, None, None]
+    assert logger.user_msgs == ["Error al buscar coincidencias. El proceso continuará sin esta validación."]

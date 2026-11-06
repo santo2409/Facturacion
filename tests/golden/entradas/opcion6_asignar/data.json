@@ -1,0 +1,9 @@
+[
+  {
+    "nit": "912345678",
+    "name": "EMPRESA RUES SAS",
+    "is_company": true,
+    "checked_bases": "Odoo, RUES",
+    "source": "RUES/NIT"
+  }
+]

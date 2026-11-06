@@ -1,0 +1,14 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "nit": "830050228",
+      "name": "GRUPO ADECCO SA"
+    },
+    {
+      "id": 2,
+      "nit": "333333333",
+      "name": "SOLO BD LOCAL"
+    }
+  ]
+}

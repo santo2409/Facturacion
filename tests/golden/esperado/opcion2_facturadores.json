@@ -1,0 +1,167 @@
+{
+ "archivos": {
+  "data.json": [
+   {
+    "nit": "900111111",
+    "is_company": true,
+    "name": "EMPRESA ALFA S.A.S.",
+    "checked_bases": "Odoo",
+    "source": "Odoo/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "830050228",
+    "is_company": true,
+    "name": "GRUPO ADECCO SA",
+    "checked_bases": "BD local",
+    "source": "BD local/NIT",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "101234567",
+    "is_company": false,
+    "name": null,
+    "checked_bases": "Odoo, RUES",
+    "source": "",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   },
+   {
+    "nit": "555555555",
+    "is_company": false,
+    "name": null,
+    "checked_bases": "Odoo, RUES",
+    "source": "",
+    "nit_original": null,
+    "name_original": null,
+    "conflict": "",
+    "save_error": ""
+   }
+  ],
+  "logs/facturadores/2026-11-05_1030/bd_local_actualizada.xlsx": {
+   "hojas": [
+    {
+     "nombre": "bd_local_actualizada",
+     "filas": [
+      [
+       "NIT",
+       "Nombre en BD local",
+       "Nombre en Odoo",
+       "Acción"
+      ],
+      [
+       "900111111",
+       null,
+       "EMPRESA ALFA S.A.S.",
+       "Agregada"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/facturadores/2026-11-05_1030/vinculacion_duplicada.xlsx": {
+   "hojas": [
+    {
+     "nombre": "vinculacion_duplicada",
+     "filas": [
+      [
+       "NIT",
+       "Empresa",
+       "Facturador descartado",
+       "Facturador vigente"
+      ],
+      [
+       "900111111",
+       "EMPRESA ALFA S.A.S.",
+       "ALFA",
+       "GAMMA"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  }
+ },
+ "bd_billers": [
+  "ALFA",
+  "BETA",
+  "GAMMA"
+ ],
+ "bd_companies": [
+  {
+   "nit": "101234567",
+   "name": "PERSONA NATURAL"
+  },
+  {
+   "nit": "555555555",
+   "name": "EMPRESA FANTASMA"
+  },
+  {
+   "nit": "830050228",
+   "name": "GRUPO ADECCO SA"
+  },
+  {
+   "nit": "900111111",
+   "name": "EMPRESA ALFA S.A.S."
+  }
+ ],
+ "bd_companies_billers": [
+  {
+   "nit": "101234567",
+   "facturador": "BETA"
+  },
+  {
+   "nit": "555555555",
+   "facturador": "BETA"
+  },
+  {
+   "nit": "830050228",
+   "facturador": "ALFA"
+  },
+  {
+   "nit": "900111111",
+   "facturador": "GAMMA"
+  }
+ ],
+ "mensajes_usuario": [
+  {
+   "nivel": "INFO",
+   "mensaje": "Hallazgos en logs/facturadores/2026-11-05_1030: vinculacion_duplicada=1, bd_local_actualizada=1."
+  }
+ ]
+}

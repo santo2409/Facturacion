@@ -2000,3 +2000,369 @@ def test_execute_es_idempotente_en_segunda_corrida_sobre_el_mismo_excel(deps, mo
 
     assert rows1 == rows2
     assert len(deps["imedical_repo"].saved_batches) == 0
+
+
+# ── AUD-60: celdas CUP no enteras ─────────────────────────────────────────
+def test_cup_cells_not_integer_raise_descriptive_invalid_operation_error():
+    from src.assign.application.use_cases.assigned_rates import (
+        CupCellValueError,
+        _check_cup_cells_castable,
+    )
+
+    df = pl.DataFrame(
+        {"Paciente": ["ANA", "LUIS", "EVA", "SOL"], "N° Identificación": ["1", "2", "3", "4"],
+         "890201": ["1", " 1", None, "x"], "903810-01": ["1.0", None, "1", None]},
+        schema={c: pl.Utf8 for c in ("Paciente", "N° Identificación", "890201", "903810-01")},
+    )
+
+    with pytest.raises(pl.exceptions.InvalidOperationError) as info:
+        _check_cup_cells_castable(df, ["890201", "903810-01"])
+
+    assert isinstance(info.value, CupCellValueError)
+    msg = str(info.value)
+    assert msg.startswith("3 celda(s) CUP con valor no entero")
+    assert "columna 890201: valor ' 1' (Paciente='LUIS', N° Identificación='2')" in msg
+    assert "columna 890201: valor 'x'" in msg and "columna 903810-01: valor '1.0'" in msg
+
+
+def test_cup_cells_valid_pass_check():
+    from src.assign.application.use_cases.assigned_rates import _check_cup_cells_castable
+
+    df = pl.DataFrame({"890201": ["1", None, "2"]}, schema={"890201": pl.Utf8})
+    _check_cup_cells_castable(df, ["890201"])  # no lanza
+
+
+# ── AUD-74: _validate_empresa vectorizado equivale a la versión fila a fila ──
+def _validate_empresa_anterior(df, db_nit_to_name):
+    mismatches = sum(
+        1 for row in df.iter_rows(named=True)
+        if row["NIT"] and row["NIT"] in db_nit_to_name and row["Empresa"] != db_nit_to_name[row["NIT"]]
+    )
+    if mismatches:
+        df = df.with_columns(
+            pl.struct(["NIT", "Empresa"]).map_elements(
+                lambda s: db_nit_to_name.get(s["NIT"], s["Empresa"]), return_dtype=pl.Utf8
+            ).alias("Empresa")
+        )
+    return df, mismatches
+
+
+@pytest.mark.parametrize("companies, nits, empresas", [
+    ({"1": "A SAS", "": "VACIO"}, ["1", "1", None, "", "2", "1"], ["a sas", "A SAS", "X", "Y", "Z", None]),
+    ({}, ["1", None], ["A", "B"]),
+    ({"1": "A"}, [None, None], ["A", None]),
+    ({"1": "A"}, ["1", "1"], ["A", "A"]),
+])
+def test_validate_empresa_vectorized_matches_previous(companies, nits, empresas):
+    from src.shared.utils.text_normalizer import normalize_name
+
+    df = pl.DataFrame({"NIT": nits, "Empresa": empresas}, schema={"NIT": pl.Utf8, "Empresa": pl.Utf8})
+    lookups = {"nit_to_company": {nit: {"name": name} for nit, name in companies.items()}}
+    db_nit_to_name = {nit: normalize_name(name) for nit, name in companies.items()}
+    esperado_df, esperado_n = _validate_empresa_anterior(df, db_nit_to_name)
+
+    logger = FakeLogger()
+    uc = AssignRatesFromExcel.__new__(AssignRatesFromExcel)
+    uc.logger = logger
+    resultado = uc._validate_empresa(df, lookups)
+
+    assert resultado["Empresa"].to_list() == esperado_df["Empresa"].to_list()
+    assert resultado.dtypes == esperado_df.dtypes
+    assert logger.warnings == ([f"{esperado_n} empresas no coinciden con BD. Corrigiendo."] if esperado_n else [])
+
+
+# ── AUD-33: mapas id→nombre una sola vez en _assign_paquete ─────────────────
+class _CountingRepo:
+    def __init__(self, rows):
+        self.rows, self.calls = rows, 0
+
+    def all(self):
+        self.calls += 1
+        return None if self.rows is None else [dict(r) for r in self.rows]
+
+
+def _paquete_anterior(nit_to_company, company_to_package, packages_all, provider_repo, special_repo):
+    out = {}
+    for nit, comp in nit_to_company.items():
+        pkg_tuple = company_to_package.get(comp["id"])
+        if pkg_tuple:
+            pkg_id, model = pkg_tuple
+            if model == "Package":
+                name = next((p["name"] for p in packages_all if p["id"] == pkg_id), None)
+            elif model == "Provider":
+                name = next((p["name"] for p in provider_repo.all() if p["id"] == pkg_id), None)
+            elif model == "Special":
+                name = next((p["name"] for p in special_repo.all() if p["id"] == pkg_id), None)
+            else:
+                name = None
+            out[nit] = name or "PAQUETE C 2025"
+        else:
+            out[nit] = "PAQUETE C 2025"
+    return out
+
+
+def _uc_paquete(provider_rows, special_rows):
+    uc = AssignRatesFromExcel.__new__(AssignRatesFromExcel)
+    uc.provider_repo, uc.special_repo = _CountingRepo(provider_rows), _CountingRepo(special_rows)
+    uc._odoo_by_nit = {}
+    return uc
+
+
+def test_assign_paquete_one_query_per_source_and_same_names():
+    companies = {f"90000000{i}": {"id": i} for i in range(1, 8)}
+    company_to_package = {1: (1, "Package"), 2: (9, "Package"), 3: (1, "Provider"), 4: (1, "Provider"),
+                          5: (2, "Special"), 6: (1, "Otro")}  # 7: sin paquete
+    packages = [{"id": 1, "name": "PAQ 1"}]
+    providers = [{"id": 1, "name": "PROV 1"}]
+    specials = [{"id": 1, "name": "ESP 1"}, {"id": 2, "name": "ESP 2"}]
+    lookups = {"nit_to_company": companies, "company_to_package": company_to_package, "packages_all": packages}
+    esperado = _paquete_anterior(companies, company_to_package, packages,
+                                 _CountingRepo(providers), _CountingRepo(specials))
+
+    uc = _uc_paquete(providers, specials)
+    df = uc._assign_paquete(pl.DataFrame({"NIT": list(companies)}), lookups)
+
+    assert dict(zip(df["NIT"], df["PAQUETE"])) == esperado
+    assert (uc.provider_repo.calls, uc.special_repo.calls) == (1, 1)
+
+
+def test_assign_paquete_skips_unused_source_and_keeps_type_error_on_failed_repo():
+    companies = {"900000001": {"id": 1}, "900000002": {"id": 2}}
+    lookups = {"nit_to_company": companies, "company_to_package": {1: (1, "Package"), 2: (1, "Special")},
+               "packages_all": [{"id": 1, "name": "PAQ 1"}]}
+
+    uc = _uc_paquete(provider_rows=[], special_rows=None)  # special_repo.all() falla → None
+    with pytest.raises(TypeError):
+        uc._assign_paquete(pl.DataFrame({"NIT": list(companies)}), lookups)
+    assert uc.provider_repo.calls == 0  # ninguna empresa es Provider: no se consulta
+
+
+# ── AUD-34: Odoo por NIT en lote equivale a la consulta NIT a NIT ──────────
+def _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla):
+    import xmlrpc.client
+    from src.odooInjection.infrastructure.odoo.xmlrpc_odoo_repository import XmlRpcOdooRepository
+    from tests.golden._odoo_simulado import OdooSimulado, ServerProxySimulado
+
+    odoo = OdooSimulado({"res.partner": partners})
+    monkeypatch.setattr(xmlrpc.client, "ServerProxy", ServerProxySimulado(odoo))
+    monkeypatch.setenv("DIRECTORY", str(tmp_path))
+    repo = XmlRpcOdooRepository("http://odoo.simulado", "db", "u", "k", FakeLogger(), {})
+    repo.connect()
+    if lote_falla:
+        def lote_caido(nits):
+            raise ConnectionError("lote caído")
+
+        repo.find_clients_batch_checked = lote_caido
+    repo.find_client_by_name = lambda name: (None, None, None)
+    uc = AssignRatesFromExcel(
+        biller_repo=FakeBillerRepo(), company_repo=FakeCompanyRepo(), biller_company_repo=FakeBillerCompanyRepo(),
+        package_repo=FakePackageRepo(), provider_repo=FakeProviderRepo(), special_repo=FakeSpecialRepo(),
+        city_repo=FakeCityRepo(), activities_repo=FakeActivityRepo(), rates_repo=FakeRatesRepo(),
+        cup_repo=FakeCupRepo(), fuzz=FakeFuzz(), progress=FakeProgress(), logger=FakeLogger(), odoo_repo=repo,
+    )
+    return uc
+
+
+def test_match_companies_odoo_batch_equals_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 10, "name": "EXACTO", "ref_num": "800000001", "vat": False},
+        {"id": 11, "name": "CON DV EN VAT", "ref_num": False, "vat": "800000002-7"},
+        {"id": 13, "name": "DUP MAYOR", "ref_num": "800000003", "vat": False},
+        {"id": 12, "name": "DUP MENOR", "ref_num": "800000003", "vat": False},
+        {"id": 14, "name": "REF CON ESPACIO", "ref_num": "800000004 ", "vat": False},
+    ]
+    df = pl.DataFrame({
+        "NIT": ["800000001", "800000002", "800000003", "800000004", "899999999", None, "800000001"],
+        "Empresa": ["A", "B", "C", "D", "E", "F", "G"],
+        "Base": ["OCT"] * 7,
+    })
+    resultados = []
+    for lote_falla in (True, False):  # True = ruta anterior (NIT a NIT)
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+
+    assert resultados[0] == resultados[1]
+    assert ("800000003", "DUP MENOR") in resultados[1][0]
+
+
+def _lote_vs_individual(monkeypatch, tmp_path, partners, nits):
+    """Corre _match_companies por la ruta individual (lote caído) y por el lote;
+    devuelve ambos resultados y los NIT que el lote mandó a find_client."""
+    resultados = []
+    individuales = []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        real_find_client = uc.odoo_repo.find_client
+        llamados: list[str] = []
+
+        def find_client_contado(nit, name, _real=real_find_client, _llamados=llamados):
+            _llamados.append(nit)
+            return _real(nit, name)
+
+        uc.odoo_repo.find_client = find_client_contado
+        df = pl.DataFrame({"NIT": nits, "Empresa": [f"E{i}" for i in range(len(nits))], "Base": ["OCT"] * len(nits)})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+        individuales.append(llamados)
+    return resultados[0], resultados[1], individuales[1]
+
+
+def test_match_companies_odoo_batch_short_nit_prefix_of_another(monkeypatch, tmp_path):
+    partners = [
+        {"id": 5, "name": "CON PUNTOS", "ref_num": "800.123.456", "vat": False},
+        {"id": 9, "name": "EXACTO", "ref_num": False, "vat": "800123456"},
+    ]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, ["800", "800123456"])
+    assert lote == individual
+    assert ("800123456", "EXACTO") in lote[0]
+    assert "800123456" in por_find_client
+
+
+def test_match_companies_odoo_batch_partner_only_reached_by_other_nit(monkeypatch, tmp_path):
+    partners = [{"id": 5, "name": "CON PUNTOS", "ref_num": "800.123.456", "vat": False}]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, ["800", "800123456"])
+    assert lote == individual
+    assert "800123456" not in lote[1]  # la consulta individual no lo encuentra
+    assert "800123456" in por_find_client
+
+
+def test_match_companies_odoo_batch_nit_with_and_without_check_digit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 20, "name": "DV EN REF", "ref_num": "8001234567", "vat": False},
+        {"id": 21, "name": "DV EN VAT", "ref_num": False, "vat": "900111222-3"},
+        {"id": 22, "name": "SIN DV", "ref_num": "700111222", "vat": False},
+        {"id": 23, "name": "CON DV", "ref_num": "7001112229", "vat": False},
+    ]
+    nits = ["800123456", "900111222", "700111222"]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, nits)
+    assert lote == individual
+    assert ("800123456", "DV EN REF") in lote[0] and ("900111222", "DV EN VAT") in lote[0]
+    assert ("700111222", "SIN DV") in lote[0]
+    assert por_find_client == []  # cada uno llegó por su propia condición y sin rivales en su etapa
+
+
+def test_match_companies_odoo_batch_duplicate_partners_go_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 31, "name": "DUP MAYOR", "ref_num": "600000001", "vat": False},
+        {"id": 30, "name": "DUP MENOR", "ref_num": "600000001", "vat": False},
+        {"id": 32, "name": "NORMAL", "ref_num": "600000002", "vat": False},
+    ]
+    individual, lote, por_find_client = _lote_vs_individual(
+        monkeypatch, tmp_path, partners, ["600000001", "600000002"])
+    assert lote == individual
+    assert ("600000001", "DUP MENOR") in lote[0]
+    assert por_find_client == ["600000001"]  # el normal se resolvió en el lote
+
+
+def test_match_companies_odoo_batch_failed_stage_goes_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 10, "name": "VAT-B", "ref_num": False, "vat": "900111222"},
+        {"id": 20, "name": "REF-A", "ref_num": "900111222 ", "vat": False},
+        {"id": 30, "name": "OTRA", "ref_num": "800000001", "vat": False},
+    ]
+    nits = ["900111222", "800000001"]
+    resultados = []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        real_execute = uc.odoo_repo._execute
+
+        def execute_que_falla_en_lote(model, method, args, *rest, _real=real_execute):
+            dominio = args[0]
+            if model == "res.partner" and any(isinstance(t, list) and t[0] == "ref_num" for t in dominio):
+                cantidad = sum(len(t[2]) if t[1] == "in" else 1 for t in dominio if isinstance(t, list))
+                if cantidad > 1:
+                    raise TimeoutError("timed out")  # solo falla la consulta con varios NIT
+            return _real(model, method, args, *rest)
+
+        uc.odoo_repo._execute = execute_que_falla_en_lote
+        df = pl.DataFrame({"NIT": nits, "Empresa": ["E0", "E1"], "Base": ["OCT"] * 2})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+
+    assert resultados[1] == resultados[0]
+    assert ("900111222", "REF-A") in resultados[1][0] and ("800000001", "OTRA") in resultados[1][0]
+
+
+def _lote_con_fallos_vs_individual(monkeypatch, tmp_path, partners, nits, falla):
+    """Como _lote_vs_individual, con bloques de 2 NIT y `falla(field, mode, nits)`
+    decidiendo qué consultas de res.partner fallan (solo si llevan más de un NIT,
+    así que la consulta individual nunca falla)."""
+    resultados, individuales = [], []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        repo = uc.odoo_repo
+        repo._BATCH_SIZE = repo._LIKE_BATCH_SIZE = 2
+        real_execute = repo._execute
+
+        def execute_con_fallos(model, method, args, *rest, _real=real_execute):
+            terminos = [t for t in args[0] if isinstance(t, list)] if model == "res.partner" else []
+            if terminos and terminos[0][0] in ("ref_num", "vat"):
+                field, op = terminos[0][0], terminos[0][1]
+                consultados = terminos[0][2] if op == "in" else [t[2][:-1] for t in terminos]
+                mode = "in" if op == "in" else "like"
+                if len(consultados) > 1 and falla(field, mode, consultados):
+                    raise TimeoutError("timed out")
+            return _real(model, method, args, *rest)
+
+        repo._execute = execute_con_fallos
+        llamados: list[str] = []
+        real_find_client = repo.find_client
+
+        def find_client_contado(nit, name, _real=real_find_client, _llamados=llamados):
+            _llamados.append(nit)
+            return _real(nit, name)
+
+        repo.find_client = find_client_contado
+        df = pl.DataFrame({"NIT": nits, "Empresa": [f"E{i}" for i in range(len(nits))], "Base": ["OCT"] * len(nits)})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+        individuales.append(llamados)
+    return resultados[0], resultados[1], individuales[1]
+
+
+def test_match_companies_odoo_batch_only_one_block_of_stage_fails(monkeypatch, tmp_path):
+    partners = [
+        {"id": 50, "name": "N3 REF", "ref_num": "500000003", "vat": False},
+        {"id": 40, "name": "N3 VAT", "ref_num": False, "vat": "500000003"},
+        {"id": 51, "name": "N1", "ref_num": "500000001", "vat": False},
+        {"id": 52, "name": "N2", "ref_num": "500000002", "vat": False},
+        {"id": 54, "name": "N4", "ref_num": "500000004", "vat": False},
+        {"id": 55, "name": "N5", "ref_num": "500000005", "vat": False},
+    ]
+    nits = ["500000001", "500000002", "500000003", "500000004", "500000005"]
+    # Etapa ref_num exacta: bloques [1,2] [3,4] [5]; falla solo [3,4], también en
+    # ref_num =like (donde es el único bloque pendiente). Los demás bloques responden.
+    bloque_caido = {"500000003", "500000004"}
+
+    individual, lote, por_find_client = _lote_con_fallos_vs_individual(
+        monkeypatch, tmp_path, partners, nits,
+        lambda field, mode, consultados: field == "ref_num" and set(consultados) == bloque_caido,
+    )
+
+    assert lote == individual
+    assert ("500000003", "N3 REF") in lote[0]  # sin la corrección saldría N3 VAT (etapa vat)
+    assert sorted(por_find_client) == sorted(bloque_caido)  # los otros bloques se resolvieron en lote
+
+
+def test_match_companies_odoo_batch_only_like_stages_fail(monkeypatch, tmp_path):
+    partners = [
+        {"id": 61, "name": "REF CON ESPACIO", "ref_num": "600000001 ", "vat": False},
+        {"id": 62, "name": "VAT CON DV", "ref_num": False, "vat": "600000002-5"},
+        {"id": 63, "name": "EXACTO", "ref_num": "600000003", "vat": False},
+    ]
+    nits = ["600000001", "600000002", "600000003", "600000009"]
+
+    individual, lote, por_find_client = _lote_con_fallos_vs_individual(
+        monkeypatch, tmp_path, partners, nits,
+        lambda field, mode, consultados: mode == "like",
+    )
+
+    assert lote == individual
+    assert ("600000001", "REF CON ESPACIO") in lote[0] and ("600000002", "VAT CON DV") in lote[0]
+    assert ("600000003", "EXACTO") in lote[0]
+    assert sorted(por_find_client) == ["600000001", "600000002"]  # el exacto no pasó por like

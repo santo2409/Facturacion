@@ -1,0 +1,186 @@
+{
+  "res.partner": [
+    {
+      "id": 10,
+      "name": "EMPRESA ALFA S.A.S.",
+      "ref_num": "900111111",
+      "vat": false,
+      "rate_base_special_id": [
+        501,
+        "ESPECIAL ALFA 2026"
+      ],
+      "rate_base_id": [
+        500,
+        "TARIFA BASICA 2025"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "GRUPO ADECCO",
+      "ref_num": "830050228",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 12,
+      "name": "TIAN SAS",
+      "ref_num": "860000001",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": [
+        500,
+        "TARIFA BASICA 2025"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "EMPRESA GAMMA",
+      "ref_num": false,
+      "vat": "700777777-1",
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    }
+  ],
+  "product.product": [
+    {
+      "id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "default_code": "890201",
+      "list_price": 30000.0
+    },
+    {
+      "id": 102,
+      "name": "CONSULTA ESPECIALISTA",
+      "default_code": "890202",
+      "list_price": 30000.0
+    },
+    {
+      "id": 103,
+      "name": "COLESTEROL TOTAL",
+      "default_code": "903810",
+      "list_price": 30000.0
+    },
+    {
+      "id": 104,
+      "name": "COLESTEROL TOTAL SUERO",
+      "default_code": "903810-01",
+      "list_price": 30000.0
+    },
+    {
+      "id": 105,
+      "name": "RX TORAX",
+      "default_code": "871121",
+      "list_price": 30000.0
+    },
+    {
+      "id": 106,
+      "name": "EXAMEN SIN TARIFA",
+      "default_code": "990101",
+      "list_price": 30000.0
+    }
+  ],
+  "account.base.rate": [
+    {
+      "id": 501,
+      "name": "ESPECIAL ALFA 2026",
+      "state": "active",
+      "start_date": "2026-01-01",
+      "finish_date": "2026-12-31"
+    },
+    {
+      "id": 500,
+      "name": "TARIFA BASICA 2025",
+      "state": "active",
+      "start_date": "2025-01-01",
+      "finish_date": "2025-12-31"
+    }
+  ],
+  "account.base.rate.line": [
+    {
+      "id": 1,
+      "base_rate_id": [
+        501,
+        "ESPECIAL ALFA 2026"
+      ],
+      "city_id": [
+        1,
+        "BOGOTA, D.C."
+      ],
+      "product_id": [
+        101,
+        "890201"
+      ],
+      "intra": true,
+      "price_unit": 31100.7
+    },
+    {
+      "id": 2,
+      "base_rate_id": [
+        501,
+        "ESPECIAL ALFA 2026"
+      ],
+      "city_id": [
+        1,
+        "BOGOTA, D.C."
+      ],
+      "product_id": [
+        101,
+        "890201"
+      ],
+      "intra": true,
+      "price_unit": 99999.0
+    },
+    {
+      "id": 3,
+      "base_rate_id": [
+        500,
+        "TARIFA BASICA 2025"
+      ],
+      "city_id": [
+        1,
+        "BOGOTA, D.C."
+      ],
+      "product_id": [
+        102,
+        "890202"
+      ],
+      "intra": true,
+      "price_unit": 0.0
+    },
+    {
+      "id": 4,
+      "base_rate_id": [
+        500,
+        "TARIFA BASICA 2025"
+      ],
+      "city_id": [
+        1,
+        "BOGOTA, D.C."
+      ],
+      "product_id": [
+        105,
+        "871121"
+      ],
+      "intra": false,
+      "price_unit": 27000.0
+    },
+    {
+      "id": 5,
+      "base_rate_id": [
+        500,
+        "TARIFA BASICA 2025"
+      ],
+      "city_id": [
+        1,
+        "BOGOTA, D.C."
+      ],
+      "product_id": [
+        101,
+        "890201"
+      ],
+      "intra": true,
+      "price_unit": 25000.0
+    }
+  ]
+}

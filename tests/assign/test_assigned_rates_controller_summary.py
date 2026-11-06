@@ -61,3 +61,16 @@ def test_summary_includes_expired_rates_count():
 
     assert "Tarifas Odoo vencidas" in text
     assert "7" in text
+
+
+# ── AUD-32 ────────────────────────────────────────────────────────────────
+_AVISO_TARIFAS = "Falló la consulta de tarifas en la base de datos"
+
+
+def test_summary_warns_when_rates_query_failed():
+    text = _render(_result(rates_query_failed=True))
+    assert _AVISO_TARIFAS in text and "Revisa logs.log." in text
+
+
+def test_summary_has_no_rates_warning_by_default():
+    assert _AVISO_TARIFAS not in _render(_result())

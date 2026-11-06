@@ -1,0 +1,2300 @@
+{
+ "archivos": {
+  "CONSOLIDADO.xlsx": {
+   "hojas": [
+    {
+     "nombre": "Consolidado",
+     "filas": [
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "NIT",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "FACTURAS",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "871121",
+       "890201",
+       "890202",
+       "903810-01",
+       "990101"
+      ],
+      [
+       "OCTUBRE 1-20",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "900111111",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "ANA PREZ",
+       "CC 1001",
+       null,
+       "OC-1",
+       null,
+       "FAC200, SET100",
+       "INTRA",
+       null,
+       86100,
+       null,
+       31100,
+       55000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "2",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "900111111",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "LUIS GMEZ",
+       "CC 1001",
+       null,
+       "OC-1",
+       null,
+       "FAC200, SET100",
+       "EXTRA",
+       null,
+       27000,
+       27000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "3",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "800222222",
+       "GENERAL",
+       "GENERAL",
+       "PROVEEDOR ALFA",
+       "EMPRESA BETA LTDA",
+       "MISION SAS",
+       "CRÉDITO",
+       "03/11/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "MARTA RUIZ",
+       "1003",
+       null,
+       "OC-1",
+       null,
+       "SET300",
+       "INTRA",
+       null,
+       30000,
+       30000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "4",
+       "SEDE NORTE",
+       "CALI",
+       "912345678",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "EMPRESA RUES SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       "12/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "PEDRO DAZ",
+       "1004",
+       null,
+       "OC-1",
+       null,
+       "FAC400",
+       "INTRA",
+       null,
+       41000,
+       null,
+       41000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "5",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "900111111",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       "13/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "SARA MORA",
+       "1005",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       12000,
+       null,
+       null,
+       null,
+       12000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "6",
+       "SEDE NORTE",
+       "MEDELLIN",
+       "830050228",
+       "BETA",
+       "ESPECIAL",
+       "ESPECIAL ADECCO",
+       "GRUPO ADECCO",
+       "MISION SAS",
+       "CRÉDITO",
+       "5/1/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "JUAN ROS",
+       "1006",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       13000,
+       null,
+       null,
+       null,
+       13000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "7",
+       "SEDE NORTE",
+       "MEDELLIN",
+       "830050228",
+       "BETA",
+       "ESPECIAL",
+       "ESPECIAL ADECCO",
+       "GRUPO ADECCO",
+       "MISION SAS",
+       "CRÉDITO",
+       "20/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "EVA LUNA",
+       "1007",
+       null,
+       "OC-1",
+       null,
+       null,
+       "EXTRA",
+       null,
+       33000,
+       33000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "8",
+       "SEDE NORTE",
+       "TUNJA",
+       "830050228",
+       "BETA",
+       "ESPECIAL",
+       "ESPECIAL ADECCO",
+       "GRUPO ADECCO",
+       "MISION SAS",
+       "CRÉDITO",
+       "21/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "IVN CRUZ",
+       "1008",
+       null,
+       "OC-1",
+       null,
+       null,
+       "EXTRA",
+       null,
+       1,
+       1
+      ],
+      [
+       "IMEDICAL OCTUBRE 1-20",
+       "9",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "900111111",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       "22/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "ROSA VEGA",
+       "1009",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       31100,
+       null,
+       31100
+      ],
+      [
+       "OCTUBRE 1-20",
+       "10",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "860000001",
+       "GENERAL",
+       "GENERAL",
+       "TARIFA BASICA 2025",
+       "CLIENTE TIAN(TIAN)",
+       "MISION SAS",
+       "CRÉDITO",
+       "23/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "HUGO PAZ",
+       "1010",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       25000,
+       null,
+       25000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "11",
+       "SEDE NORTE",
+       "CALI",
+       "700777777",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "EMPRESA GAMMA",
+       "MISION SAS",
+       "CRÉDITO",
+       "24/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "LA SOL",
+       "1011",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       41000,
+       null,
+       41000
+      ],
+      [
+       "OCTUBRE 1-20",
+       "12",
+       "SEDE NORTE",
+       "CALI",
+       "555555555",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "DESCONOCIDA XYZ",
+       "MISION SAS",
+       "CRÉDITO",
+       "25/10/2026",
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "NO GIL",
+       "1012",
+       null,
+       "OC-1",
+       null,
+       null,
+       "INTRA",
+       null,
+       1,
+       null,
+       null,
+       null,
+       null,
+       1
+      ],
+      [
+       "OCTUBRE 1-20",
+       "13",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "900111111",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CRÉDITO",
+       null,
+       "INGRESO",
+       "AUXILIAR A BODEGA",
+       "ANA PREZ",
+       "CC 1001",
+       null,
+       "OC-1",
+       null,
+       "FAC200, SET100",
+       "INTRA",
+       null,
+       2,
+       null,
+       2
+      ]
+     ],
+     "estilos": {
+      "W2": {
+       "formato": "#,##0"
+      },
+      "X2": {
+       "formato": "#,##0"
+      },
+      "Y2": {
+       "formato": "#,##0"
+      },
+      "Z2": {
+       "relleno": "E2EFDA",
+       "formato": "#,##0"
+      },
+      "AA2": {
+       "formato": "#,##0"
+      },
+      "AB2": {
+       "formato": "#,##0"
+      },
+      "W3": {
+       "formato": "#,##0"
+      },
+      "X3": {
+       "formato": "#,##0"
+      },
+      "Y3": {
+       "formato": "#,##0"
+      },
+      "Z3": {
+       "formato": "#,##0"
+      },
+      "AA3": {
+       "formato": "#,##0"
+      },
+      "AB3": {
+       "formato": "#,##0"
+      },
+      "W4": {
+       "formato": "#,##0"
+      },
+      "X4": {
+       "relleno": "FFF2CC",
+       "formato": "#,##0"
+      },
+      "Y4": {
+       "formato": "#,##0"
+      },
+      "Z4": {
+       "formato": "#,##0"
+      },
+      "AA4": {
+       "formato": "#,##0"
+      },
+      "AB4": {
+       "formato": "#,##0"
+      },
+      "W5": {
+       "formato": "#,##0"
+      },
+      "X5": {
+       "formato": "#,##0"
+      },
+      "Y5": {
+       "relleno": "F4B183",
+       "formato": "#,##0"
+      },
+      "Z5": {
+       "formato": "#,##0"
+      },
+      "AA5": {
+       "formato": "#,##0"
+      },
+      "AB5": {
+       "formato": "#,##0"
+      },
+      "W6": {
+       "formato": "#,##0"
+      },
+      "X6": {
+       "formato": "#,##0"
+      },
+      "Y6": {
+       "formato": "#,##0"
+      },
+      "Z6": {
+       "formato": "#,##0"
+      },
+      "AA6": {
+       "relleno": "BDD7EE",
+       "formato": "#,##0"
+      },
+      "AB6": {
+       "formato": "#,##0"
+      },
+      "W7": {
+       "formato": "#,##0"
+      },
+      "X7": {
+       "formato": "#,##0"
+      },
+      "Y7": {
+       "formato": "#,##0"
+      },
+      "Z7": {
+       "formato": "#,##0"
+      },
+      "AA7": {
+       "relleno": "9DC3E6",
+       "formato": "#,##0"
+      },
+      "AB7": {
+       "formato": "#,##0"
+      },
+      "W8": {
+       "formato": "#,##0"
+      },
+      "X8": {
+       "relleno": "D5A6E6",
+       "formato": "#,##0"
+      },
+      "Y8": {
+       "formato": "#,##0"
+      },
+      "Z8": {
+       "formato": "#,##0"
+      },
+      "AA8": {
+       "formato": "#,##0"
+      },
+      "AB8": {
+       "formato": "#,##0"
+      },
+      "W9": {
+       "formato": "#,##0"
+      },
+      "X9": {
+       "formato": "#,##0"
+      },
+      "Y9": {
+       "formato": "#,##0"
+      },
+      "Z9": {
+       "formato": "#,##0"
+      },
+      "AA9": {
+       "formato": "#,##0"
+      },
+      "AB9": {
+       "formato": "#,##0"
+      },
+      "W10": {
+       "formato": "#,##0"
+      },
+      "X10": {
+       "formato": "#,##0"
+      },
+      "Y10": {
+       "formato": "#,##0"
+      },
+      "Z10": {
+       "formato": "#,##0"
+      },
+      "AA10": {
+       "formato": "#,##0"
+      },
+      "AB10": {
+       "formato": "#,##0"
+      },
+      "W11": {
+       "formato": "#,##0"
+      },
+      "X11": {
+       "formato": "#,##0"
+      },
+      "Y11": {
+       "formato": "#,##0"
+      },
+      "Z11": {
+       "formato": "#,##0"
+      },
+      "AA11": {
+       "formato": "#,##0"
+      },
+      "AB11": {
+       "formato": "#,##0"
+      },
+      "W12": {
+       "formato": "#,##0"
+      },
+      "X12": {
+       "formato": "#,##0"
+      },
+      "Y12": {
+       "relleno": "F4B183",
+       "formato": "#,##0"
+      },
+      "Z12": {
+       "formato": "#,##0"
+      },
+      "AA12": {
+       "formato": "#,##0"
+      },
+      "AB12": {
+       "formato": "#,##0"
+      },
+      "W13": {
+       "formato": "#,##0"
+      },
+      "X13": {
+       "formato": "#,##0"
+      },
+      "Y13": {
+       "formato": "#,##0"
+      },
+      "Z13": {
+       "formato": "#,##0"
+      },
+      "AA13": {
+       "formato": "#,##0"
+      },
+      "AB13": {
+       "formato": "#,##0"
+      },
+      "W14": {
+       "formato": "#,##0"
+      },
+      "X14": {
+       "formato": "#,##0"
+      },
+      "Y14": {
+       "formato": "#,##0"
+      },
+      "Z14": {
+       "formato": "#,##0"
+      },
+      "AA14": {
+       "formato": "#,##0"
+      },
+      "AB14": {
+       "formato": "#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/empresas_odoo.xlsx": {
+   "hojas": [
+    {
+     "nombre": "empresas_odoo",
+     "filas": [
+      [
+       "NIT",
+       "Empresa",
+       "Motivo"
+      ],
+      [
+       "800222222",
+       "EMPRESA BETA LTDA",
+       "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
+      ],
+      [
+       "912345678",
+       "EMPRESA RUES SAS",
+       "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
+      ],
+      [
+       "830050228",
+       "GRUPO ADECCO",
+       "Sin tarifa especial ni base. Acción: asignar una tarifa especial o base a la empresa en Odoo."
+      ],
+      [
+       "700777777",
+       "EMPRESA GAMMA",
+       "Sin tarifa especial ni base. Acción: asignar una tarifa especial o base a la empresa en Odoo."
+      ],
+      [
+       "555555555",
+       "DESCONOCIDA XYZ",
+       "No encontrada en Odoo. Acción: registrar la empresa en Odoo (el sistema no la crea)."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Empresas sin tarifa en Odoo (no existen o no tienen tarifa especial ni base)."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "Motivo",
+       "Por qué la empresa no tiene tarifa en Odoo."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_01_paquete_propio_local.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_01_paquete_propio_local",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 1 — Paquete propio local",
+       "EMPRESA ALFA SAS",
+       "900111111",
+       "PAQUETE A 2025",
+       "BOGOTA, D.C.",
+       "890202",
+       "INTRA",
+       55000,
+       "Base de datos local — Paquete: PAQUETE A 2025",
+       "BOGOTA, D.C.",
+       "890202",
+       1,
+       "Cargar en Odoo la tarifa de paquete «PAQUETE A 2025», ciudad BOGOTA, D.C., CUP 890202, actividad INTRA: Odoo no tiene esta tarifa y se tomó de la base de datos local."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Odoo no tiene la tarifa; se tomó de la base de datos local (paquete propio de la empresa). Debe cargarse en Odoo. «Paquete original» y «Fuente de la tarifa» coinciden porque la tarifa sale del propio paquete de la empresa."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_02_paquete_c_2025.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_02_paquete_c_2025",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)",
+       "EMPRESA BETA LTDA",
+       "800222222",
+       "PROVEEDOR ALFA",
+       "BOGOTA, D.C.",
+       "871121",
+       "INTRA",
+       30000,
+       "Paquete: PAQUETE C 2025",
+       "BOGOTA, D.C.",
+       "871121",
+       1,
+       "Crear tarifa en paquete «PROVEEDOR ALFA», ciudad BOGOTA, D.C., CUP 871121, actividad INTRA. Hoy se usa Paquete: PAQUETE C 2025."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "El paquete propio no tiene tarifa; se asignó la de PAQUETE C 2025 (mismo CUP y ciudad)."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_03_cualquier_paquete.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_03_cualquier_paquete",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)",
+       "EMPRESA RUES SAS",
+       "912345678",
+       "PAQUETE C 2025",
+       "CALI",
+       "890201",
+       "INTRA",
+       41000,
+       "Paquete: PAQUETE Z",
+       "CALI",
+       "890201",
+       1,
+       "Crear tarifa en paquete «PAQUETE C 2025», ciudad CALI, CUP 890201, actividad INTRA. Hoy se usa Paquete: PAQUETE Z."
+      ],
+      [
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)",
+       "EMPRESA GAMMA",
+       "700777777",
+       "PAQUETE C 2025",
+       "CALI",
+       "890201",
+       "INTRA",
+       41000,
+       "Paquete: PAQUETE Z",
+       "CALI",
+       "890201",
+       1,
+       "Crear tarifa en paquete «PAQUETE C 2025», ciudad CALI, CUP 890201, actividad INTRA. Hoy se usa Paquete: PAQUETE Z."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "H3": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L3": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Ni el paquete propio ni PAQUETE C 2025 tienen tarifa; se asignó la de otro paquete, proveedor o especial (mismo CUP y ciudad)."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_04_cup_base_paquete_c.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_04_cup_base_paquete_c",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)",
+       "EMPRESA ALFA SAS",
+       "900111111",
+       "PAQUETE A 2025",
+       "BOGOTA, D.C.",
+       "903810-01",
+       "INTRA",
+       12000,
+       "Paquete: PAQUETE C 2025",
+       "BOGOTA, D.C.",
+       "903810",
+       1,
+       "Crear tarifa para el CUP 903810-01 en paquete «PAQUETE A 2025», ciudad BOGOTA, D.C., CUP 903810-01, actividad INTRA. Hoy se homologa al CUP base 903810 (Paquete: PAQUETE C 2025)."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Sin tarifa para el CUP con sufijo; se asignó la de su CUP base en PAQUETE C 2025."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_05_cup_base_cualquier_paquete.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_05_cup_base_cualquier_paqu",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)",
+       "GRUPO ADECCO",
+       "830050228",
+       "ESPECIAL ADECCO",
+       "MEDELLIN",
+       "903810-01",
+       "INTRA",
+       13000,
+       "Paquete: PAQUETE Z",
+       "MEDELLIN",
+       "903810",
+       1,
+       "Crear tarifa para el CUP 903810-01 en paquete «ESPECIAL ADECCO», ciudad MEDELLIN, CUP 903810-01, actividad INTRA. Hoy se homologa al CUP base 903810 (Paquete: PAQUETE Z)."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Sin tarifa para el CUP con sufijo; se asignó la de su CUP base en otro paquete, proveedor o especial."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/fase_06_cualquier_ciudad.xlsx": {
+   "hojas": [
+    {
+     "nombre": "fase_06_cualquier_ciudad",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)",
+       "GRUPO ADECCO",
+       "830050228",
+       "ESPECIAL ADECCO",
+       "MEDELLIN",
+       "871121",
+       "EXTRA",
+       33000,
+       "Paquete: PAQUETE Z",
+       "BOGOTA, D.C.",
+       "871121",
+       1,
+       "Crear tarifa en paquete «ESPECIAL ADECCO», ciudad MEDELLIN, CUP 871121, actividad EXTRA. Hoy se usa la de BOGOTA, D.C. (Paquete: PAQUETE Z)."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "H2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Sin tarifa en la ciudad solicitada; se asignó la de otra ciudad (ver «Ciudad efectiva»)."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/odoo_tarifa_vencida.xlsx": {
+   "hojas": [
+    {
+     "nombre": "odoo_tarifa_vencida",
+     "filas": [
+      [
+       "Empresa",
+       "NIT",
+       "Tarifa Odoo",
+       "Tipo de tarifa",
+       "Inicio vigencia",
+       "Fin vigencia",
+       "Estado Odoo",
+       "Ciudad",
+       "CUP",
+       "Actividad",
+       "Tarifa asignada",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "EMPRESA ALFA SAS",
+       "900111111",
+       "TARIFA BASICA 2025",
+       "Base",
+       "2025-01-01",
+       "2025-12-31",
+       "active",
+       "BOGOTA, D.C.",
+       "871121",
+       "EXTRA",
+       27000,
+       1,
+       "Renovar en Odoo la tarifa «TARIFA BASICA 2025» (Base), vencida el 2025-12-31. Se asignó igual el valor 27000."
+      ],
+      [
+       "CLIENTE TIAN(TIAN)",
+       "860000001",
+       "TARIFA BASICA 2025",
+       "Base",
+       "2025-01-01",
+       "2025-12-31",
+       "active",
+       "BOGOTA, D.C.",
+       "890201",
+       "INTRA",
+       25000,
+       1,
+       "Renovar en Odoo la tarifa «TARIFA BASICA 2025» (Base), vencida el 2025-12-31. Se asignó igual el valor 25000."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "K2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "K3": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L3": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "Tarifas de Odoo con vigencia vencida que se asignaron igual; deben renovarse en Odoo."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Tarifa Odoo",
+       "Nombre de la tarifa vencida en Odoo."
+      ],
+      [
+       "Tipo de tarifa",
+       "Especial (de la empresa) o Base."
+      ],
+      [
+       "Inicio vigencia",
+       "Fecha de inicio de vigencia en Odoo."
+      ],
+      [
+       "Fin vigencia",
+       "Fecha de fin de vigencia en Odoo; es anterior a la fecha de ejecución."
+      ],
+      [
+       "Estado Odoo",
+       "Estado de la tarifa en Odoo (approved / not_approved)."
+      ],
+      [
+       "Ciudad",
+       "Ciudad de la línea de tarifa."
+      ],
+      [
+       "CUP",
+       "CUP del examen."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/asignar_tarifas/2026-11-05_1030/sin_resolver.xlsx": {
+   "hojas": [
+    {
+     "nombre": "sin_resolver",
+     "filas": [
+      [
+       "Fase",
+       "Empresa",
+       "NIT",
+       "Paquete original",
+       "Ciudad original",
+       "CUP original",
+       "Actividad",
+       "Tarifa asignada",
+       "Fuente de la tarifa",
+       "Ciudad efectiva",
+       "CUP efectivo",
+       "Nº pacientes",
+       "Qué debe hacer el área"
+      ],
+      [
+       "Sin resolver",
+       "GRUPO ADECCO",
+       "830050228",
+       "ESPECIAL ADECCO",
+       "TUNJA",
+       "871121",
+       "EXTRA",
+       "Sin tarifa",
+       "Sin tarifa",
+       null,
+       null,
+       1,
+       "Crear tarifa en paquete «ESPECIAL ADECCO», ciudad TUNJA, CUP 871121, actividad EXTRA: no existe en ninguna fase."
+      ],
+      [
+       "Sin resolver",
+       "DESCONOCIDA XYZ",
+       "555555555",
+       "PAQUETE C 2025",
+       "CALI",
+       "990101",
+       "INTRA",
+       "Sin tarifa",
+       "Sin tarifa",
+       null,
+       null,
+       1,
+       "Crear tarifa en paquete «PAQUETE C 2025», ciudad CALI, CUP 990101, actividad INTRA: no existe en ninguna fase."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "H1": {
+       "negrita": true
+      },
+      "I1": {
+       "negrita": true
+      },
+      "J1": {
+       "negrita": true
+      },
+      "K1": {
+       "negrita": true
+      },
+      "L1": {
+       "negrita": true
+      },
+      "M1": {
+       "negrita": true
+      },
+      "L2": {
+       "formato": "#,##0;[Red]-#,##0"
+      },
+      "L3": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Columna",
+       "Significado"
+      ],
+      [
+       "Libro",
+       "No existe tarifa en ninguna fase. En el CONSOLIDADO queda con valor 1 y debe crearse la tarifa."
+      ],
+      [
+       "Fase",
+       "Fase de la cascada que resolvió el precio."
+      ],
+      [
+       "Empresa",
+       "Nombre de la empresa cliente."
+      ],
+      [
+       "NIT",
+       "NIT de la empresa (máximo 9 dígitos, sin dígito de verificación)."
+      ],
+      [
+       "Paquete original",
+       "Paquete de la empresa en el que se buscó primero la tarifa (llave original)."
+      ],
+      [
+       "Ciudad original",
+       "Ciudad solicitada en el consolidado (llave original)."
+      ],
+      [
+       "CUP original",
+       "CUP del examen solicitado en el consolidado (llave original)."
+      ],
+      [
+       "Actividad",
+       "Tipo de actividad: INTRA o EXTRA."
+      ],
+      [
+       "Tarifa asignada",
+       "Valor asignado, o «Sin tarifa» si no se resolvió."
+      ],
+      [
+       "Fuente de la tarifa",
+       "Tipo (Paquete, Proveedor, Especial) y nombre de donde salió la tarifa asignada."
+      ],
+      [
+       "Ciudad efectiva",
+       "Ciudad de la que salió la tarifa asignada."
+      ],
+      [
+       "CUP efectivo",
+       "CUP cuya tarifa se usó (el CUP base cuando se homologó)."
+      ],
+      [
+       "Nº pacientes",
+       "Cantidad de filas del consolidado (pacientes) que comparten esta llave."
+      ],
+      [
+       "Qué debe hacer el área",
+       "Acción sugerida para el área de tarifas."
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      }
+     }
+    }
+   ]
+  },
+  "logs/empresas_no_encontradas.xlsx": {
+   "hojas": [
+    {
+     "nombre": "No Encontradas",
+     "filas": [
+      [
+       "#",
+       "NIT",
+       "Empresa",
+       "Estado",
+       "Base Consultada",
+       "Fecha/Hora"
+      ],
+      [
+       1,
+       "555555555",
+       "Desconocida XYZ",
+       "No encontrado (ni Odoo ni RUES)",
+       "Odoo, BD local, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       2,
+       "811000000",
+       "Cliente Tian",
+       "No encontrado (ni Odoo ni RUES)",
+       "Odoo, BD local, RUES",
+       "2026-11-05 10:30:00"
+      ],
+      [
+       null,
+       null,
+       "TOTAL PENDIENTES",
+       2
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFEB9C"
+      },
+      "B2": {
+       "relleno": "FFEB9C"
+      },
+      "C2": {
+       "relleno": "FFEB9C"
+      },
+      "D2": {
+       "relleno": "FFEB9C"
+      },
+      "E2": {
+       "relleno": "FFEB9C"
+      },
+      "F2": {
+       "relleno": "FFEB9C"
+      },
+      "A3": {
+       "relleno": "FFEB9C"
+      },
+      "B3": {
+       "relleno": "FFEB9C"
+      },
+      "C3": {
+       "relleno": "FFEB9C"
+      },
+      "D3": {
+       "relleno": "FFEB9C"
+      },
+      "E3": {
+       "relleno": "FFEB9C"
+      },
+      "F3": {
+       "relleno": "FFEB9C"
+      },
+      "C4": {
+       "negrita": true
+      },
+      "D4": {
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A2"
+    }
+   ]
+  },
+  "logs/empresas_tian.xlsx": {
+   "hojas": [
+    {
+     "nombre": "Empresas TIAN",
+     "filas": [
+      [
+       "#",
+       "NIT Original",
+       "Empresa Original",
+       "NIT TIAN",
+       "Empresa Facturada",
+       "Registros"
+      ],
+      [
+       1,
+       "811000000",
+       "CLIENTE TIAN",
+       "860000001",
+       "CLIENTE TIAN(TIAN)",
+       1
+      ],
+      [],
+      [
+       null,
+       null,
+       "TOTAL",
+       null,
+       1,
+       1
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "3D2B6B",
+       "negrita": true
+      },
+      "C4": {
+       "negrita": true
+      },
+      "E4": {
+       "negrita": true
+      },
+      "F4": {
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A2"
+    }
+   ]
+  }
+ },
+ "bd_imedical_guardados": [],
+ "consola": "                      Asignación de tarifas                      \n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┓\n┃ Origen del precio                                    ┃ Celdas ┃\n┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━┩\n│ Tarifa Odoo (especial/base)                          │      4 │\n│ Fase 1 — Paquete propio local                        │      1 │\n│ Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)    │      1 │\n│ Fase 3 — Cualquier paquete (mismo CUP, misma ciudad) │      2 │\n│ Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)     │      1 │\n│ Fase 5 — Cualquier paquete (CUP base, misma ciudad)  │      1 │\n│ Fase 6 — Cualquier paquete/ciudad (cup + actividad)  │      1 │\n│ Sin resolver (valor 1)                               │      2 │\n│ Tarifas Odoo vencidas (asignadas)                    │      2 │\n└──────────────────────────────────────────────────────┴────────┘\n   Hallazgos por fase en: logs/asignar_tarifas/2026-11-05_1030   \n",
+ "mensajes_usuario": []
+}

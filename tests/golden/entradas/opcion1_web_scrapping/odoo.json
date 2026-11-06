@@ -1,0 +1,28 @@
+{
+  "res.partner": [
+    {
+      "id": 10,
+      "name": "EMPRESA ALFA S.A.S.",
+      "ref_num": "900111111",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 11,
+      "name": "GRUPO ADECCO S.A.",
+      "ref_num": "830050228",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 14,
+      "name": "ACME INDUSTRIAL S.A.S.",
+      "ref_num": "777888999",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    }
+  ]
+}

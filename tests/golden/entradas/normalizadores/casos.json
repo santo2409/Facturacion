@@ -1,0 +1,101 @@
+{
+  "nits": [
+    "900123456",
+    "900.123.456-7",
+    "9001234567",
+    "1012345678",
+    "80012345-6",
+    "12345",
+    "",
+    "None",
+    " 900 123 456 ",
+    "NIT 900123456"
+  ],
+  "documentos": [
+    "900123456",
+    "9001234567",
+    "9001234560",
+    "1012345678",
+    "52123456",
+    "800.123.456-7",
+    "8001234567",
+    ""
+  ],
+  "valores_opcion3": [
+    "150000",
+    "150.000",
+    "$ 150.000",
+    "1.234.567",
+    "1500.5",
+    "150,000",
+    "150000.5",
+    "5.000",
+    "  25 000 ",
+    "abc",
+    null,
+    "0"
+  ],
+  "fuzzy": [
+    {
+      "nombre": "ACME",
+      "catalogo": [
+        "ACME INDUSTRIAL S.A.S.",
+        "OTRA"
+      ],
+      "umbral": 90
+    },
+    {
+      "nombre": "CLINICA SAN JOSE",
+      "catalogo": [
+        "CLINICA SAN JOSE DE CUCUTA SA"
+      ],
+      "umbral": 90
+    },
+    {
+      "nombre": "ESPECIAL ADECCO 2",
+      "catalogo": [
+        "ESPECIAL ADECCO"
+      ],
+      "umbral": 95
+    },
+    {
+      "nombre": "PAQUETE A-2025",
+      "catalogo": [
+        "PAQUETE A 2025"
+      ],
+      "umbral": 95
+    },
+    {
+      "nombre": "BOGOTA D.C",
+      "catalogo": [
+        "BOGOTA",
+        "MEDELLIN"
+      ],
+      "umbral": 95
+    },
+    {
+      "nombre": "XYZ",
+      "catalogo": [],
+      "umbral": 90
+    }
+  ],
+  "ciudades_cuenta_analitica": [
+    "BOGOTA",
+    "Bogotá D.C.",
+    "MEDELLIN",
+    "MEDELIN",
+    "BELLO",
+    "ITAGUI",
+    "LIBANO",
+    "PALMIRA",
+    "CIUDAD INEXISTENTE",
+    "",
+    null
+  ],
+  "claves_texto": [
+    "Clínica San José",
+    "EMPRESA ALFA S.A.S.",
+    "  Bogotá, D.C. ",
+    "Ñandú & Cía"
+  ]
+}

@@ -32,6 +32,9 @@ class FakeOdooRepo:
                 result[nit] = (c["id"], c["name"], "NIT")
         return result
 
+    def find_clients_batch_checked(self, nits):
+        return self.find_clients_batch(nits), set()
+
     def find_client_by_name(self, name):
         for nit, c in self._clients.items():
             if c["name"] == name:

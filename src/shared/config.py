@@ -12,8 +12,12 @@ normalizarla.
 """
 
 import os
+from pathlib import Path
 
 DEFAULT_DIRECTORY = "."
+
+# Libro que escribe la opción 6 y lee la opción 7, relativo al directorio de trabajo.
+CONSOLIDADO_PATH = Path("CONSOLIDADO.xlsx")
 
 
 def get_paths_config() -> dict:
@@ -29,3 +33,28 @@ def get_tian_config() -> dict:
     consuma esta config decidir abortar el tratamiento.
     """
     return {"nit": os.getenv("TIAN_NIT") or ""}
+
+
+def get_book_config() -> dict:
+    """Libro de NITs de la opción 1 (BOOK_ROUTE/BOOK_NAME).
+
+    Sin valor por defecto: una variable ausente se devuelve como None y quien
+    consume la config decide abortar con un mensaje claro. Una cadena vacía se
+    conserva tal cual (BOOK_ROUTE="" equivale al directorio de trabajo).
+    """
+    return {"route": os.getenv("BOOK_ROUTE"), "name": os.getenv("BOOK_NAME")}
+
+
+def get_int_env(name: str, default: int) -> int:
+    """Entero desde una variable de entorno; `default` solo si la variable no existe.
+
+    Una variable presente pero vacía o no numérica lanza ValueError (como el
+    `int(os.getenv(...))` que reemplaza), con un mensaje que nombra la variable.
+    """
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        raise ValueError(f"La variable de entorno {name} debe ser un número entero.") from None

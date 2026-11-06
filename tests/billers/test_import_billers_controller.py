@@ -45,14 +45,24 @@ def test_import_billers_executes_use_case_with_the_selected_sheet(monkeypatch, t
 
     monkeypatch.setattr(controller, "ask_excel_path", lambda: path)
     monkeypatch.setattr(controller, "ask_sheet_name", lambda names: "Hoja1")
-    monkeypatch.setattr(controller, "get_session", lambda: "sesion")
+    session = _Session()
+    monkeypatch.setattr(controller, "get_session", lambda: session)
     monkeypatch.setattr(controller, "_build_use_case", _fake_build)
     logger = FakeLogger()
 
     controller.import_billers(logger)
 
     assert _UseCase.executed_with["NIT"].to_list() == ["900111111"]
-    assert built["session"] == "sesion" and built["logger"] is logger
+    assert built["session"] is session and built["logger"] is logger
+    assert session.closed  # AUD-43
+
+
+class _Session:
+    def __init__(self):
+        self.closed = False
+
+    def close(self):
+        self.closed = True
 
 
 def test_build_use_case_injects_rues_cache_loader():

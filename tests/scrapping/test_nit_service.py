@@ -20,15 +20,6 @@ def test_search_uses_injected_scraper_without_launching_browser():
     assert scraper.search_nits_calls == [["111"]]
 
 
-def test_search_by_name_uses_injected_scraper():
-    scraper = FakeNitScraper(
-        by_name={"EMPRESA A": NitResult("111", True, "EMPRESA A")}
-    )
-    service = RUESNitService(logger=FakeLogger(), scraper=scraper)
-
-    assert service.search_by_name("EMPRESA A").name == "EMPRESA A"
-
-
 def test_writer_creates_json_file(tmp_path):
     service = RUESNitService(logger=FakeLogger())
     data = [

@@ -574,7 +574,7 @@ C4Deployment
     Rel(app, logs, "Escribe")
 ```
 
-> Alembic usa `DATABASE_URL` si está definida (si no, `SUPABASE_DB_*` con puerto por defecto 6543). La aplicación usa siempre `SUPABASE_DB_*` (puerto por defecto 5432).
+> Alembic usa `DATABASE_URL` si está definida; si no, la misma URL que la aplicación. La aplicación usa siempre `SUPABASE_DB_*` (puerto por defecto 5432, `sslmode=require`; AUD-45).
 
 ---
 

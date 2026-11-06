@@ -13,6 +13,8 @@ class SaRatesRepository:
     def __init__(self, session: Session, logger: LoggerAdapter = None):
         self.session = session
         self.logger = logger or LoggerAdapter(__name__)
+        # True si alguna consulta de tarifas falló en esta ejecución (AUD-32).
+        self.query_failed = False
 
     def find_by_name(self, rate: Rate):
         try:
@@ -59,6 +61,8 @@ class SaRatesRepository:
                     key = (r[0], r[1], r[2], r[4], r[5])
                     result[key] = r[3]
         except Exception as excep:
+            self.session.rollback()
+            self.query_failed = True
             self.logger.error(f"Error in find_batch: {excep}", exc_info=True, user_msg="No se pudieron consultar las tarifas en lote.")
         return result
 
@@ -90,6 +94,8 @@ class SaRatesRepository:
                     if k not in result:
                         result[k] = (r[2], r[3], r[4], r[5])
         except Exception as excep:
+            self.session.rollback()
+            self.query_failed = True
             self.logger.error(f"Error in find_rate_by_cup_activity: {excep}", exc_info=True, user_msg="No se pudieron consultar tarifas por CUP.")
         return result
 
@@ -123,6 +129,8 @@ class SaRatesRepository:
                     if k not in result:
                         result[k] = (r[3], r[4], r[5])
         except Exception as excep:
+            self.session.rollback()
+            self.query_failed = True
             self.logger.error(f"Error in find_any_rate: {excep}", exc_info=True, user_msg="No se pudieron consultar tarifas alternativas.")
         return result
 

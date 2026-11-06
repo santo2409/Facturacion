@@ -5,7 +5,48 @@ import xmlrpc.client
 from src.odooInjection.domain.repositories.odoo_connection_repository import (
     OdooConnectionRepository,
 )
+from src.shared.config import get_int_env
 from src.shared.utils.text_normalizer import normalize_nit
+
+DEFAULT_ODOO_TIMEOUT_SECONDS = 180  # mismo valor que usa ETL-Avancys para Odoo
+
+
+def odoo_timeout_seconds() -> int:
+    """Timeout de socket para Odoo (AUD-11). Sin la variable, 180 s; con un valor
+    no entero, ValueError que nombra ODOO_TIMEOUT_SECONDS."""
+    return get_int_env("ODOO_TIMEOUT_SECONDS", DEFAULT_ODOO_TIMEOUT_SECONDS)
+
+
+class _TimeoutTransport(xmlrpc.client.Transport):
+    """Transporte XML-RPC (http) con timeout de socket (AUD-11)."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        conn.timeout = self.timeout
+        return conn
+
+
+class _TimeoutSafeTransport(xmlrpc.client.SafeTransport):
+    """Transporte XML-RPC (https) con timeout de socket (AUD-11)."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        conn.timeout = self.timeout
+        return conn
+
+
+def _transport_for(url: str, timeout: float) -> xmlrpc.client.Transport:
+    if url.lower().startswith("https://"):
+        return _TimeoutSafeTransport(timeout)
+    return _TimeoutTransport(timeout)
 
 _CORPORATE_SUFFIX_RE = re.compile(
     r"\s*(SAS|S\s*A\s*S|SA|S\s*A|LTDA|L\s*T\s*D\s*A|EU|ESP|BIC)\s*$",
@@ -30,13 +71,18 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         self._cache_uom = {}
 
     def connect(self) -> None:
+        timeout = odoo_timeout_seconds()
         for attempt in range(3):
             try:
-                common = xmlrpc.client.ServerProxy(f"{self._url}/xmlrpc/2/common")
+                common = xmlrpc.client.ServerProxy(
+                    f"{self._url}/xmlrpc/2/common", transport=_transport_for(self._url, timeout)
+                )
                 self._uid = common.authenticate(self._db, self._username, self._api_key, {})
                 if not self._uid:
                     raise ConnectionError("Autenticación fallida — verifica la API Key")
-                self._models = xmlrpc.client.ServerProxy(f"{self._url}/xmlrpc/2/object")
+                self._models = xmlrpc.client.ServerProxy(
+                    f"{self._url}/xmlrpc/2/object", transport=_transport_for(self._url, timeout)
+                )
                 self._logger.info(f"Conectado a Odoo. UID: {self._uid}")
                 return
             except Exception as e:
@@ -85,10 +131,24 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             return [[field, "in", nits]]
         return ["|"] * (len(nits) - 1) + [[field, "=like", f"{n}%"] for n in nits]
 
-    def _find_partners_by_document(self, nits: list[str], fields: list[str]) -> dict[str, dict]:
+    @staticmethod
+    def _matches_own_condition(raw, mode: str, nit: str) -> bool:
+        """¿La consulta individual de `nit` habría traído este valor en esta etapa?"""
+        if mode == "in":
+            return raw == nit
+        return str(raw).startswith(nit)
+
+    def _find_partners_by_document(
+        self, nits: list[str], fields: list[str], ambiguous: set[str] | None = None,
+    ) -> dict[str, dict]:
         """{nit: fila de res.partner}. Una fila se acepta si `normalize_nit` del campo
         consultado coincide con el NIT pedido; gana la de menor id. Un fallo de una
-        etapa se registra y no impide las siguientes. Solo lectura."""
+        etapa se registra y no impide las siguientes. Solo lectura.
+
+        Si se pasa `ambiguous`, se anotan ahí los NIT cuyo resultado en lote podría
+        diferir de la consulta individual (AUD-34): les llegó una fila por la
+        condición de otro NIT, más de un partner distinto coincide con ellos, o
+        falló la consulta de su bloque en alguna etapa."""
         unique_nits = list(dict.fromkeys(n for n in nits if n))
         fields = list(dict.fromkeys([*fields, "ref_num", "vat"]))
         found: dict[str, dict] = {}
@@ -109,11 +169,20 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
                     self._logger.warning(
                         f"Fallo consultando Odoo ({field}, {mode}) para {len(chunk)} NIT(s): {e}"
                     )
+                    if ambiguous is not None:
+                        ambiguous.update(chunk)  # se resuelven uno a uno, como antes del lote
                     continue
                 wanted = set(chunk)
                 for row in rows:
                     nit = normalize_nit(row.get(field) or "")
-                    if nit in wanted and nit not in found:
+                    if nit not in wanted:
+                        continue
+                    if ambiguous is not None and (
+                        not self._matches_own_condition(row.get(field), mode, nit)
+                        or (nit in found and found[nit]["id"] != row["id"])
+                    ):
+                        ambiguous.add(nit)
+                    if nit not in found:
                         found[nit] = row
         return found
 
@@ -128,6 +197,14 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
     def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
         rows = self._find_partners_by_document(nits, ["id", "name"])
         return {nit: (row["id"], row["name"], "NIT") for nit, row in rows.items()}
+
+    def find_clients_batch_checked(
+        self, nits: list[str],
+    ) -> tuple[dict[str, tuple[int, str, str]], set[str]]:
+        ambiguous: set[str] = set()
+        rows = self._find_partners_by_document(nits, ["id", "name"], ambiguous)
+        found = {nit: (row["id"], row["name"], "NIT") for nit, row in rows.items()}
+        return found, ambiguous
 
     _PARTNER_RATE_FIELDS = ["id", "name", "rate_base_special_id", "rate_base_id"]
 

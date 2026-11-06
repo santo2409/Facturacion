@@ -100,31 +100,6 @@ class SaCompanyRepository(CompanyRepository):
             self.logger.error(f"Error retrieving companies: {e}", exc_info=True, user_msg="No se pudo obtener el listado de empresas.")
             return None
 
-    def find_by_id(self, id):
-        try:
-            row = self.session.query(CompanyPackageModel).filter_by(company_id=id).first()
-            return (row.company_id, row.package_id, row.model) if row else None
-        except Exception as e:
-            self.session.rollback()
-            self.logger.error(f"Error retrieving company by id: {e}", exc_info=True, user_msg="No se pudo consultar la empresa.")
-            return None
-
-    def companies_packages(self, relations):
-        try:
-            stmt = insert(CompanyPackageModel).values(
-                company_id=relations.company_id, package_id=relations.package_id, model=relations.model
-            )
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["company_id"],
-                set_={"package_id": stmt.excluded.package_id, "model": stmt.excluded.model},
-            )
-            self.session.execute(stmt)
-            self.session.commit()
-        except Exception as e:
-            self.session.rollback()
-            self.logger.error(f"Error saving companies_packages: {e}", exc_info=True, user_msg="No se pudo vincular la empresa con el paquete.")
-            return None
-
     def companies_packages_all(self):
         try:
             rows = self.session.query(CompanyPackageModel).all()

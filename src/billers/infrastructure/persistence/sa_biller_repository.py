@@ -16,6 +16,7 @@ class SaBillerRepository:
             row = self.session.query(BillerModel).filter_by(name=name).first()
             return (row.id, row.name) if row else None
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error finding biller: {e}", exc_info=True, user_msg=f"No se pudo consultar el facturador. {name}")
             return None
 
@@ -52,5 +53,6 @@ class SaBillerRepository:
             rows = self.session.query(BillerModel).all()
             return [{"id": r.id, "name": r.name} for r in rows]
         except Exception as e:
+            self.session.rollback()
             self.logger.error(f"Error retrieving billers: {e}", exc_info=True, user_msg="No se pudo obtener el listado de facturadores.")
             return None

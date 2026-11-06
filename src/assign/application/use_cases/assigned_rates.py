@@ -14,7 +14,7 @@ from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
 from src.scrapping.domain.entities.nit_result import NitResult
-from src.shared.config import get_paths_config, get_tian_config
+from src.shared.config import CONSOLIDADO_PATH, get_paths_config, get_tian_config
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.company_name_matcher import CompanyNameMatcher
 from src.shared.utils.text_normalizer import (
@@ -81,6 +81,36 @@ def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) ->
     return df
 
 
+class CupCellValueError(pl.exceptions.InvalidOperationError):
+    """Celdas CUP no convertibles a entero. Subclase de la excepción que Polars
+    lanzaba antes en el mismo punto, con un mensaje que dice qué celdas son (AUD-60)."""
+
+
+_MAX_INVALID_CUP_CELLS = 10
+
+
+def _check_cup_cells_castable(df: pl.DataFrame, headers: list) -> None:
+    """Lanza CupCellValueError si alguna celda CUP no vacía no se puede convertir a Int64
+    con la misma regla estricta que `cast(pl.Int64)`. No modifica `df`."""
+    who = [c for c in ("Paciente", "N° Identificación") if c in df.columns]
+    invalid: list[str] = []
+    total = 0
+    for h in headers:
+        col = pl.col(str(h))
+        bad = df.filter(col.is_not_null() & col.cast(pl.Int64, strict=False).is_null())
+        total += bad.height
+        for row in bad.select([str(h), *who]).head(_MAX_INVALID_CUP_CELLS).iter_rows(named=True):
+            if len(invalid) < _MAX_INVALID_CUP_CELLS:
+                person = ", ".join(f"{c}={row[c]!r}" for c in who)
+                invalid.append(f"columna {h}: valor {row[str(h)]!r} ({person})")
+    if total:
+        raise CupCellValueError(
+            f"{total} celda(s) CUP con valor no entero; deben ser números enteros o estar vacías. "
+            + "; ".join(invalid)
+            + (" ..." if total > len(invalid) else "")
+        )
+
+
 PHASE_FINDING_KEYS = (
     "fase_01_paquete_propio_local",
     "fase_02_paquete_c_2025",
@@ -111,6 +141,7 @@ class AssignRatesResult:
     counts: dict[str, int] = field(default_factory=dict)
     findings_dir: Path | None = None
     odoo_available: bool = False
+    rates_query_failed: bool = False
 
 
 class AssignRatesFromExcel:
@@ -265,7 +296,7 @@ class AssignRatesFromExcel:
 
         with self.progress("Exportando consolidado", total=1):
             import xlsxwriter as _xlsxwriter
-            workbook = _xlsxwriter.Workbook("CONSOLIDADO.xlsx")
+            workbook = _xlsxwriter.Workbook(str(CONSOLIDADO_PATH))
             df.write_excel(
                 workbook,
                 worksheet="Consolidado",
@@ -353,7 +384,8 @@ class AssignRatesFromExcel:
         counts = {"odoo": self._odoo_cells}
         counts.update({key: len(rows) for key, rows in self._findings.items()})
         return AssignRatesResult(
-            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available
+            counts=counts, findings_dir=findings_dir, odoo_available=self.odoo_available,
+            rates_query_failed=self.rates_repo.query_failed,
         )
 
     def _drop_internal_columns(self, df: pl.DataFrame) -> pl.DataFrame:
@@ -553,6 +585,25 @@ class AssignRatesFromExcel:
         matched_empresas = []
         cambios = []
         not_found_by_nit: dict[str, NitResult] = {}
+
+        # Odoo por NIT en lote (AUD-34): se consultan todos los NIT de una vez y el
+        # bucle lee del caché. Los NIT ambiguos (su resultado en lote podría diferir
+        # de la consulta individual) no se guardan: el bucle los resuelve con
+        # find_client(nit). Si el lote falla, el bucle consulta NIT a NIT.
+        if self.odoo_repo:
+            unique_nits = list(dict.fromkeys(n for n in df["NIT"].to_list() if n))
+            try:
+                found, ambiguous = (
+                    self.odoo_repo.find_clients_batch_checked(unique_nits) if unique_nits else ({}, set())
+                )
+            except Exception as e:
+                self.logger.warning(f"Fallo consultando Odoo por NIT en lote; se consulta uno a uno: {e}")
+            else:
+                for n in unique_nits:
+                    if n in ambiguous:
+                        continue
+                    cid, cname, _ = found.get(n, (None, None, None))
+                    _odoo_nit_cache[n] = (cid, cname)
 
         with self.progress("Validando empresas", total=df.height):
             for row in df.iter_rows(named=True):
@@ -1059,20 +1110,32 @@ class AssignRatesFromExcel:
 
         default_package = "PAQUETE C 2025"
 
+        # Mapas id → nombre por tipo de fuente, construidos una sola vez y solo
+        # si alguna empresa los necesita (AUD-33: antes, una consulta por empresa).
+        sources = {
+            Package.__name__: lambda: packages_all,
+            Provider.__name__: self.provider_repo.all,
+            Special.__name__: self.special_repo.all,
+        }
+        id_to_name: dict[str, dict] = {}
+
+        def source_name(model, pkg_id):
+            if model not in sources:
+                return None
+            if model not in id_to_name:
+                names: dict = {}
+                for p in sources[model]():
+                    names.setdefault(p["id"], p["name"])  # como next(): gana el primero
+                id_to_name[model] = names
+            return id_to_name[model].get(pkg_id)
+
         # Build NIT → package_name mapping
         nit_to_pkg = {}
         for nit, comp in nit_to_company.items():
             pkg_tuple = company_to_package.get(comp["id"])
             if pkg_tuple:
                 pkg_id, model = pkg_tuple
-                if model == Package.__name__:
-                    name = next((p["name"] for p in packages_all if p["id"] == pkg_id), None)
-                elif model == Provider.__name__:
-                    name = next((p["name"] for p in self.provider_repo.all() if p["id"] == pkg_id), None)
-                elif model == Special.__name__:
-                    name = next((p["name"] for p in self.special_repo.all() if p["id"] == pkg_id), None)
-                else:
-                    name = None
+                name = source_name(model, pkg_id)
                 nit_to_pkg[nit] = name or default_package
             else:
                 nit_to_pkg[nit] = default_package
@@ -1179,10 +1242,11 @@ class AssignRatesFromExcel:
         headers = [h for h in df.columns if str(h).replace("-", "").isdigit()]
 
         # Cast CUP columns to Int64
+        _check_cup_cells_castable(df, headers)
         for h in headers:
             df = df.with_columns(pl.col(str(h)).cast(pl.Int64))
 
-        # Phase 1: Collect all unique rate keys needed
+        # Paso 1 (preparación): llaves de tarifa únicas que se necesitan
         rate_keys_set = set()
         local_pkg_col = "_PAQUETE_LOCAL" if "_PAQUETE_LOCAL" in df.columns else "PAQUETE"
         report_cols = [c for c in ("Empresa", "Paciente", "N° Identificación") if c in df.columns]
@@ -1260,7 +1324,7 @@ class AssignRatesFromExcel:
 
                 self.progress.advance()
 
-        # Phase 2: Batch query all needed rates
+        # Paso 2 (preparación): consulta en lote de esas tarifas
         self.logger.info(
             f"Consultando {len(rate_keys_set)} combinaciones únicas de tarifas",
         )
@@ -1269,7 +1333,7 @@ class AssignRatesFromExcel:
             f"Encontradas {len(rates_cache)} tarifas de {len(rate_keys_set)} consultadas",
         )
 
-        # Phase 3: Build result columns with fallback, collect unresolved for wildcard
+        # Fases 1 y 2: paquete propio y PAQUETE C 2025 (mismo CUP, misma ciudad); lo no resuelto pasa a la fase 3
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
         for (col, idx), price in odoo_resolved.items():
             result_cols[col][idx] = price
@@ -1333,7 +1397,9 @@ class AssignRatesFromExcel:
                         else:
                             unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
 
-        # Phase 4: Wildcard fallback — find any rate for unresolved combinations
+        # Fase 3: cualquier paquete con el mismo CUP, ciudad y actividad
+        # Mapas id → nombre de la fuente; se construyen en la fase 3 o 5 (o, si no, en la 6).
+        pkg_id_to_name = prov_id_to_name = spec_id_to_name = None
         still_unresolved = []
         if unresolved:
             wildcard_keys = list({(city_id, cup_id, act_id) for _, _, city_id, cup_id, act_id, _, _, _ in unresolved})
@@ -1374,7 +1440,7 @@ class AssignRatesFromExcel:
                     + "\n".join(f"  {l}" for l in unique_wlogs[:50]),
                 )
 
-        # Phase 5: CUP homologation — strip suffix and search base CUP in PAQUETE C 2025
+        # Fase 4: CUP base (sin sufijo) en PAQUETE C 2025, misma ciudad
         still_unresolved_2 = []
         if still_unresolved and default_pkg_tuple:
             def_id, def_model = default_pkg_tuple
@@ -1412,14 +1478,14 @@ class AssignRatesFromExcel:
         else:
             still_unresolved_2 = list(still_unresolved)
 
-        # Phase 6: CUP homologation in any package — base CUP wildcard
+        # Fase 5: CUP base en cualquier paquete, misma ciudad
         still_unresolved_3 = []
         if still_unresolved_2:
             wildcard2_keys = set()
             for _, h, city_id, _, activity_id, _, _, _ in still_unresolved_2:
                 base_code = str(h).split("-")[0]
                 if base_code == str(h):
-                    continue  # No dash — will go to Phase 7
+                    continue  # Sin guion: pasa a la fase 6
                 base_cup_id = cup_code_to_id.get(base_code)
                 if base_cup_id:
                     wildcard2_keys.add((city_id, base_cup_id, activity_id))
@@ -1471,13 +1537,13 @@ class AssignRatesFromExcel:
             else:
                 still_unresolved_3 = list(still_unresolved_2)
 
-        # Phase 7: Any package, any city — search by cup_id + activity_id only
+        # Fase 6: cualquier paquete y cualquier ciudad, solo por cup_id + activity_id
         if still_unresolved_3:
             cup_activity_keys = list({(cup_id, activity_id) for _, _, _, cup_id, activity_id, _, _, _ in still_unresolved_3})
             cup_activity_cache = self.rates_repo.find_rate_by_cup_activity(cup_activity_keys)
 
             if cup_activity_cache:
-                if 'pkg_id_to_name' not in dir():
+                if pkg_id_to_name is None:
                     pkg_id_to_name = {p["id"]: p["name"] for p in packages_all}
                     prov_id_to_name = {p["id"]: p["name"] for p in self.provider_repo.all()}
                     spec_id_to_name = {p["id"]: p["name"] for p in self.special_repo.all()}
@@ -1558,24 +1624,24 @@ class AssignRatesFromExcel:
             if nit not in excluidos
         }
 
-        # Check mismatches
-        mismatches = 0
-        for row in df.iter_rows(named=True):
-            nit = row["NIT"]
-            if nit and nit in db_nit_to_name and row["Empresa"] != db_nit_to_name[nit]:
-                mismatches += 1
+        # Vectorizado (AUD-74): equivale a dict.get(NIT, Empresa) fila a fila.
+        en_bd = pl.col("NIT").is_in(list(db_nit_to_name))
+        nombre_bd = pl.col("NIT").replace_strict(db_nit_to_name, default=None, return_dtype=pl.Utf8)
+
+        # Check mismatches (NIT no vacío, en BD y con Empresa distinta; None cuenta como distinta)
+        mismatches = df.select(
+            (
+                pl.col("NIT").is_not_null() & (pl.col("NIT") != "") & en_bd
+                & pl.col("Empresa").ne_missing(nombre_bd)
+            ).sum()
+        ).item()
 
         if mismatches:
             self.logger.warning(
                 f"{mismatches} empresas no coinciden con BD. Corrigiendo.",
             )
             df = df.with_columns(
-                pl.struct(["NIT", "Empresa"])
-                .map_elements(
-                    lambda s: db_nit_to_name.get(s["NIT"], s["Empresa"]),
-                    return_dtype=pl.Utf8,
-                )
-                .alias("Empresa")
+                pl.when(en_bd).then(nombre_bd).otherwise(pl.col("Empresa")).alias("Empresa")
             )
 
         return df

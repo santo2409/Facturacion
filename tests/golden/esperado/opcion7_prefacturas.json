@@ -1,0 +1,5940 @@
+{
+ "archivos": {
+  "pre-facturas/ALFA/pre_factura_811111111_COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "811111111",
+       "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P1",
+       "2001",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       100,
+       100
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "FFB6C1"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/ALFA/pre_factura_811111112_COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "811111112",
+       "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P2",
+       "2002",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       100,
+       100
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/ALFA/pre_factura_822222222_EMPRESA A_B_ SAS.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "RX TORAX"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "871121"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "822222222",
+       "EMPRESA A/B: SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P3",
+       "2003",
+       null,
+       null,
+       "OC-1",
+       null,
+       "EXTRA",
+       null,
+       33000,
+       33000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/ALFA/pre_factura_900111111_EMPRESA ALFA SAS.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL",
+       "CONSULTA ESPECIALISTA",
+       "COLESTEROL TOTAL SUERO"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201",
+       "890202",
+       "903810-01"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "900111111",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "ANA PEREZ",
+       "CC 1001",
+       null,
+       "SET100, FAC200",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       86100,
+       31100,
+       55000
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "900111111",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "SARA MORA",
+       "1005",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       12000,
+       null,
+       null,
+       12000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Y1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Z1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Y2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Z2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Y3": {
+       "relleno": "E2EFDA"
+      },
+      "Z4": {
+       "relleno": "BDD7EE"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/GENERAL/pre_factura_700777777_EMPRESA GAMMA.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "700777777",
+       "EMPRESA GAMMA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "LIA SOL",
+       "1011",
+       null,
+       "SET900",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/GENERAL/pre_factura_800222222_EMPRESA BETA LTDA.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "RX TORAX"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "871121"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "GENERAL",
+       "GENERAL",
+       "PROVEEDOR ALFA",
+       "800222222",
+       "EMPRESA BETA LTDA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "MARTA RUIZ",
+       "1003",
+       null,
+       "SET300",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       30000,
+       30000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "FFF2CC"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/General sin factura/pre_factura_700777777_EMPRESA GAMMA.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "700777777",
+       "EMPRESA GAMMA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "LUZ MAR",
+       "1014",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/General sin factura/pre_factura_912345678_EMPRESA RUES SAS.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "912345678",
+       "EMPRESA RUES SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "PEDRO DIAZ",
+       "1004",
+       null,
+       "FAC400",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/NITs_consolidado.xlsx": {
+   "hojas": [
+    {
+     "nombre": "EMPRESA ALFA SAS",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL",
+       "CONSULTA ESPECIALISTA",
+       "COLESTEROL TOTAL SUERO"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201",
+       "890202",
+       "903810-01"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "900111111",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "ANA PEREZ",
+       "CC 1001",
+       null,
+       "SET100, FAC200",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       86100,
+       31100,
+       55000
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "ESPECIAL ALFA 2026",
+       "900111111",
+       "EMPRESA ALFA SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "SARA MORA",
+       "1005",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       12000,
+       null,
+       null,
+       12000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Y1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Z1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Y2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Z2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Y3": {
+       "relleno": "E2EFDA"
+      },
+      "Z4": {
+       "relleno": "BDD7EE"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "COMPANIA DE SERVICIOS TEMPORALE",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "811111111",
+       "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P1",
+       "2001",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       100,
+       100
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "FFB6C1"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "COMPANIA DE SERVICIOS TEMPORA_1",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "811111112",
+       "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P2",
+       "2002",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       100,
+       100
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "EMPRESA A_B_ SAS",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "RX TORAX"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "871121"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "ALFA",
+       "ESPECIAL",
+       "PAQUETE A 2025",
+       "822222222",
+       "EMPRESA A/B: SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "P3",
+       "2003",
+       null,
+       null,
+       "OC-1",
+       null,
+       "EXTRA",
+       null,
+       33000,
+       33000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "EMPRESA BETA LTDA",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "RX TORAX"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "871121"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "BOGOTA, D.C.",
+       "GENERAL",
+       "GENERAL",
+       "PROVEEDOR ALFA",
+       "800222222",
+       "EMPRESA BETA LTDA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "MARTA RUIZ",
+       "1003",
+       null,
+       "SET300",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       30000,
+       30000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "FFF2CC"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "EMPRESA GAMMA",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "700777777",
+       "EMPRESA GAMMA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "LIA SOL",
+       "1011",
+       null,
+       "SET900",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "EMPRESA RUES SAS",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "912345678",
+       "EMPRESA RUES SAS",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "PEDRO DIAZ",
+       "1004",
+       null,
+       "FAC400",
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "EMPRESA GAMMA_1",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "CONSULTA MEDICINA GENERAL"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "890201"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       "GENERAL",
+       "GENERAL",
+       "PAQUETE C 2025",
+       "700777777",
+       "EMPRESA GAMMA",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "LUZ MAR",
+       "1014",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       41000,
+       41000
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X3": {
+       "relleno": "F4B183"
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "DESCONOCIDA XYZ",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "EXAMEN SIN TARIFA"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "990101"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       null,
+       "ESPECIAL",
+       "PAQUETE C 2025",
+       "555555555",
+       "DESCONOCIDA XYZ",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "NOE GIL",
+       "1012",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       1,
+       1
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  },
+  "pre-facturas/SIN_FACTURADOR/pre_factura_555555555_DESCONOCIDA XYZ.xlsx": {
+   "hojas": [
+    {
+     "nombre": "BASE GENERAL",
+     "filas": [
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       "EXAMEN SIN TARIFA"
+      ],
+      [
+       "Base",
+       "Ingreso N°",
+       "Sede",
+       "Ciudad",
+       "FACTURADOR",
+       "Especial / General",
+       "PAQUETE",
+       "NIT",
+       "Empresa",
+       "Empresa Misión",
+       "Medio de Pago",
+       "Fecha Ingreso",
+       "Tipo Examen",
+       "Cargo",
+       "Paciente",
+       "N° Identificación",
+       "Número de Póliza",
+       "FACTURAS",
+       "ORDEN, CENTRO DE COSTO, CECO, PET",
+       "ORDEN, CENTRO DE COSTO, CECO, PET_1",
+       "TIPO DE ACTIVIDAD",
+       "Observaciones Ingreso",
+       "Total",
+       "990101"
+      ],
+      [
+       "OCT",
+       "1",
+       "SEDE NORTE",
+       "CALI",
+       null,
+       "ESPECIAL",
+       "PAQUETE C 2025",
+       "555555555",
+       "DESCONOCIDA XYZ",
+       "MISION SAS",
+       "CREDITO",
+       "05/10/2026",
+       "INGRESO",
+       "AUXILIAR",
+       "NOE GIL",
+       "1012",
+       null,
+       null,
+       "OC-1",
+       null,
+       "INTRA",
+       null,
+       1,
+       1
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "B1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "C1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "D1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "E1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "F1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "G1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "H1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "I1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "J1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "K1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "L1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "M1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "N1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "O1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "P1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "Q1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "R1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "S1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "T1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "U1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "V1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "W1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "X1": {
+       "relleno": "D6E4F0",
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "B2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "C2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "D2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "E2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "F2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "G2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "H2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "I2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "J2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "K2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "L2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "M2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "N2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "O2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "P2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "Q2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "R2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "S2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "T2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "U2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "V2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "W2": {
+       "relleno": "808080",
+       "negrita": true
+      },
+      "X2": {
+       "relleno": "808080",
+       "negrita": true
+      }
+     },
+     "inmovilizar": "A3"
+    },
+    {
+     "nombre": "Leyenda",
+     "filas": [
+      [
+       "Color",
+       "Significado"
+      ],
+      [
+       null,
+       "Sin color — Tarifa Odoo (especial/base)"
+      ],
+      [
+       null,
+       "Fase 1 — Paquete propio local"
+      ],
+      [
+       null,
+       "Fase 2 — PAQUETE C 2025 (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 3 — Cualquier paquete (mismo CUP, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 4 — PAQUETE C 2025 (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 5 — Cualquier paquete (CUP base, misma ciudad)"
+      ],
+      [
+       null,
+       "Fase 6 — Cualquier paquete/ciudad (cup + actividad)"
+      ],
+      [
+       null,
+       "Fase 7 — Cualquier paquete, otra ciudad"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "A2": {
+       "relleno": "FFFFFF"
+      },
+      "A3": {
+       "relleno": "E2EFDA"
+      },
+      "A4": {
+       "relleno": "FFF2CC"
+      },
+      "A5": {
+       "relleno": "F4B183"
+      },
+      "A6": {
+       "relleno": "BDD7EE"
+      },
+      "A7": {
+       "relleno": "9DC3E6"
+      },
+      "A8": {
+       "relleno": "D5A6E6"
+      },
+      "A9": {
+       "relleno": "FFB6C1"
+      }
+     }
+    }
+   ]
+  }
+ },
+ "mensajes_usuario": [
+  {
+   "nivel": "INFO",
+   "mensaje": "Iniciando generación de archivos por NIT..."
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Se encontraron 4 carpetas destino y 9 NITs."
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Archivos individuales generados en subcarpetas por facturador."
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Libro consolidado generado en pre-facturas/NITs_consolidado.xlsx"
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Pre-facturas generadas exitosamente."
+  }
+ ]
+}

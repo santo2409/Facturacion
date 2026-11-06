@@ -1,7 +1,7 @@
 """create table billers
 
 Revision ID: 6f0ab654aacd
-Revises: bc1d152a1ddb
+Revises: 9d05527f843e
 Create Date: 2026-02-21 13:58:14.826739
 
 """

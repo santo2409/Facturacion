@@ -1,0 +1,165 @@
+{
+  "res.partner": [
+    {
+      "id": 10,
+      "name": "EMPRESA ALFA S.A.S.",
+      "ref_num": "900111111",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 11,
+      "name": "GRUPO ADECCO",
+      "ref_num": "830050228",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 13,
+      "name": "EMPRESA GAMMA",
+      "ref_num": "700777777",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 15,
+      "name": "EMPRESA RUES SAS",
+      "ref_num": "912345678",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 16,
+      "name": "EMPRESA ALFA SAS SUCURSAL",
+      "ref_num": "111222333",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 17,
+      "name": "EMPRESA ALFA AGRO LTDA",
+      "ref_num": "444555666",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 21,
+      "name": "EMPRESA DUPLICADA (B)",
+      "ref_num": "600666666",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    },
+    {
+      "id": 20,
+      "name": "EMPRESA DUPLICADA (A)",
+      "ref_num": "600666666",
+      "vat": false,
+      "rate_base_special_id": false,
+      "rate_base_id": false
+    }
+  ],
+  "product.product": [
+    {
+      "id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "default_code": "890201",
+      "list_price": 30001.0
+    },
+    {
+      "id": 102,
+      "name": "CONSULTA ESPECIALISTA",
+      "default_code": "890202",
+      "list_price": 30002.0
+    },
+    {
+      "id": 104,
+      "name": "COLESTEROL TOTAL SUERO",
+      "default_code": "903810-01",
+      "list_price": 30004.0
+    },
+    {
+      "id": 105,
+      "name": "RX TORAX",
+      "default_code": "871121",
+      "list_price": 30005.0
+    },
+    {
+      "id": 106,
+      "name": "EXAMEN SIN TARIFA",
+      "default_code": "990101",
+      "list_price": 30006.0
+    }
+  ],
+  "account.analytic.account": [
+    {
+      "id": 301,
+      "code": "AA10813",
+      "name": "CALI"
+    },
+    {
+      "id": 302,
+      "code": "AA10801",
+      "name": "BELLO"
+    },
+    {
+      "id": 303,
+      "code": "AA10801",
+      "name": "CHINCHINA"
+    },
+    {
+      "id": 304,
+      "code": "AA8638",
+      "name": "BOGOTA"
+    },
+    {
+      "id": 305,
+      "code": "AA10806",
+      "name": "MEDELLIN"
+    }
+  ],
+  "account.tax": [
+    {
+      "id": 41,
+      "name": "AUTORRETENCION IMPUESTO RENTA 2%",
+      "type_tax_use": "sale"
+    },
+    {
+      "id": 42,
+      "name": "AUTORRETENCION COMPRA IMPUESTO RENTA 2,5%",
+      "type_tax_use": "purchase"
+    }
+  ],
+  "uom.uom": [
+    {
+      "id": 1,
+      "name": "Unidades"
+    }
+  ],
+  "date.range": [
+    {
+      "id": 71,
+      "name": "SEP-2026",
+      "date_start": "2026-09-01",
+      "date_end": "2026-09-30"
+    },
+    {
+      "id": 72,
+      "name": "OCT-2026",
+      "date_start": "2026-10-01",
+      "date_end": "2026-10-31"
+    },
+    {
+      "id": 73,
+      "name": "NOV-2026",
+      "date_start": "2026-11-01",
+      "date_end": "2026-11-30"
+    }
+  ]
+}

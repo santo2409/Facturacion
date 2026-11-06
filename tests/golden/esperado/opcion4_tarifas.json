@@ -1,0 +1,315 @@
+{
+ "archivos": {
+  "logs/cargar_tarifas/2026-11-05_1030/actividad_invalida.xlsx": {
+   "hojas": [
+    {
+     "nombre": "actividad_invalida",
+     "filas": [
+      [
+       "Hoja",
+       "Fila",
+       "CONTRATO",
+       "CIUDAD",
+       "CUP",
+       "INTRA O EXTRA",
+       "VALOR"
+      ],
+      [
+       "Paquetes",
+       7,
+       "PAQUETE A 2025",
+       "BOGOTA",
+       "890201",
+       "MIXTA",
+       "1000"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "B2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    }
+   ]
+  },
+  "logs/cargar_tarifas/2026-11-05_1030/contrato_no_existe.xlsx": {
+   "hojas": [
+    {
+     "nombre": "contrato_no_existe",
+     "filas": [
+      [
+       "Hoja",
+       "Fila",
+       "CONTRATO",
+       "CIUDAD",
+       "CUP",
+       "INTRA O EXTRA",
+       "VALOR"
+      ],
+      [
+       "Paquetes",
+       10,
+       "PAQUETE A 2025 V2",
+       "BOGOTA",
+       "890201",
+       "INTRA",
+       "8000"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "B2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    }
+   ]
+  },
+  "logs/cargar_tarifas/2026-11-05_1030/cup_no_existe.xlsx": {
+   "hojas": [
+    {
+     "nombre": "cup_no_existe",
+     "filas": [
+      [
+       "Hoja",
+       "Fila",
+       "CONTRATO",
+       "CIUDAD",
+       "CUP",
+       "INTRA O EXTRA",
+       "VALOR"
+      ],
+      [
+       "Paquetes",
+       6,
+       "PAQUETE A 2025",
+       "BOGOTA",
+       "123456",
+       "INTRA",
+       "1000"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "B2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    }
+   ]
+  },
+  "logs/cargar_tarifas/2026-11-05_1030/tarifa_vacia.xlsx": {
+   "hojas": [
+    {
+     "nombre": "tarifa_vacia",
+     "filas": [
+      [
+       "Hoja",
+       "Fila",
+       "CONTRATO",
+       "CIUDAD",
+       "CUP",
+       "INTRA O EXTRA",
+       "VALOR"
+      ],
+      [
+       "Paquetes",
+       8,
+       "PAQUETE A 2025",
+       "BOGOTA",
+       "871121",
+       "INTRA"
+      ]
+     ],
+     "estilos": {
+      "A1": {
+       "negrita": true
+      },
+      "B1": {
+       "negrita": true
+      },
+      "C1": {
+       "negrita": true
+      },
+      "D1": {
+       "negrita": true
+      },
+      "E1": {
+       "negrita": true
+      },
+      "F1": {
+       "negrita": true
+      },
+      "G1": {
+       "negrita": true
+      },
+      "B2": {
+       "formato": "#,##0;[Red]-#,##0"
+      }
+     }
+    }
+   ]
+  }
+ },
+ "bd_catalogos": {
+  "Package": [
+   "PAQUETE A 2025",
+   "PAQUETE C 2025"
+  ],
+  "Provider": [
+   "PROVEEDOR ALFA",
+   "PROVEEDOR NUEVO"
+  ],
+  "Special": [
+   "ESPECIAL ADECCO 2",
+   "ESPECIAL NUEVA"
+  ],
+  "City": [
+   "BOGOTA",
+   "CALI",
+   "MEDELLIN"
+  ]
+ },
+ "bd_rates": [
+  {
+   "tipo": "Special",
+   "contrato": "ESPECIAL ADECCO 2",
+   "ciudad": "BOGOTA",
+   "cup_id": 1,
+   "actividad_id": 1,
+   "tarifa": 110000
+  },
+  {
+   "tipo": "Package",
+   "contrato": "PAQUETE A 2025",
+   "ciudad": "BOGOTA",
+   "cup_id": 1,
+   "actividad_id": 1,
+   "tarifa": 6000
+  },
+  {
+   "tipo": "Package",
+   "contrato": "PAQUETE A 2025",
+   "ciudad": "BOGOTA",
+   "cup_id": 2,
+   "actividad_id": 1,
+   "tarifa": 1500005
+  },
+  {
+   "tipo": "Provider",
+   "contrato": "PROVEEDOR NUEVO",
+   "ciudad": "BOGOTA",
+   "cup_id": 1,
+   "actividad_id": 1,
+   "tarifa": 45000
+  },
+  {
+   "tipo": "Package",
+   "contrato": "PAQUETE A 2025",
+   "ciudad": "CALI",
+   "cup_id": 1,
+   "actividad_id": 1,
+   "tarifa": 70000
+  },
+  {
+   "tipo": "Package",
+   "contrato": "PAQUETE A 2025",
+   "ciudad": "BOGOTA",
+   "cup_id": 3,
+   "actividad_id": 2,
+   "tarifa": 90000
+  },
+  {
+   "tipo": "Package",
+   "contrato": "PAQUETE C 2025",
+   "ciudad": "MEDELLIN",
+   "cup_id": 5,
+   "actividad_id": 2,
+   "tarifa": 33000
+  },
+  {
+   "tipo": "Provider",
+   "contrato": "PROVEEDOR ALFA",
+   "ciudad": "MEDELLIN",
+   "cup_id": 2,
+   "actividad_id": 2,
+   "tarifa": 40000
+  }
+ ],
+ "mensajes_usuario": [
+  {
+   "nivel": "ERROR",
+   "mensaje": "No se pudieron guardar las tarifas."
+  },
+  {
+   "nivel": "INFO",
+   "mensaje": "Hallazgos en logs/cargar_tarifas/2026-11-05_1030: contrato_no_existe=1, cup_no_existe=1, actividad_invalida=1, tarifa_vacia=1."
+  }
+ ],
+ "ciudad_nula": {
+  "excepcion": "AttributeError: 'NoneType' object has no attribute 'upper'",
+  "bd_rates_sin_cambios": true,
+  "mensajes_usuario": []
+ }
+}

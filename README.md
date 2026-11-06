@@ -129,6 +129,7 @@ src/<módulo>/
 ## Tests
 
 ```bash
+pip install -r requirements-dev.txt   # requirements.txt + pytest
 pytest
 pytest tests/assign/ -v   # Módulo específico
 ```

@@ -1,31 +1,20 @@
 import os
 from logging.config import fileConfig
-from urllib.parse import quote_plus
 
 from alembic import context
-from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
-from src.shared.database.database import Base
+from src.shared.database.database import Base, build_database_url
 from src.shared.database.models import *  # noqa: F401,F403 - register all models
 
-load_dotenv()
-
-
-def _build_url():
-    url = os.getenv("DATABASE_URL")
-    if url:
-        return url
-    user = os.getenv("SUPABASE_DB_USER")
-    password = quote_plus(os.getenv("SUPABASE_DB_PASSWORD", ""))
-    host = os.getenv("SUPABASE_DB_HOST")
-    port = os.getenv("SUPABASE_DB_PORT", "6543")
-    name = os.getenv("SUPABASE_DB_NAME", "postgres")
-    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{name}"
-
+# El .env ya lo cargó src.shared.database.database (load_env) al importarse.
+# DATABASE_URL, si existe, solo la usa Alembic (como antes); si no, la misma URL
+# que la app (AUD-45).
+_url = os.getenv("DATABASE_URL") or build_database_url()
 
 config = context.config
-config.set_main_option("sqlalchemy.url", _build_url())
+# ConfigParser interpreta '%': la contraseña escapada (p. ej. %40) debe ir como %%.
+config.set_main_option("sqlalchemy.url", _url.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
