@@ -231,6 +231,7 @@ class SplitByNit:
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         sheet_names_used = {}
+        titles_upper = {"LEYENDA"}  # reservado para la hoja que agrega _write_legend
 
         with self._progress_bar("Generando consolidado por NIT", total_nits):
             for facturador, nit_groups in groups.items():
@@ -248,6 +249,13 @@ class SplitByNit:
                             sheet_name = base_name[: 31 - len(suffix)] + suffix
                         else:
                             sheet_names_used[base_name] = 0
+                        # Excel no distingue mayúsculas: si choca con una hoja ya
+                        # creada (o con la Leyenda), se sigue numerando (AUD-76).
+                        while sheet_name.upper() in titles_upper:
+                            sheet_names_used[base_name] += 1
+                            suffix = f"_{sheet_names_used[base_name]}"
+                            sheet_name = base_name[: 31 - len(suffix)] + suffix
+                        titles_upper.add(sheet_name.upper())
 
                         ws = wb.create_sheet(title=sheet_name)
                         self._write_sheet(
