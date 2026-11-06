@@ -1182,7 +1182,7 @@ class AssignRatesFromExcel:
         for h in headers:
             df = df.with_columns(pl.col(str(h)).cast(pl.Int64))
 
-        # Phase 1: Collect all unique rate keys needed
+        # Paso 1 (preparación): llaves de tarifa únicas que se necesitan
         rate_keys_set = set()
         local_pkg_col = "_PAQUETE_LOCAL" if "_PAQUETE_LOCAL" in df.columns else "PAQUETE"
         report_cols = [c for c in ("Empresa", "Paciente", "N° Identificación") if c in df.columns]
@@ -1260,7 +1260,7 @@ class AssignRatesFromExcel:
 
                 self.progress.advance()
 
-        # Phase 2: Batch query all needed rates
+        # Paso 2 (preparación): consulta en lote de esas tarifas
         self.logger.info(
             f"Consultando {len(rate_keys_set)} combinaciones únicas de tarifas",
         )
@@ -1269,7 +1269,7 @@ class AssignRatesFromExcel:
             f"Encontradas {len(rates_cache)} tarifas de {len(rate_keys_set)} consultadas",
         )
 
-        # Phase 3: Build result columns with fallback, collect unresolved for wildcard
+        # Fases 1 y 2: paquete propio y PAQUETE C 2025 (mismo CUP, misma ciudad); lo no resuelto pasa a la fase 3
         result_cols = {str(h): df[str(h)].to_list() for h in headers}
         for (col, idx), price in odoo_resolved.items():
             result_cols[col][idx] = price
@@ -1333,7 +1333,7 @@ class AssignRatesFromExcel:
                         else:
                             unresolved.append((idx, h, city_id, cup_id, activity_id, pkg_name, city, activity))
 
-        # Phase 4: Wildcard fallback — find any rate for unresolved combinations
+        # Fase 3: cualquier paquete con el mismo CUP, ciudad y actividad
         still_unresolved = []
         if unresolved:
             wildcard_keys = list({(city_id, cup_id, act_id) for _, _, city_id, cup_id, act_id, _, _, _ in unresolved})
@@ -1374,7 +1374,7 @@ class AssignRatesFromExcel:
                     + "\n".join(f"  {l}" for l in unique_wlogs[:50]),
                 )
 
-        # Phase 5: CUP homologation — strip suffix and search base CUP in PAQUETE C 2025
+        # Fase 4: CUP base (sin sufijo) en PAQUETE C 2025, misma ciudad
         still_unresolved_2 = []
         if still_unresolved and default_pkg_tuple:
             def_id, def_model = default_pkg_tuple
@@ -1412,14 +1412,14 @@ class AssignRatesFromExcel:
         else:
             still_unresolved_2 = list(still_unresolved)
 
-        # Phase 6: CUP homologation in any package — base CUP wildcard
+        # Fase 5: CUP base en cualquier paquete, misma ciudad
         still_unresolved_3 = []
         if still_unresolved_2:
             wildcard2_keys = set()
             for _, h, city_id, _, activity_id, _, _, _ in still_unresolved_2:
                 base_code = str(h).split("-")[0]
                 if base_code == str(h):
-                    continue  # No dash — will go to Phase 7
+                    continue  # Sin guion: pasa a la fase 6
                 base_cup_id = cup_code_to_id.get(base_code)
                 if base_cup_id:
                     wildcard2_keys.add((city_id, base_cup_id, activity_id))
@@ -1471,7 +1471,7 @@ class AssignRatesFromExcel:
             else:
                 still_unresolved_3 = list(still_unresolved_2)
 
-        # Phase 7: Any package, any city — search by cup_id + activity_id only
+        # Fase 6: cualquier paquete y cualquier ciudad, solo por cup_id + activity_id
         if still_unresolved_3:
             cup_activity_keys = list({(cup_id, activity_id) for _, _, _, cup_id, activity_id, _, _, _ in still_unresolved_3})
             cup_activity_cache = self.rates_repo.find_rate_by_cup_activity(cup_activity_keys)
