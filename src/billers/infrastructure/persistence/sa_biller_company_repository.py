@@ -10,17 +10,6 @@ class SaBillerCompanyRepository:
         self.session = session
         self.logger = logger or LoggerAdapter(__name__)
 
-    def link_or_update(self, company_id, biller_id):
-        try:
-            stmt = insert(CompanyBillerModel).values(company_id=company_id, biller_id=biller_id)
-            stmt = stmt.on_conflict_do_update(index_elements=["company_id"], set_={"biller_id": stmt.excluded.biller_id})
-            self.session.execute(stmt)
-            self.session.commit()
-        except Exception as e:
-            self.session.rollback()
-            self.logger.error(f"Error linking biller-company: {e}", exc_info=True, user_msg="No se pudo vincular el facturador con la empresa.")
-            return None
-
     def link_or_update_batch(self, pairs):
         """pairs: list of (company_id, biller_id)"""
         if not pairs:
