@@ -2149,16 +2149,10 @@ def _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla):
     repo = XmlRpcOdooRepository("http://odoo.simulado", "db", "u", "k", FakeLogger(), {})
     repo.connect()
     if lote_falla:
-        real = repo.find_clients_batch
-        llamadas = {"n": 0}
+        def lote_caido(nits):
+            raise ConnectionError("lote caído")
 
-        def batch_que_falla_la_primera_vez(nits):
-            llamadas["n"] += 1
-            if llamadas["n"] == 1:
-                raise ConnectionError("lote caído")
-            return real(nits)
-
-        repo.find_clients_batch = batch_que_falla_la_primera_vez
+        repo.find_clients_batch_checked = lote_caido
     repo.find_client_by_name = lambda name: (None, None, None)
     uc = AssignRatesFromExcel(
         biller_repo=FakeBillerRepo(), company_repo=FakeCompanyRepo(), biller_company_repo=FakeBillerCompanyRepo(),
@@ -2191,3 +2185,73 @@ def test_match_companies_odoo_batch_equals_per_nit(monkeypatch, tmp_path):
 
     assert resultados[0] == resultados[1]
     assert ("800000003", "DUP MENOR") in resultados[1][0]
+
+
+def _lote_vs_individual(monkeypatch, tmp_path, partners, nits):
+    """Corre _match_companies por la ruta individual (lote caído) y por el lote;
+    devuelve ambos resultados y los NIT que el lote mandó a find_client."""
+    resultados = []
+    individuales = []
+    for lote_falla in (True, False):
+        uc = _uc_con_odoo_simulado(monkeypatch, tmp_path, partners, lote_falla)
+        real_find_client = uc.odoo_repo.find_client
+        llamados: list[str] = []
+
+        def find_client_contado(nit, name, _real=real_find_client, _llamados=llamados):
+            _llamados.append(nit)
+            return _real(nit, name)
+
+        uc.odoo_repo.find_client = find_client_contado
+        df = pl.DataFrame({"NIT": nits, "Empresa": [f"E{i}" for i in range(len(nits))], "Base": ["OCT"] * len(nits)})
+        lookups = uc._build_lookups()
+        out = uc._match_companies(df, lookups)
+        resultados.append((out.select("NIT", "Empresa").rows(), sorted(lookups["odoo_resolved_nits"])))
+        individuales.append(llamados)
+    return resultados[0], resultados[1], individuales[1]
+
+
+def test_match_companies_odoo_batch_short_nit_prefix_of_another(monkeypatch, tmp_path):
+    partners = [
+        {"id": 5, "name": "CON PUNTOS", "ref_num": "800.123.456", "vat": False},
+        {"id": 9, "name": "EXACTO", "ref_num": False, "vat": "800123456"},
+    ]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, ["800", "800123456"])
+    assert lote == individual
+    assert ("800123456", "EXACTO") in lote[0]
+    assert "800123456" in por_find_client
+
+
+def test_match_companies_odoo_batch_partner_only_reached_by_other_nit(monkeypatch, tmp_path):
+    partners = [{"id": 5, "name": "CON PUNTOS", "ref_num": "800.123.456", "vat": False}]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, ["800", "800123456"])
+    assert lote == individual
+    assert "800123456" not in lote[1]  # la consulta individual no lo encuentra
+    assert "800123456" in por_find_client
+
+
+def test_match_companies_odoo_batch_nit_with_and_without_check_digit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 20, "name": "DV EN REF", "ref_num": "8001234567", "vat": False},
+        {"id": 21, "name": "DV EN VAT", "ref_num": False, "vat": "900111222-3"},
+        {"id": 22, "name": "SIN DV", "ref_num": "700111222", "vat": False},
+        {"id": 23, "name": "CON DV", "ref_num": "7001112229", "vat": False},
+    ]
+    nits = ["800123456", "900111222", "700111222"]
+    individual, lote, por_find_client = _lote_vs_individual(monkeypatch, tmp_path, partners, nits)
+    assert lote == individual
+    assert ("800123456", "DV EN REF") in lote[0] and ("900111222", "DV EN VAT") in lote[0]
+    assert ("700111222", "SIN DV") in lote[0]
+    assert por_find_client == []  # cada uno llegó por su propia condición y sin rivales en su etapa
+
+
+def test_match_companies_odoo_batch_duplicate_partners_go_per_nit(monkeypatch, tmp_path):
+    partners = [
+        {"id": 31, "name": "DUP MAYOR", "ref_num": "600000001", "vat": False},
+        {"id": 30, "name": "DUP MENOR", "ref_num": "600000001", "vat": False},
+        {"id": 32, "name": "NORMAL", "ref_num": "600000002", "vat": False},
+    ]
+    individual, lote, por_find_client = _lote_vs_individual(
+        monkeypatch, tmp_path, partners, ["600000001", "600000002"])
+    assert lote == individual
+    assert ("600000001", "DUP MENOR") in lote[0]
+    assert por_find_client == ["600000001"]  # el normal se resolvió en el lote

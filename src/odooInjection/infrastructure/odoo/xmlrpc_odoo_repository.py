@@ -125,10 +125,23 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             return [[field, "in", nits]]
         return ["|"] * (len(nits) - 1) + [[field, "=like", f"{n}%"] for n in nits]
 
-    def _find_partners_by_document(self, nits: list[str], fields: list[str]) -> dict[str, dict]:
+    @staticmethod
+    def _matches_own_condition(raw, mode: str, nit: str) -> bool:
+        """¿La consulta individual de `nit` habría traído este valor en esta etapa?"""
+        if mode == "in":
+            return raw == nit
+        return str(raw).startswith(nit)
+
+    def _find_partners_by_document(
+        self, nits: list[str], fields: list[str], ambiguous: set[str] | None = None,
+    ) -> dict[str, dict]:
         """{nit: fila de res.partner}. Una fila se acepta si `normalize_nit` del campo
         consultado coincide con el NIT pedido; gana la de menor id. Un fallo de una
-        etapa se registra y no impide las siguientes. Solo lectura."""
+        etapa se registra y no impide las siguientes. Solo lectura.
+
+        Si se pasa `ambiguous`, se anotan ahí los NIT cuyo resultado en lote podría
+        diferir de la consulta individual (AUD-34): les llegó una fila por la
+        condición de otro NIT, o más de un partner distinto coincide con ellos."""
         unique_nits = list(dict.fromkeys(n for n in nits if n))
         fields = list(dict.fromkeys([*fields, "ref_num", "vat"]))
         found: dict[str, dict] = {}
@@ -153,7 +166,14 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
                 wanted = set(chunk)
                 for row in rows:
                     nit = normalize_nit(row.get(field) or "")
-                    if nit in wanted and nit not in found:
+                    if nit not in wanted:
+                        continue
+                    if ambiguous is not None and (
+                        not self._matches_own_condition(row.get(field), mode, nit)
+                        or (nit in found and found[nit]["id"] != row["id"])
+                    ):
+                        ambiguous.add(nit)
+                    if nit not in found:
                         found[nit] = row
         return found
 
@@ -168,6 +188,14 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
     def find_clients_batch(self, nits: list[str]) -> dict[str, tuple[int, str, str]]:
         rows = self._find_partners_by_document(nits, ["id", "name"])
         return {nit: (row["id"], row["name"], "NIT") for nit, row in rows.items()}
+
+    def find_clients_batch_checked(
+        self, nits: list[str],
+    ) -> tuple[dict[str, tuple[int, str, str]], set[str]]:
+        ambiguous: set[str] = set()
+        rows = self._find_partners_by_document(nits, ["id", "name"], ambiguous)
+        found = {nit: (row["id"], row["name"], "NIT") for nit, row in rows.items()}
+        return found, ambiguous
 
     _PARTNER_RATE_FIELDS = ["id", "name", "rate_base_special_id", "rate_base_id"]
 

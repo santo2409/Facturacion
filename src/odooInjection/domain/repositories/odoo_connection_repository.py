@@ -31,6 +31,14 @@ class OdooConnectionRepository(ABC):
         pass
 
     @abstractmethod
+    def find_clients_batch_checked(
+        self, nits: list[str],
+    ) -> tuple[dict[str, tuple[int, str, str]], set[str]]:
+        """Como `find_clients_batch`, más los NIT ambiguos: aquellos cuyo resultado
+        en lote podría diferir de `find_client(nit)` y deben resolverse uno a uno."""
+        pass
+
+    @abstractmethod
     def find_partner_rates_batch(self, nits: list[str]) -> list[dict]:
         """Busca empresas por `ref_num` y devuelve sus tarifas relacionadas.
         [{'nit','partner_id','name','special_id','special_name','base_id','base_name'}]
