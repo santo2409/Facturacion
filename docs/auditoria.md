@@ -240,7 +240,7 @@ Estados: pendiente · aprobado · descartado · después · hecho · revisar
 | AUD-66 | rapidfuzz_biller.py:24-34 | manejo de errores | baja | no | Con un catálogo vacío lanza TypeError que se captura y registra `user_msg` en **cada fila** | revisar |
 | AUD-67 | rues_selenium_scraper.py:59-62; sa_company_repository.py:69-72 | legibilidad | baja | sí (mensajes) | `user_msg` por fila, contra ADR-014. Cambiarlo altera los mensajes: consultar | revisar |
 | AUD-68 | import_rues_nits.py:91-108; rues_selenium_scraper.py:37-42 | manejo de errores | baja | no | `int(os.getenv(...))` y `os.path.join(os.getenv("BOOK_ROUTE"))` sin validar. Leer vía `config.py` | revisar |
-| AUD-69 | rues_selenium_scraper.py:4, 54, 76-92, 23-24 | dependencias | baja | no | numpy solo para `isnan`; el archivo se llama "selenium" pero usa Playwright; timeouts fijos; XPath absolutos | revisar |
+| AUD-69 | rues_selenium_scraper.py:4, 54, 76-92, 23-24 | dependencias | baja | no | numpy solo para `isnan`; el archivo se llama "selenium" pero usa Playwright; timeouts fijos; XPath absolutos | hecho (solo numpy; renombre del archivo, timeouts y XPath pendientes) |
 | AUD-70 | sa_package_repository.py:55; sa_provider_repository.py:55; sa_special_repository.py:54 | dependencias | baja | no | `session.query(M).get(id)` es API legacy de SQLAlchemy 2.0; usar `session.get(M, id)` | revisar |
 | AUD-71 | not_found_companies_log_generator.py:133, 143 | bug | baja | sí | El histórico se indexa por el NIT crudo, no normalizado: duplica filas con DV o puntos | aprobado |
 | AUD-72 | import_rues_nits.py:114; search_nits use case:132 | bug | baja | no | Una celda vacía en `nits` aparece como NIT "None" no encontrado. Filtrar nulos | descartar |

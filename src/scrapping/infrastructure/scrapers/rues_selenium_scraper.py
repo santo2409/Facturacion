@@ -1,7 +1,7 @@
 import asyncio
+import math
 import os
 
-import numpy as np
 from bs4 import BeautifulSoup
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
@@ -51,7 +51,7 @@ class RuesPlaywrightScraper(NitScraperRepository):
 
         valid = []
         for nit in nits:
-            if nit[0] is None or (isinstance(nit[0], float) and np.isnan(nit[0])):
+            if nit[0] is None or (isinstance(nit[0], float) and math.isnan(nit[0])):
                 continue
             try:
                 valid.append(int(str(nit[0]).strip()))
