@@ -1,9 +1,9 @@
 import os
 from datetime import date, timedelta
 
-from dotenv import load_dotenv
+from src.shared.env import load_env
 
-load_dotenv(override=True)
+load_env()
 
 
 def _fecha_servicio() -> str:

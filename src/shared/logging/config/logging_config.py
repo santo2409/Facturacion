@@ -2,15 +2,14 @@ import logging.config
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 from src.shared.config import get_paths_config
+from src.shared.env import load_env
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.logging.spec import root_logger_guard
 from src.shared.logging.spec.spec_loader import SpecLoader
 from src.shared.logging.spec.spec_validator import SpecValidator
 
-load_dotenv(override=True)
+load_env()
 
 
 def setup_logging() -> LoggerAdapter:

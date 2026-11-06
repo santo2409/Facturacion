@@ -2,7 +2,6 @@ from collections.abc import Callable
 from datetime import datetime
 from os import getenv
 
-from dotenv import load_dotenv
 from rich import box
 from rich.console import Console
 from rich.prompt import Prompt
@@ -27,6 +26,7 @@ from src.preInvoice.infrastructure.console.pre_invoice_controller import (
 )
 from src.rates.infrastructure.console.import_rates_controller import import_rates
 from src.scrapping.infrastructure.console.import_rues_nits import execute_web_scrapping
+from src.shared.env import load_env
 from src.shared.logging.config.logging_config import setup_logging
 from src.shared.logging.infrastructure.logging.logger_adapter import LoggerAdapter
 from src.shared.utils.deprecated import DEPRECATED_LABEL, is_deprecated
@@ -35,7 +35,7 @@ console = Console()
 user_logger = setup_logging()
 tech_logger = LoggerAdapter("tech_logger")
 
-load_dotenv(override=True)
+load_env()
 
 # (opción, descripción, función). La función sirve para detectar @deprecated;
 # None cuando la opción no tiene controller (Salir) o está desconectada (8).

@@ -1,13 +1,14 @@
 import os
 from urllib.parse import quote_plus
 
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+from src.shared.env import load_env
+
 Base = declarative_base()
 
-load_dotenv(override=True)
+load_env()
 
 
 def _build_url():
