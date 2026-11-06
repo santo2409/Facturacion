@@ -5,7 +5,42 @@ import xmlrpc.client
 from src.odooInjection.domain.repositories.odoo_connection_repository import (
     OdooConnectionRepository,
 )
+from src.shared.config import get_int_env
 from src.shared.utils.text_normalizer import normalize_nit
+
+DEFAULT_ODOO_TIMEOUT_SECONDS = 180  # mismo valor que usa ETL-Avancys para Odoo
+
+
+class _TimeoutTransport(xmlrpc.client.Transport):
+    """Transporte XML-RPC (http) con timeout de socket (AUD-11)."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        conn.timeout = self.timeout
+        return conn
+
+
+class _TimeoutSafeTransport(xmlrpc.client.SafeTransport):
+    """Transporte XML-RPC (https) con timeout de socket (AUD-11)."""
+
+    def __init__(self, timeout: float):
+        super().__init__()
+        self.timeout = timeout
+
+    def make_connection(self, host):
+        conn = super().make_connection(host)
+        conn.timeout = self.timeout
+        return conn
+
+
+def _transport_for(url: str, timeout: float) -> xmlrpc.client.Transport:
+    if url.lower().startswith("https://"):
+        return _TimeoutSafeTransport(timeout)
+    return _TimeoutTransport(timeout)
 
 _CORPORATE_SUFFIX_RE = re.compile(
     r"\s*(SAS|S\s*A\s*S|SA|S\s*A|LTDA|L\s*T\s*D\s*A|EU|ESP|BIC)\s*$",
@@ -30,13 +65,18 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         self._cache_uom = {}
 
     def connect(self) -> None:
+        timeout = get_int_env("ODOO_TIMEOUT_SECONDS", DEFAULT_ODOO_TIMEOUT_SECONDS)
         for attempt in range(3):
             try:
-                common = xmlrpc.client.ServerProxy(f"{self._url}/xmlrpc/2/common")
+                common = xmlrpc.client.ServerProxy(
+                    f"{self._url}/xmlrpc/2/common", transport=_transport_for(self._url, timeout)
+                )
                 self._uid = common.authenticate(self._db, self._username, self._api_key, {})
                 if not self._uid:
                     raise ConnectionError("Autenticación fallida — verifica la API Key")
-                self._models = xmlrpc.client.ServerProxy(f"{self._url}/xmlrpc/2/object")
+                self._models = xmlrpc.client.ServerProxy(
+                    f"{self._url}/xmlrpc/2/object", transport=_transport_for(self._url, timeout)
+                )
                 self._logger.info(f"Conectado a Odoo. UID: {self._uid}")
                 return
             except Exception as e:
