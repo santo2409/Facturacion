@@ -1,0 +1,47 @@
+{
+ "res.partner": [
+  {"id": 501, "name": "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A", "ref_num": "811111111"},
+  {"id": 502, "name": "COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B", "ref_num": "811111112"},
+  {"id": 503, "name": "EMPRESA A_B_ SAS", "ref_num": "822222222"},
+  {"id": 504, "name": "EMPRESA ALFA SAS", "ref_num": "900111111"},
+  {"id": 505, "name": "EMPRESA GAMMA", "ref_num": "700777777"},
+  {"id": 506, "name": "EMPRESA BETA LTDA", "ref_num": "800222222"},
+  {"id": 507, "name": "CASOS SEDES SAS", "ref_num": "901000001"},
+  {"id": 508, "name": "TERCERO DUPLICADO SAS", "ref_num": "901000003"},
+  {"id": 509, "name": "TERCERO DUPLICADO SAS (COPIA)", "ref_num": "901000003"},
+  {"id": 510, "name": "OTRA RAZON SOCIAL TOTALMENTE DIFERENTE", "ref_num": "901000004"},
+  {"id": 511, "name": "SIN LINEAS SAS", "ref_num": "901000006"},
+  {"id": 512, "name": "TERCERO DEL NIT BLOQUEADO", "ref_num": "900448167"},
+  {"id": 513, "name": "SGS COLOMIA PRUEBA SAS", "ref_num": "901000002"},
+  {"id": 514, "name": "NIT CORTO SAS", "ref_num": "12345"}
+ ],
+ "product.product": [
+  {"id": 601, "name": "CONSULTA MEDICINA GENERAL", "default_code": "890201", "list_price": 1.0},
+  {"id": 602, "name": "CONSULTA ESPECIALISTA", "default_code": "890202", "list_price": 1.0},
+  {"id": 603, "name": "COLESTEROL TOTAL SUERO", "default_code": "903810-01", "list_price": 1.0},
+  {"id": 604, "name": "AUDIOMETRIA", "default_code": "871121", "list_price": 1.0},
+  {"id": 605, "name": "EXAMEN GRAVADO", "default_code": "100006", "list_price": 1.0}
+ ],
+ "account.tax": [
+  {"id": 701, "name": "AUTORRETENCION IMPUESTO RENTA 2%", "type_tax_use": "sale"},
+  {"id": 702, "name": "AUTORRETENCION COMPRA IMPUESTO RENTA 2%", "type_tax_use": "sale"}
+ ],
+ "uom.uom": [
+  {"id": 1, "name": "Unidades"}
+ ],
+ "account.analytic.account": [
+  {"id": 101, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C.", "code": "AA8638"},
+  {"id": 102, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - ZONA INDUSTRIAL - BOGOTA D.C.", "code": "AA8637"},
+  {"id": 103, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - EXTRAMURAL - EXTRAMURAL - BOGOTA D.C.", "code": "AA10344"},
+  {"id": 104, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE CALI - CALI", "code": "AA10405"},
+  {"id": 105, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN", "code": "AA8641"},
+  {"id": 106, "name": "SEDE SOA - PROVEEDORES - TABIO", "code": "AA90106"},
+  {"id": 107, "name": "SEDE SOA - PROVEEDORES - BARRANQUILLA", "code": "AA10319"},
+  {"id": 108, "name": "SEDE SOA - PROVEEDORES - SAN JUAN DEL CESAR", "code": "AA10319"},
+  {"id": 109, "name": "SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE BUGA - BUGA", "code": "AA10460"},
+  {"id": 110, "name": "GRUPO ALTUM - EXTRAMURAL - EXTRAMURAL - MEDELLIN", "code": "AA90110"},
+  {"id": 111, "name": "SEDE SOA - EXTRAMURAL - EXTRAMURAL - MEDELLIN", "code": "AA90111"},
+  {"id": 11136, "name": "SEDE SOA - PROVEEDORES - MARIQUITA", "code": false}
+ ],
+ "account.move": []
+}
