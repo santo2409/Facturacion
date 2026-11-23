@@ -786,3 +786,41 @@ class TestGranularFindingKey:
             "Sin resolver", "PAQUETE BASICO", "BOGOTA, D.C.", "890201",
             None, "Sin tarifa", None, None,
         )]
+
+
+# ── Bases sin tarifa: pista de alturas y sede virtual ─────────────────────
+
+class TestBaseSinTarifa:
+    @pytest.mark.parametrize("base", [
+        "PISTA DE ALTURAS", "Pista de alturas", "ALTURAS NOVIEMBRE", "PISTA",
+        "SEDE VIRTUAL", "virtual 1-15",
+    ])
+    def test_base_sin_tarifa_conserva_valores_de_entrada(self, deps, base):
+        deps["rates_repo"]._data[(1, 1, 1, 1, "Package")] = 5000
+        df = _df(nits=(NIT, NIT)).with_columns(pl.Series("Base", [base, "GENERAL"]))
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+
+        uc, result, colors = _assign(deps, df, _partner(), lines)
+
+        assert result["890201"].to_list() == [1, 31100]
+        assert result["Total"].to_list() == [1, 31100]
+        assert colors == {}
+        assert _rows(uc, SIN_RESOLVER) == []
+
+    def test_base_sin_tarifa_no_entra_a_fases_locales(self, deps):
+        deps["rates_repo"]._data[(1, 1, 1, 1, "Package")] = 5000
+        df = _df().with_columns(pl.Series("Base", ["SEDE VIRTUAL"]))
+
+        uc, result, colors = _assign(deps, df, odoo=False)
+
+        assert result["890201"][0] == 1
+        assert colors == {}
+        assert all(_rows(uc, key) == [] for key in uc._findings)
+
+    def test_base_general_sigue_asignando_tarifa(self, deps):
+        df = _df().with_columns(pl.Series("Base", ["GENERAL"]))
+        lines = [_line(SPECIAL["id"], "890201", 31100.0)]
+
+        _, result, _ = _assign(deps, df, _partner(), lines)
+
+        assert result["890201"][0] == 31100

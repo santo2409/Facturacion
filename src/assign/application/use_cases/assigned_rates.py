@@ -45,6 +45,22 @@ def _es_base_imedical(base) -> bool:
     return "IMEDICAL" in normalize_name(str(base))
 
 
+# Bases cuyas filas conservan los valores de las columnas CUP tal como vienen
+# en el libro de entrada: no se les asigna tarifa (ni Odoo ni fases locales).
+# Pista de alturas ("ALTURAS" o "PISTA") y sede virtual ("VIRTUAL").
+_PALABRAS_BASE_SIN_TARIFA = ("ALTURAS", "PISTA", "VIRTUAL")
+
+
+def _es_base_sin_tarifa(base) -> bool:
+    """True si la columna Base contiene alguna de `_PALABRAS_BASE_SIN_TARIFA`.
+    Tolerante a mayúsculas/minúsculas y espacios (ej. 'Pista de alturas',
+    'SEDE VIRTUAL')."""
+    if not base:
+        return False
+    texto = normalize_name(str(base))
+    return any(palabra in texto for palabra in _PALABRAS_BASE_SIN_TARIFA)
+
+
 def _enrich_with_invoices(df: pl.DataFrame, df_facture: pl.DataFrame, logger) -> pl.DataFrame:
     """Añade columna FACTURAS a df cruzando por N° Identificación."""
     id_col = "N° Identificación"
@@ -1255,6 +1271,22 @@ class AssignRatesFromExcel:
             + report_cols
             + [str(h) for h in headers]
         ).to_dicts()
+        # Filas de pista de alturas / sede virtual: se ocultan sus celdas CUP a
+        # la cascada (ninguna celda queda en 1 para Odoo ni para las fases
+        # locales), así conservan los valores de entrada y no salen como
+        # "sin tarifa". result_cols se arma desde df, no desde rows_data.
+        if "Base" in df.columns:
+            filas_sin_tarifa = [
+                idx for idx, base in enumerate(df["Base"].to_list()) if _es_base_sin_tarifa(base)
+            ]
+            for idx in filas_sin_tarifa:
+                for h in headers:
+                    rows_data[idx][str(h)] = None
+            if filas_sin_tarifa:
+                self.logger.info(
+                    f"{len(filas_sin_tarifa)} fila(s) con Base de pista de alturas o sede virtual: "
+                    "se conservan sus valores sin asignar tarifa.",
+                )
         self._findings = {key: [] for key in PHASE_FINDING_KEYS}
         odoo_resolved = self._resolve_odoo_cells(rows_data, headers)
         self._odoo_cells = len(odoo_resolved)
