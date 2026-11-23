@@ -26,11 +26,17 @@ from src.city.infrastructure.persistence.sa_city_repository import (
 from src.company.infrastructure.persistence.sa_company_repository import (
     SaCompanyRepository,
 )
+from src.company.infrastructure.persistence.sa_billing_redirect_repository import (
+    SaBillingRedirectRepository,
+)
 from src.company.infrastructure.persistence.sa_imedical_repository import (
     SaImedicalRepository,
 )
 from src.company.infrastructure.persistence.sa_tian_repository import (
     SaTianRepository,
+)
+from src.company.infrastructure.reporting.redirected_companies_log_generator import (
+    RedirectedCompaniesLogGenerator,
 )
 from src.company.infrastructure.reporting.tian_companies_log_generator import (
     TianCompaniesLogGenerator,
@@ -165,6 +171,8 @@ def assign_rates(logger, with_invoices=False):
             imedical_repo=SaImedicalRepository(session, logger),
             tian_repo=SaTianRepository(session, logger),
             tian_log_generator=TianCompaniesLogGenerator(logger),
+            redirect_repo=SaBillingRedirectRepository(session, logger),
+            redirect_log_generator=RedirectedCompaniesLogGenerator(logger),
             findings_reporter=XlsxPhaseFindingsReporter(),
         )
 

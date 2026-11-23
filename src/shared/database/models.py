@@ -114,6 +114,21 @@ class TianModel(Base):
     deleted_at = Column(TIMESTAMP, nullable=True)
 
 
+class BillingRedirectModel(Base):
+    """Redirección de facturación: las filas con `nit_origen` se facturan bajo
+    `nit_destino` y su Empresa lleva el sufijo "(<etiqueta>)". Generaliza `tian`."""
+
+    __tablename__ = "billing_redirects"
+
+    nit_origen = Column(String(50), nullable=False, primary_key=True)
+    nit_destino = Column(String(50), nullable=False)
+    etiqueta = Column(String(50), nullable=False)
+    name = Column(String(255), nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, server_default=func.now())
+    deleted_at = Column(TIMESTAMP, nullable=True)
+
+
 class CompanyModel(Base):
     __tablename__ = "companies"
 

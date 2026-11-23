@@ -63,6 +63,7 @@ from tests.fakes.fake_cup_repo import FakeCupRepo
 from tests.fakes.fake_imedical_repo import FakeImedicalRepo
 from tests.fakes.fake_nit_scraper import FakeNitScraper
 from tests.fakes.fake_rates_repo import FakeRatesRepo
+from tests.fakes.fake_billing_redirect_repo import FakeBillingRedirectRepo
 from tests.fakes.fake_tian_repo import FakeTianRepo
 from tests.golden._odoo_simulado import OdooSimulado, ServerProxySimulado
 
@@ -551,6 +552,7 @@ def esc_opcion6(entradas: Path, trabajo: Path, mp) -> dict:
         "SaCupRepository": _constante(FakeCupRepo(bd["cups"])),
         "SaImedicalRepository": _constante(imedical),
         "SaTianRepository": _constante(FakeTianRepo(bd["tian"])),
+        "SaBillingRedirectRepository": _constante(FakeBillingRedirectRepo(bd.get("billing_redirects", []))),
         "XlsxPhaseFindingsReporter": lambda: XlsxPhaseFindingsReporter(clock=_reloj),
         "AssignRatesFromExcel": lambda **k: AssignRatesFromExcel(**k, today=_RelojDate.today),
         "Console": _constante(consola),

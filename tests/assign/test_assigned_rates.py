@@ -2366,3 +2366,129 @@ def test_match_companies_odoo_batch_only_like_stages_fail(monkeypatch, tmp_path)
     assert ("600000001", "REF CON ESPACIO") in lote[0] and ("600000002", "VAT CON DV") in lote[0]
     assert ("600000003", "EXACTO") in lote[0]
     assert sorted(por_find_client) == ["600000001", "600000002"]  # el exacto no pasó por like
+
+
+# ── _apply_redirects: redirecciones genéricas (tabla billing_redirects) ──
+
+def _redirect_deps(deps, redirect_rows, destino="901555555", destino_tiene_paquete=True):
+    from tests.fakes.fake_billing_redirect_repo import FakeBillingRedirectRepo
+    from tests.fakes.fake_redirect_log_generator import FakeRedirectLogGenerator
+    deps["company_repo"]._data.append({"id": 300, "nit": destino, "name": "DESTINO SAS"})
+    if destino_tiene_paquete:
+        deps["company_repo"]._packages.append({"company": 300, "package": 7, "model": "Special"})
+    deps["redirect_repo"] = FakeBillingRedirectRepo(redirect_rows)
+    deps["redirect_log_generator"] = FakeRedirectLogGenerator()
+    return deps
+
+
+def _redirect(origen, destino="901555555", etiqueta="OTRA"):
+    return {"nit_origen": origen, "nit_destino": destino, "etiqueta": etiqueta, "name": "X"}
+
+
+def test_apply_redirects_reemplaza_nit_y_agrega_sufijo_de_la_etiqueta(deps, monkeypatch):
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    _redirect_deps(deps, [_redirect("800082633", etiqueta=" otra ")])
+    deps["company_repo"]._data.append({"id": 629, "nit": "800082633", "name": "LABORATORIOS DERMANAT SAS"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800082633", "900111111"], "Empresa": ["LAB DERMANAT", "EMPRESA A"]})
+
+    result = uc._apply_redirects(df, lookups)
+
+    assert result["NIT"].to_list() == ["901555555", "900111111"]
+    assert result["Empresa"].to_list() == ["LABORATORIOS DERMANAT SAS(OTRA)", "EMPRESA A"]
+    assert lookups["redirected_nits"] == {"901555555"}
+    filas, _ = deps["redirect_log_generator"].calls[0]
+    assert [(a.etiqueta, a.nit_original, a.nit_destino, a.rows) for a in filas] == [
+        ("OTRA", "800082633", "901555555", 1)
+    ]
+
+
+def test_apply_redirects_varios_destinos_y_cuenta_registros(deps, monkeypatch):
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    _redirect_deps(deps, [_redirect("800000001"), _redirect("800000002", destino="902666666", etiqueta="NORTE")])
+    deps["company_repo"]._data.append({"id": 301, "nit": "902666666", "name": "NORTE SAS"})
+    deps["company_repo"]._packages.append({"company": 301, "package": 8, "model": "Special"})
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800000001", "800000002", "800000001"], "Empresa": ["A", "B", "A"]})
+
+    result = uc._apply_redirects(df, lookups)
+
+    assert result["NIT"].to_list() == ["901555555", "902666666", "901555555"]
+    assert result["Empresa"].to_list() == ["A(OTRA)", "B(NORTE)", "A(OTRA)"]
+    filas, _ = deps["redirect_log_generator"].calls[0]
+    assert {a.nit_original: a.rows for a in filas} == {"800000001": 2, "800000002": 1}
+
+
+def test_apply_redirects_usa_nit_crudo_y_sufijo_idempotente(deps, monkeypatch):
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    _redirect_deps(deps, [_redirect("1015426422")])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["101542642"], "Empresa": ["Y(OTRA)"], "_NIT_RAW": ["1015426422"]})
+
+    result = uc._apply_redirects(df, lookups)
+
+    assert result["NIT"][0] == "901555555"
+    assert result["Empresa"][0] == "Y(OTRA)"
+
+
+def test_apply_redirects_omite_destino_sin_paquete_o_inexistente(deps, monkeypatch):
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    _redirect_deps(deps, [_redirect("800000001"), _redirect("800000002", destino="909999999")],
+                   destino_tiene_paquete=False)
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = pl.DataFrame({"NIT": ["800000001", "800000002"], "Empresa": ["A", "B"]})
+
+    result = uc._apply_redirects(df, lookups)
+
+    assert result["NIT"].to_list() == ["800000001", "800000002"]
+    assert any("901555555" in e for e in deps["logger"].errors)
+    assert any("909999999" in e for e in deps["logger"].errors)
+    assert deps["redirect_log_generator"].calls == []
+
+
+def test_build_lookups_redirects_descarta_filas_invalidas_y_las_de_tian(deps, monkeypatch):
+    from tests.fakes.fake_tian_repo import FakeTianRepo
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    deps["tian_repo"] = FakeTianRepo([{"nit_error": "800082633", "name": "X"}])
+    _redirect_deps(deps, [
+        _redirect("800082633"),                 # ya está en tian: TIAN gana
+        _redirect("900293402"),                 # el propio TIAN_NIT
+        _redirect("901555555"),                 # a sí mismo
+        _redirect("800000003", etiqueta=""),    # sin etiqueta
+        _redirect("800-000.004", destino="901.555.555"),
+    ])
+    uc = _build(deps)
+
+    lookups = uc._build_lookups()
+
+    assert lookups["redirects"] == {"800000004": ("901555555", "OTRA")}
+
+
+def test_apply_redirects_no_toca_filas_ya_redirigidas_a_tian(deps, monkeypatch):
+    monkeypatch.setenv("TIAN_NIT", "900293402")
+    _redirect_deps(deps, [_redirect("800000001")])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    lookups["tian_rerouted_nits"] = {"900293402"}
+    df = pl.DataFrame({"NIT": ["900293402"], "Empresa": ["A(TIAN)"], "_NIT_RAW": ["800000001"]})
+
+    result = uc._apply_redirects(df, lookups)
+
+    assert result["NIT"][0] == "900293402"
+    assert result["Empresa"][0] == "A(TIAN)"
+
+
+def test_validate_empresa_no_revierte_el_nombre_de_las_redirigidas(deps, monkeypatch):
+    monkeypatch.delenv("TIAN_NIT", raising=False)
+    _redirect_deps(deps, [_redirect("800000001")])
+    uc = _build(deps)
+    lookups = uc._build_lookups()
+    df = uc._apply_redirects(pl.DataFrame({"NIT": ["800000001"], "Empresa": ["A"]}), lookups)
+
+    result = uc._validate_empresa(df, lookups)
+
+    assert result["Empresa"][0] == "A(OTRA)"

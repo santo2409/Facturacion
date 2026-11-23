@@ -10,6 +10,7 @@ import polars as pl
 
 from src.assign.domain.odoo_rate_index import OdooRateIndex
 from src.company.domain.entities.imedical_correction import ImedicalCorrection
+from src.company.domain.entities.redirect_assignment import RedirectAssignment
 from src.company.domain.entities.tian_assignment import TianAssignment
 from src.package.domain.entities.package import Package
 from src.provider.domain.entities.provider import Provider
@@ -182,6 +183,8 @@ class AssignRatesFromExcel:
         imedical_repo=None,
         tian_repo=None,
         tian_log_generator=None,
+        redirect_repo=None,
+        redirect_log_generator=None,
         findings_reporter=None,
         today: Callable[[], date] = date.today,
     ):
@@ -204,6 +207,8 @@ class AssignRatesFromExcel:
         self.imedical_repo = imedical_repo
         self.tian_repo = tian_repo
         self.tian_log_generator = tian_log_generator
+        self.redirect_repo = redirect_repo
+        self.redirect_log_generator = redirect_log_generator
         self.findings_reporter = findings_reporter
         self._today = today
         self.odoo_available = False
@@ -300,6 +305,9 @@ class AssignRatesFromExcel:
         # de asignar facturador/paquete/tarifas (RF-13) para que la fila
         # herede los de TIAN.
         df = self._apply_tian(df, lookups)
+        # Redirecciones genéricas (tabla billing_redirects): mismo momento y
+        # mismo efecto que TIAN; TIAN tiene prioridad si un NIT está en ambas.
+        df = self._apply_redirects(df, lookups)
         df = self._normalize_city(df, lookups)
         self._load_odoo_rates(df)
         df = self._assign_facturador(df, lookups)
@@ -494,6 +502,21 @@ class AssignRatesFromExcel:
                 if raw and raw != tian_nit:
                     tian_nits.add(raw)
 
+        # billing_redirects: NIT origen → (NIT destino, etiqueta). TIAN gana si
+        # un NIT está en ambas tablas; se descartan filas incompletas, las que
+        # se redirigen a sí mismas y las que tienen como origen a TIAN_NIT.
+        redirects: dict[str, tuple[str, str]] = {}
+        if self.redirect_repo:
+            for row in self.redirect_repo.all():
+                origen = re.sub(r"\D", "", str(row.get("nit_origen") or ""))
+                destino = re.sub(r"\D", "", str(row.get("nit_destino") or ""))
+                etiqueta = str(row.get("etiqueta") or "").strip().upper()
+                if not origen or not destino or not etiqueta or origen == destino:
+                    continue
+                if origen in tian_nits or origen == tian_nit:
+                    continue
+                redirects[origen] = (destino, etiqueta)
+
         return {
             "nit_to_company": nit_to_company,
             "name_to_company": name_to_company,
@@ -512,6 +535,7 @@ class AssignRatesFromExcel:
             "imedical_known_nit_errors": imedical_known_nit_errors,
             "tian_nits": tian_nits,
             "tian_nit": tian_nit,
+            "redirects": redirects,
         }
 
     # ── i-medical: NIT crudo y corrección (spec 008 RF-01..05) ─────────────
@@ -1057,6 +1081,98 @@ class AssignRatesFromExcel:
 
         if self.tian_log_generator:
             self.tian_log_generator.generate(list(asignaciones.values()), self.logs_dir)
+
+        return df
+
+    # ── Redirecciones genéricas de facturación (tabla billing_redirects) ──
+
+    def _apply_redirects(self, df: pl.DataFrame, lookups: dict) -> pl.DataFrame:
+        """Igual que _apply_tian, pero con el destino y la etiqueta de cada fila
+        de `billing_redirects`: la fila pasa a facturarse bajo `nit_destino` y su
+        Empresa queda "<razón social>(<ETIQUETA>)". Va antes de asignar
+        facturador/paquete/tarifas para que herede los del destino.
+
+        Un destino que no existe en companies o no tiene paquete se omite (con
+        error en el log) y sus filas conservan su NIT. Las filas que TIAN ya
+        redirigió no se tocan. Una sola pasada: no hay redirecciones encadenadas."""
+        redirects = lookups.get("redirects", {})
+        if not redirects:
+            return df
+
+        nit_to_company = lookups["nit_to_company"]
+        company_to_package = lookups["company_to_package"]
+
+        destinos_validos: set[str] = set()
+        for destino in sorted({d for d, _ in redirects.values()}):
+            company = nit_to_company.get(destino)
+            if not company:
+                self.logger.error(
+                    f"Redirección: el NIT destino {destino} no existe en companies; se omiten sus redirecciones.",
+                    user_msg=f"Redirección: el NIT destino {destino} no existe en la BD; sus empresas no se redirigen.",
+                )
+                continue
+            if company["id"] not in company_to_package:
+                self.logger.error(
+                    f"Redirección: la empresa destino {destino} no tiene paquete asignado; se omiten sus redirecciones.",
+                    user_msg=f"Redirección: la empresa destino {destino} no tiene paquete; sus empresas no se redirigen.",
+                )
+                continue
+            destinos_validos.add(destino)
+        if not destinos_validos:
+            return df
+
+        ya_redirigidos = lookups.get("tian_rerouted_nits", set())
+        raw_source = "_NIT_RAW" if "_NIT_RAW" in df.columns else "NIT"
+        raw_nits = df[raw_source].cast(pl.Utf8).str.replace_all(r"[^\d]", "").to_list()
+        current_nits = df["NIT"].cast(pl.Utf8).to_list()
+        empresas = df["Empresa"].cast(pl.Utf8).to_list()
+
+        nuevos_nit = list(current_nits)
+        nuevas_empresas = list(empresas)
+        asignaciones: dict[str, RedirectAssignment] = {}
+
+        for i, nit_actual in enumerate(current_nits):
+            if nit_actual in ya_redirigidos:
+                continue
+            if nit_actual in redirects:
+                candidato = nit_actual
+            elif raw_nits[i] in redirects:
+                candidato = raw_nits[i]
+            else:
+                continue
+            destino, etiqueta = redirects[candidato]
+            if destino not in destinos_validos or nit_actual == destino:
+                continue
+
+            sufijo = f"({etiqueta})"
+            name_canonica = nit_to_company.get(nit_actual, {}).get("name") or empresas[i]
+            name_final = name_canonica if name_canonica.endswith(sufijo) else f"{name_canonica}{sufijo}"
+
+            nuevos_nit[i] = destino
+            nuevas_empresas[i] = name_final
+
+            previa = asignaciones.get(nit_actual)
+            asignaciones[nit_actual] = RedirectAssignment(
+                etiqueta=etiqueta,
+                nit_original=nit_actual,
+                name_original=previa.name_original if previa else empresas[i],
+                nit_destino=destino,
+                name_final=name_final,
+                rows=previa.rows + 1 if previa else 1,
+            )
+
+        if not asignaciones:
+            return df
+
+        lookups["redirected_nits"] = {a.nit_destino for a in asignaciones.values()}
+
+        df = df.with_columns([
+            pl.Series("NIT", nuevos_nit),
+            pl.Series("Empresa", nuevas_empresas),
+        ])
+
+        if self.redirect_log_generator:
+            self.redirect_log_generator.generate(list(asignaciones.values()), self.logs_dir)
 
         return df
 
@@ -1649,7 +1765,9 @@ class AssignRatesFromExcel:
         # los NIT ya resueltos vía Odoo no deben revertirse al nombre de BD local.
         # Los NIT redirigidos a TIAN (spec 008 RF-13) tampoco: su Empresa lleva
         # el sufijo "(TIAN)" con la razón social original, no la de TIAN.
-        excluidos = odoo_resolved_nits | tian_rerouted_nits
+        # Igual para los destinos de billing_redirects.
+        redirected_nits = lookups.get("redirected_nits", set())
+        excluidos = odoo_resolved_nits | tian_rerouted_nits | redirected_nits
         db_nit_to_name = {
             nit: normalize_name(c["name"])
             for nit, c in nit_to_company.items()
