@@ -12,6 +12,23 @@ _DEAD_MODULES = {
     "src.package.application.use_cases.update_package": ("update_package", "UpdatePackageUseCase"),
     "src.scrapping.infrastructure.scrapers.datos_gov_scraper": ("datos_gov_scraper", "DatosGovScraper"),
     "src.shared.logging.infrastructure.repositories.iLogger": ("iLogger",),
+    # Opciones del menú en desuso eliminadas (antes 3, 4, 5 y 9) y lo que solo ellas usaban.
+    "src.dataProcessing.infrastructure.console.import_information_controller": ("import_information_controller",),
+    "src.dataProcessing.application.use_cases.normalize_information_from_excel": ("normalize_information_from_excel",),
+    "src.dataProcessing.infrastructure.persistence.cup_column_validator": ("cup_column_validator",),
+    "src.dataProcessing.domain.services.cup_resolver": ("cup_resolver",),
+    "src.rates.infrastructure.console.import_rates_controller": ("import_rates_controller",),
+    "src.rates.application.use_cases.import_rates_from_excel": ("import_rates_from_excel",),
+    "src.company.infrastructure.console.import_companies_rates_controller": ("import_companies_rates_controller",),
+    "src.company.application.use_cases.import_companies_from_excel": ("import_companies_from_excel",),
+    "src.company.infrastructure.reporting.not_linked_companies_log_generator": ("not_linked_companies_log_generator",),
+    "src.assign.infrastructure.console.missing_rates_controller": ("missing_rates_controller",),
+    "src.assign.application.use_cases.missing_rates": ("generate_missing_rates",),
+    "src.shared.utils.mega_dataframes": ("mega_dataframes",),
+    "src.shared.utils.document_normalizer": ("document_normalizer",),
+    "src.shared.excel.excel_exporter": ("excel_exporter",),
+    "src.shared.console.file_output": ("ask_directory_path",),
+    "src.shared.utils.deprecated": ("DEPRECATED_LABEL", "is_deprecated"),
 }
 
 

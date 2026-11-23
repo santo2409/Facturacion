@@ -7,7 +7,7 @@ Sistema CLI para automatizar el proceso de facturación de SOANDES: importación
 - Python 3.12+
 - PostgreSQL
 - Firefox (para web scraping RUES)
-- Acceso a Odoo 14 / Avancys (validación de clientes, tarifas oficiales de la opción 6 en solo lectura e inyección de facturas)
+- Acceso a Odoo 14 / Avancys (validación de clientes, tarifas oficiales de la opción 3 en solo lectura e inyección de facturas)
 
 ## Instalación
 
@@ -66,30 +66,27 @@ python main.py
 |--------|---------|-------------|
 | 1 | Web Scrapping | Valida NITs/nombres: Odoo → BD local → RUES; corrige la BD local con lo que dice Odoo |
 | 2 | Facturadores | Importa facturadores y los vincula con empresas (validadas contra Odoo) |
-| 3 | Tratamiento Información | Normaliza paquetes/proveedores/especiales y corrige CUPs |
-| 4 | Cargar Tarifas | Importa tarifas a BD (fuzzy de ciudades, rename de especiales) |
-| 5 | Registrar Empresas - Paquetes | Registra empresas y su paquete tarifario |
-| 6 | Asignar Tarifas | Tarifa Odoo (especial → base), luego cascada local de 6 fases; i-medical, TIAN → `CONSOLIDADO.xlsx` + libros por fase |
-| 7 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
-| 8 | Cargar Pre Facturas | Inyección en Odoo — **deshabilitada** |
-| 9 | Generar Faltantes | Lista las tarifas no resueltas |
-| 10 | Detectar Empresas Duplicadas | Reporte de posibles duplicados (solo lectura) |
+| 3 | Asignar Tarifas | Tarifa Odoo (especial → base), luego cascada local de 6 fases; i-medical, TIAN → `CONSOLIDADO.xlsx` + libros por fase |
+| 4 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
+| 5 | Cargar Pre Facturas | Inyección en Odoo — **deshabilitada** |
+| 6 | Detectar Empresas Duplicadas | Reporte de posibles duplicados (solo lectura) |
 
 ### Flujo típico de facturación
 
 ```
-1 → 2 → 3 → 4 → 5 → 6 → 9 (faltantes) → 7 (pre-facturas)
+1 → 2 → 3 (asignar tarifas; revisar sin_resolver.xlsx) → 4 (pre-facturas)
 ```
 
-La opción 6 pide además el libro de números de factura cuando el día del mes está fuera del rango `DAY_INITIAL`–`DAY_FINAL`.
+Las tarifas, los paquetes de cada empresa y el catálogo de CUPs se mantienen fuera de esta aplicación (Odoo y la base de datos).
+La opción 3 pide además el libro de números de factura cuando el día del mes está fuera del rango `DAY_INITIAL`–`DAY_FINAL`.
 
 Ver la [Guía de Usuario](docs/USER_GUIDE.md) para el detalle de cada opción.
 
 ## Características Principales
 
-- **Odoo, fuente de verdad**: las empresas se validan siempre contra Odoo (opciones 1, 2, 5 y 6), también las que ya están en la BD local; la BD local es el respaldo y se corrige con lo que dice Odoo (libro `bd_local_actualizada`). Solo lectura
+- **Odoo, fuente de verdad**: las empresas se validan siempre contra Odoo (opciones 1, 2 y 3), también las que ya están en la BD local; la BD local es el respaldo y se corrige con lo que dice Odoo (libro `bd_local_actualizada`). Solo lectura
 - **Cascada de resolución de empresas**: Odoo → BD local → RUES (por NIT y por nombre; en Odoo por `ref_num`, con respaldo en `vat`)
-- **Tarifas desde Odoo**: la tarifa especial/base de cada empresa en Odoo es la fuente principal de la opción 6; la BD local es el respaldo. Solo lectura
+- **Tarifas desde Odoo**: la tarifa especial/base de cada empresa en Odoo es la fuente principal de la opción 3; la BD local es el respaldo. Solo lectura
 - **Normalización inteligente**: NITs (9 dígitos), fechas (smart swap dd/mm), sufijos corporativos (S.A.S → SAS)
 - **Fuzzy matching**: resolución de nombres con RapidFuzz (ciudades, paquetes, empresas)
 - **Anti-duplicados**: dedup batch antes de INSERT y log de inyección previo
@@ -110,7 +107,7 @@ src/<módulo>/
 
 ### Módulos
 
-`scrapping` · `billers` · `company` · `rates` · `dataProcessing` · `assign` · `preInvoice` · `odooInjection` · `package` · `provider` · `special` · `city` · `cup` · `activity`
+`scrapping` · `billers` · `company` · `rates` · `assign` · `preInvoice` · `odooInjection` · `package` · `provider` · `special` · `city` · `cup` · `activity`
 
 ## Stack Tecnológico
 

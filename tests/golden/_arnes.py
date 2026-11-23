@@ -5,7 +5,7 @@ Qué es real y qué se sustituye (fronteras externas, sin tocar código de produ
 - Real: controllers, casos de uso, servicios de dominio, lectura/escritura de Excel,
   generadores de libros, `XmlRpcOdooRepository`, `SaCompanyNitCacheRepository`.
 - Sustituido con monkeypatch:
-  · preguntas al usuario (`ask_excel_path`, `ask_sheet_name`, `ask_directory_path`);
+  · preguntas al usuario (`ask_excel_path`, `ask_sheet_name`);
   · PostgreSQL: `get_session` y los `Sa*Repository` → repositorios en memoria
     sembrados desde `entradas/<escenario>/bd.json`;
   · Odoo: `xmlrpc.client.ServerProxy` → `OdooSimulado` (ver _odoo_simulado.py);
@@ -38,17 +38,13 @@ from src.assign.application.use_cases.assigned_rates import AssignRatesFromExcel
 from src.assign.infrastructure.console import assigned_rates_controller as ctrl_opcion6
 from src.assign.infrastructure.reporting.xlsx_phase_findings_reporter import XlsxPhaseFindingsReporter
 from src.billers.infrastructure.console import import_billers_controller as ctrl_opcion2
-from src.dataProcessing.infrastructure.console import import_information_controller as ctrl_opcion3
-from src.dataProcessing.infrastructure.persistence.cup_column_validator import _is_success
 from src.odooInjection.domain.services.city_account_resolver import CityAccountResolver
 from src.odooInjection.infrastructure.console import inject_invoices_controller as ctrl_opcion8
 from src.preInvoice.infrastructure.console import pre_invoice_controller as ctrl_opcion7
-from src.rates.infrastructure.console import import_rates_controller as ctrl_opcion4
 from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.infrastructure.console import import_rues_nits as ctrl_opcion1
 from src.scrapping.infrastructure.console import nit_service
 from src.shared.reporting.xlsx_findings_writer import XlsxFindingsWriter
-from src.shared.utils.document_normalizer import normalize_document
 from src.shared.utils.rapidfuzz_biller import RapidFuzzBiller
 from src.shared.utils.text_normalizer import (
     normalize_company_name,
@@ -108,7 +104,6 @@ def fijar_reloj(mp):
     mp.setattr("src.odooInjection.config.date", _RelojDate)
     mp.setattr("src.odooInjection.application.use_cases.inject_invoices_to_odoo.datetime", _RelojDatetime)
     mp.setattr("src.scrapping.infrastructure.reporting.not_found_companies_log_generator.datetime", _RelojDatetime)
-    mp.setattr("src.dataProcessing.infrastructure.reporting.cup_novelties_log_generator.datetime", _RelojDatetime)
     mp.setattr(main, "datetime", _RelojDatetime)
 
     # _normalize_fecha hace `from datetime import date` dentro de la función: solo
@@ -364,14 +359,8 @@ def esc_normalizadores(entradas: Path, trabajo: Path, mp) -> dict:
     fuzz = RapidFuzzBiller(logger)
     resolver = CityAccountResolver()
 
-    def _doc(v):
-        r = normalize_document(v)
-        return {k: getattr(r, k) for k in r.__dataclass_fields__}
-
     return {
         "normalize_nit": [[v, normalize_nit(v)] for v in casos["nits"]],
-        "normalize_document": [[v, _doc(v)] for v in casos["documentos"]],
-        "valor_opcion3": [[v, _is_success(v)] for v in casos["valores_opcion3"]],
         "fuzz_property": [
             [c, fuzz.fuzz_property(c["nombre"], [{"name": n} for n in c["catalogo"]], threshold=c["umbral"])]
             for c in casos["fuzzy"]
@@ -446,85 +435,6 @@ def esc_opcion2(entradas: Path, trabajo: Path, mp) -> dict:
         ),
         "mensajes_usuario": logger.mensajes_usuario,
     }
-
-
-def esc_opcion3(entradas: Path, trabajo: Path, mp) -> dict:
-    copiados = copiar_entradas(entradas, trabajo, {"tarifario_crudo.xlsx"})
-    entorno_controlado(mp)
-    bd = _leer_json(entradas / "bd.json")
-    salida = trabajo / "salida"
-    salida.mkdir()
-    mp.setattr(ctrl_opcion3, "ask_excel_path", _constante(trabajo / "tarifario_crudo.xlsx"))
-    mp.setattr(ctrl_opcion3, "ask_directory_path", _constante(salida))
-    mp.setattr(ctrl_opcion3, "get_session", _constante(_SesionNula()))
-    mp.setattr(ctrl_opcion3, "SaCupRepository", lambda *_: FakeCupRepo(bd["cups"]))
-    logger = LoggerGrabador()
-
-    ctrl_opcion3.import_information(logger)
-
-    return {"archivos": instantanea_archivos(trabajo, copiados), "mensajes_usuario": logger.mensajes_usuario}
-
-
-def _estado_tarifas(catalogos: dict, rates_repo) -> list[dict]:
-    """N4 — Tarifas expresadas por nombres, no por ids sustitutos."""
-    nombres = {tipo: {f["id"]: f["name"] for f in repo.all()} for tipo, repo in catalogos.items()}
-    filas = []
-    for (rid, cid, cup_id, aid, tipo), valor in rates_repo._data.items():
-        filas.append({
-            "tipo": tipo, "contrato": nombres[tipo].get(rid), "ciudad": nombres["City"].get(cid),
-            "cup_id": cup_id, "actividad_id": aid, "tarifa": valor,
-        })
-    return sorted(filas, key=lambda f: json.dumps(f, sort_keys=True, ensure_ascii=False))
-
-
-def esc_opcion4(entradas: Path, trabajo: Path, mp) -> dict:
-    copiados = copiar_entradas(entradas, trabajo, {"tarifario_normalizado.xlsx", "tarifario_ciudad_nula.xlsx"})
-    entorno_controlado(mp)
-    bd = _leer_json(entradas / "bd.json")
-    catalogos = {
-        "Package": CatalogoEnMemoria(bd["packages"]), "Provider": CatalogoEnMemoria(bd["providers"]),
-        "Special": CatalogoEnMemoria(bd["specials"]), "City": CatalogoEnMemoria(bd["cities"]),
-    }
-    rates = _rates_repo(bd["rates"])
-    libro = iter(["tarifario_normalizado.xlsx", "tarifario_ciudad_nula.xlsx"])
-    mp.setattr(ctrl_opcion4, "ask_excel_path", lambda *_: trabajo / next(libro))
-    mp.setattr(ctrl_opcion4, "get_session", _constante(_SesionNula()))
-    mp.setattr(ctrl_opcion4, "SaPackageRepository", _constante(catalogos["Package"]))
-    mp.setattr(ctrl_opcion4, "SaProviderRepository", _constante(catalogos["Provider"]))
-    mp.setattr(ctrl_opcion4, "SaSpecialRepository", _constante(catalogos["Special"]))
-    mp.setattr(ctrl_opcion4, "SaCityRepository", _constante(catalogos["City"]))
-    mp.setattr(ctrl_opcion4, "SaActivityRepository", _constante(CatalogoEnMemoria(bd["activities"])))
-    mp.setattr(ctrl_opcion4, "SaCupRepository", _constante(FakeCupRepo(bd["cups"])))
-    mp.setattr(ctrl_opcion4, "SaRatesRepository", _constante(rates))
-    mp.setattr(ctrl_opcion4, "XlsxFindingsWriter", lambda base: XlsxFindingsWriter(base, clock=_reloj))
-    logger = LoggerGrabador()
-
-    ctrl_opcion4.import_rates(logger)
-    resultado = {
-        "archivos": instantanea_archivos(trabajo, copiados),
-        "bd_catalogos": {tipo: sorted(f["name"] for f in repo.all()) for tipo, repo in catalogos.items()},
-        "bd_rates": _estado_tarifas(catalogos, rates),
-        "mensajes_usuario": logger.mensajes_usuario,
-    }
-
-    # Segunda corrida, sobre el estado anterior: libro con CIUDAD vacía.
-    logger = LoggerGrabador()
-    excepcion = _capturar(lambda: ctrl_opcion4.import_rates(logger))
-    resultado["ciudad_nula"] = {
-        "excepcion": excepcion,
-        "bd_rates_sin_cambios": _estado_tarifas(catalogos, rates) == resultado["bd_rates"],
-        "mensajes_usuario": logger.mensajes_usuario,
-    }
-    return resultado
-
-
-def _capturar(fn) -> str | None:
-    """Ejecuta `fn`; si lanza, devuelve 'Tipo: mensaje' (el comportamiento actual es parte del golden)."""
-    try:
-        fn()
-    except Exception as e:  # noqa: BLE001
-        return f"{type(e).__name__}: {e}"
-    return None
 
 
 def esc_opcion6(entradas: Path, trabajo: Path, mp) -> dict:
@@ -623,13 +533,13 @@ def esc_menu(entradas: Path, trabajo: Path, mp) -> dict:
     for dia in casos["dias"]:
         llamadas.clear()
         mp.setattr(main, "datetime", _con_dia(dia))
-        main.dispatch_option("6", LoggerGrabador())
+        main.dispatch_option("3", LoggerGrabador())
         salida["pide_libro_facturas"].append([dia, llamadas[0]])
     for config in casos["configuraciones_invalidas"]:
         entorno_controlado(mp, **config)
         logger = LoggerGrabador()
         llamadas.clear()
-        sigue = main.safe_dispatch("6", logger)
+        sigue = main.safe_dispatch("3", logger)
         salida["configuraciones_invalidas"].append({
             "config": config, "menu_continua": sigue, "llamo_asignar": bool(llamadas),
             "mensajes_usuario": logger.mensajes_usuario,
@@ -641,8 +551,6 @@ ESCENARIOS = {
     "normalizadores": esc_normalizadores,
     "opcion1_web_scrapping": esc_opcion1,
     "opcion2_facturadores": esc_opcion2,
-    "opcion3_tratamiento": esc_opcion3,
-    "opcion4_tarifas": esc_opcion4,
     "opcion6_asignar": esc_opcion6,
     "opcion7_prefacturas": esc_opcion7,
     "opcion8_inyeccion": esc_opcion8,
@@ -678,23 +586,6 @@ def _lista_ordenada(valor):
     return ", ".join(sorted(valor.split(", "))) if isinstance(valor, str) else valor
 
 
-def _ordenar_novedades_cups(libro: dict) -> None:
-    """cup_column_validator.py:100-102 y 125-127: `group_by` sin maintain_order y
-    `CONTRATO.unique()` → orden de novedades y de 'Contratos (ejemplos)' arbitrario."""
-    for hoja in libro["hojas"]:
-        filas = hoja["filas"]
-        if not filas or "Contratos (ejemplos)" not in filas[0]:
-            continue
-        col = filas[0].index("Contratos (ejemplos)")
-        datos = [i for i, f in enumerate(filas[1:], start=1) if f and isinstance(f[0], int)]
-        for i in datos:
-            filas[i] = list(filas[i])
-            filas[i][col] = _lista_ordenada(filas[i][col])
-        _reordenar_filas(hoja, datos, lambda f: json.dumps(f[1:], ensure_ascii=False, default=str))
-        for numero, i in enumerate(datos, start=1):
-            hoja["filas"][i][0] = numero
-
-
 def _ordenar_facturas(libro: dict) -> None:
     """assigned_rates.py:57-71: `unique()` + `group_by` sin maintain_order antes de
     `str.join(", ")` → el orden de los números en FACTURAS es arbitrario."""
@@ -710,8 +601,6 @@ def _ordenar_facturas(libro: dict) -> None:
 
 def _orden_no_determinista(nombre: str, instantanea: dict) -> dict:
     archivos = instantanea.get("archivos", {})
-    if nombre == "opcion3_tratamiento" and "logs/novedades_cups.xlsx" in archivos:
-        _ordenar_novedades_cups(archivos["logs/novedades_cups.xlsx"])
     if nombre == "opcion6_asignar":
         for ruta, contenido in archivos.items():
             if ruta.endswith(".xlsx"):

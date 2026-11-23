@@ -91,10 +91,6 @@ def normalizadores():
     _json(d / "casos.json", {
         "nits": ["900123456", "900.123.456-7", "9001234567", "1012345678", "80012345-6",
                  "12345", "", "None", " 900 123 456 ", "NIT 900123456"],          # [AUD-28, P-09]
-        "documentos": ["900123456", "9001234567", "9001234560", "1012345678", "52123456",
-                       "800.123.456-7", "8001234567", ""],                          # [document_normalizer]
-        "valores_opcion3": ["150000", "150.000", "$ 150.000", "1.234.567", "1500.5", "150,000",
-                            "150000.5", "5.000", "  25 000 ", "abc", None, "0"],     # [AUD-01]
         "fuzzy": [                                                                   # [AUD-03]
             {"nombre": "ACME", "catalogo": ["ACME INDUSTRIAL S.A.S.", "OTRA"], "umbral": 90},
             {"nombre": "CLINICA SAN JOSE", "catalogo": ["CLINICA SAN JOSE DE CUCUTA SA"], "umbral": 90},
@@ -158,96 +154,6 @@ def opcion2():
     _json(d / "odoo.json", {"res.partner": [_partner(10, "EMPRESA ALFA S.A.S.", ref_num="900111111")]})
     _json(d / "rues.json", {"por_nit": {}, "por_nombre": {}, "sin_respuesta": []})
     _json(d / "data.json", [])
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-def opcion3():
-    d = RAIZ / "opcion3_tratamiento"
-    paquetes = [
-        TARIFA_COLS,
-        ["PAQUETE A 2025", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "150.000"],  # [AUD-01] texto con miles
-        ["PAQUETE A 2025", "BOGOTA", "890202", "CONSULTA ESPECIALISTA", "INTRA", 150000],          # celda numérica
-        ["PAQUETE A 2025", "BOGOTA", "903810", "COLESTEROL TOTAL", "EXTRA", 150000.5],              # [AUD-01] decimal
-        ["PAQUETE A 2025", "MEDELLIN", "871121", "RX  TORAX", "INTRA", "$ 1.234.567"],             # [AUD-16] doble espacio
-        ["PAQUETE A 2025", "MEDELLIN", "999999", "CONSULTA MEDICINA GENERAL", "INTRA", "5.000"],   # F1 por nombre
-        ["PAQUETE A 2025", "MEDELLIN", "35000", "COLESTEROL TOTAL", "INTRA", "903810"],            # F0 CUP↔VALOR
-        ["PAQUETE A 2025", "CALI", "890201-99", "X", "INTRA", "150,000"],                          # F3 sufijo; coma
-        ["PAQUETE  B  2025", "CALI", "123456", "EXAMEN DESCONOCIDO", "INTRA", "1500.5"],           # CUP inexistente
-        ["PAQUETE A 2025", "CALI", None, "EXAMEN VACIO", "INTRA", "20000"],                        # CUP vacío
-        ["PAQUETE A 2025", "CALI", "555", "PERFIL LIPIDICO", "INTRA", "100000"],                   # F2 co-ocurrencia
-        ["PAQUETE A 2025", "CALI", "903810", "PERFIL LIPIDICO", "INTRA", "110000"],
-    ]
-    proveedores = [
-        TARIFA_COLS,
-        ["PROVEEDOR ALFA 2024", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "80000"],  # [AUD-17]
-        ["PROVEEDOR ALFA 2025", "BOGOTA", "890202", "CONSULTA ESPECIALISTA", "INTRA", "90000"],
-        ["PROVEEDOR  BETA", "CALI", "903810", "COLESTEROL TOTAL", "EXTRA", "  25 000 "],
-    ]
-    especiales1 = [
-        TARIFA_COLS,
-        ["ESPECIAL ADECCO 2026", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "120000"],
-        ["ESPECIAL ADECCO 2025", "BOGOTA", "890202", "CONSULTA ESPECIALISTA", "INTRA", "130000"],
-    ]
-    especiales2 = [
-        TARIFA_COLS,
-        ["ESPECIAL GRUPO X", "MEDELLIN", "871121", "RX TORAX", "EXTRA", "70000"],
-    ]
-    _libro(d / "tarifario_crudo.xlsx", {
-        "Paquetes": paquetes, "Proveedores": proveedores,
-        "TarifasEspeciales1": especiales1, "TarifasEspeciales2": especiales2,
-    })
-    _json(d / "bd.json", {"cups": CUPS})
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-def opcion4():
-    d = RAIZ / "opcion4_tarifas"
-    _libro(d / "tarifario_normalizado.xlsx", {
-        "Paquetes": [
-            TARIFA_COLS,
-            ["PAQUETE A 2025", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "$5.000"],
-            ["PAQUETE A 2025", "BOGOTA", "890202", "CONSULTA ESPECIALISTA", None, 150000.5],   # [AUD-02] decimal; actividad vacía → INTRA
-            ["PAQUETE A 2025", "BOGOTA D.C", "903810", "COLESTEROL TOTAL", "EXTRA", "90000"],   # alias de ciudad
-            ["PAQUETE A 2025", "CALI", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "70000"],  # ciudad nueva
-            ["PAQUETE A 2025", "BOGOTA", "123456", "DESCONOCIDO", "INTRA", "1000"],            # cup_no_existe
-            ["PAQUETE A 2025", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "MIXTA", "1000"],  # actividad_invalida
-            ["PAQUETE A 2025", "BOGOTA", "871121", "RX TORAX", "INTRA", None],                 # tarifa_vacia
-            ["PAQUETE A 2025", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "6000"],  # misma llave: gana la última
-            ["PAQUETE A 2025 V2", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "8000"],  # [AUD-15]
-            ["PAQUETES C 2025", "MEDELLIN", "871121", "RX TORAX", "EXTRA", "33000"],           # PAQUETES→PAQUETE
-        ],
-        "Proveedores": [
-            TARIFA_COLS,
-            ["PROVEEDOR ALFA", "MEDELLIN", "890202", "CONSULTA ESPECIALISTA", "EXTRA", "40000"],
-            ["PROVEEDOR NUEVO", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "45000"],
-        ],
-        "TarifasEspeciales": [
-            TARIFA_COLS,
-            ["ESPECIAL ADECCO 2", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "120000"],  # [AUD-04] renombra
-            ["ESPECIAL NUEVA", "MEDELLIN", None, "RX TORAX", "EXTRA", "60000"],                # [AUD-38] CUP nulo aborta el resto
-            ["ESPECIAL NUEVA", "MEDELLIN", "871121", "RX TORAX", "EXTRA", "61000"],
-        ],
-    })
-    # CIUDAD vacía: la opción 4 completa termina en excepción antes de guardar nada.
-    _libro(d / "tarifario_ciudad_nula.xlsx", {
-        "Paquetes": [
-            TARIFA_COLS,
-            ["PAQUETE A 2025", "BOGOTA", "890201", "CONSULTA MEDICINA GENERAL", "INTRA", "5000"],
-            ["PAQUETE A 2025", None, "890202", "CONSULTA ESPECIALISTA", "INTRA", "6000"],
-        ],
-    })
-    _json(d / "bd.json", {
-        "cities": [{"id": 1, "name": "BOGOTA"}, {"id": 2, "name": "MEDELLIN"}],
-        "packages": [{"id": 1, "name": "PAQUETE A 2025"}, {"id": 2, "name": "PAQUETE C 2025"}],
-        "providers": [{"id": 1, "name": "PROVEEDOR ALFA"}],
-        "specials": [{"id": 1, "name": "ESPECIAL ADECCO"}],
-        "activities": ACTIVIDADES,
-        "cups": CUPS,
-        "rates": [
-            {"rateable_id": 1, "city_id": 1, "cup_id": 1, "activity_id": 1, "rateable_type": "Package", "rate": 100000},
-            {"rateable_id": 1, "city_id": 1, "cup_id": 1, "activity_id": 1, "rateable_type": "Special", "rate": 110000},
-        ],
-    })
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -527,7 +433,7 @@ def menu():
     })
 
 
-ESCENARIOS = [normalizadores, opcion1, opcion2, opcion3, opcion4, opcion6, opcion7, opcion8, menu]
+ESCENARIOS = [normalizadores, opcion1, opcion2, opcion6, opcion7, opcion8, menu]
 
 
 def main(forzar: bool):

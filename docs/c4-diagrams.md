@@ -25,7 +25,7 @@ C4Context
     SystemDb_Ext(db, "PostgreSQL (Supabase)", "Catálogos, empresas, tarifas, correcciones i-medical / TIAN")
     System_Ext(excel, "Libros Excel", "Entradas (atenciones, tarifas, empresas, gestores) y salidas (CONSOLIDADO, pre-facturas, logs)")
 
-    Rel(facturador, facturacion, "Ejecuta opciones 1-10", "Terminal")
+    Rel(facturador, facturacion, "Ejecuta opciones 1-6", "Terminal")
     Rel(facturador, excel, "Prepara libros de entrada")
     Rel(coordinador, excel, "Revisa salidas y logs de novedades")
     Rel(facturacion, rues, "Consulta NIT y nombre", "HTTPS / Playwright")
@@ -48,7 +48,7 @@ C4Container
 
     System_Boundary(sistema, "Sistema de Facturación (proceso Python único)") {
         Container(cli, "Aplicación CLI", "Python 3.12 / Rich", "main.py: menú, dispatch_option y safe_dispatch (contiene excepciones por opción)")
-        Container(core, "Casos de uso", "Python / Polars", "application/use_cases por módulo: importación, normalización, asignación, split, inyección")
+        Container(core, "Casos de uso", "Python / Polars", "application/use_cases por módulo: validación, asignación, split, inyección")
         Container(domain, "Dominio", "dataclasses + ABC", "Entidades, puertos (repositorios ABC) y servicios puros: CupResolver, DuplicateCompanyDetector, OdooRateIndex")
         Container(persistence, "Adaptadores de persistencia", "SQLAlchemy 2.0 / Alembic", "Repositorios Sa* que devuelven list[dict]")
         Container(scraper, "Scraper RUES", "Playwright (Firefox headless)", "RuesPlaywrightScraper: búsqueda por NIT y por nombre")
@@ -72,7 +72,7 @@ C4Container
     Rel(core, logging_sys, "logger.x(..., user_msg=...)")
     Rel(persistence, db, "SQL", "psycopg2, sslmode=require")
     Rel(scraper, rues, "HTTPS")
-    Rel(odoo_client, odoo, "XML-RPC: search_read / read; escritura solo en op. 8 (deshabilitada)", "HTTPS")
+    Rel(odoo_client, odoo, "XML-RPC: search_read / read; escritura solo en op. 5 (deshabilitada)", "HTTPS")
     Rel(excel_io, fs, ".xlsx")
     Rel(logging_sys, fs, "logs.log, logs/<opcion>/<fecha>/*.xlsx")
 ```
@@ -90,37 +90,32 @@ C4Component
     Container_Boundary(core, "Módulos (src/<módulo>)") {
         Component(scrapping, "scrapping (op. 1)", "SearchNitsWithOdooFallbackUseCase", "Cascada Odoo (fuente de verdad) → BD local (respaldo) → RUES por NIT y por nombre; sincroniza la BD local con Odoo. data.json (solo caché de RUES) + empresas_no_encontradas.xlsx + bd_local_actualizada")
         Component(billers, "billers (op. 2)", "ImportBillersFromExcel", "Facturadores por fuzzy (90) y vínculo empresa↔facturador (1:1); duplicado: gana el último. Hallazgos en logs/facturadores")
-        Component(dataProcessing, "dataProcessing (op. 3)", "NormalizeInformationFromExcel + CupResolver", "Normaliza contratos y corrige CUPs (F0-F4). novedades_cups.xlsx")
-        Component(rates, "rates (op. 4)", "ImportRatesFromExcel", "Reclasifica contratos, fuzzy de ciudad (90) y nombres (95), rename de especiales, dedup + upsert. Hallazgos con Hoja/Fila en logs/cargar_tarifas")
-        Component(company, "company (op. 5, 10)", "ImportCompaniesFromExcel, DetectDuplicateCompanies", "normalize_document NIT/cédula, vínculo empresa↔paquete (1:1), duplicados; repos imedical/tian. Hallazgos en logs/registrar_empresas")
-        Component(assign, "assign (op. 6, 9)", "AssignRatesFromExcel, MissingRates", "i-medical, cascada de empresas, TIAN, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas; faltantes.xlsx")
-        Component(preInvoice, "preInvoice (op. 7)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
-        Component(odooInjection, "odooInjection (op. 8, deshabilitada)", "InjectInvoicesToOdoo", "Anti-duplicados, VERIFICAR en vez de crear, account.move borrador. Su XmlRpcOdooRepository se reutiliza en op. 1, 2, 5 y 6: búsqueda por ref_num → vat y lectura de tarifas para op. 6")
+        Component(rates, "rates", "SaRatesRepository", "Lectura de tarifas locales para op. 3 (se cargan fuera de esta app)")
+        Component(company, "company (op. 6)", "DetectDuplicateCompanies", "Duplicados; repos imedical/tian/billing_redirects que usa op. 3")
+        Component(assign, "assign (op. 3)", "AssignRatesFromExcel", "i-medical, cascada de empresas, TIAN y redirecciones, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas")
+        Component(preInvoice, "preInvoice (op. 4)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
+        Component(odooInjection, "odooInjection (op. 5, deshabilitada)", "InjectInvoicesToOdoo", "Anti-duplicados, VERIFICAR en vez de crear, account.move borrador. Su XmlRpcOdooRepository se reutiliza en op. 1, 2 y 3: búsqueda por ref_num → vat y lectura de tarifas para op. 3")
         Component(catalogs, "Catálogos", "package, provider, special, city, cup, activity", "Repos Sa* de catálogos")
     }
 
     Container_Boundary(shared, "src/shared") {
-        Component(normalizers, "Normalizadores", "text_normalizer, document_normalizer", "normalize_nit (9 díg.), normalize_document (NIT vs cédula, DV DIAN), nombres")
+        Component(normalizers, "Normalizadores", "text_normalizer", "normalize_nit (9 díg.), nombres")
         Component(fuzz, "Fuzzy", "RapidFuzzBiller, CompanyNameMatcher", "token_sort_ratio → partial_ratio")
-        Component(excel_io, "Excel", "ExcelLoader, ExcelExporter, MegaDataFrames", "calamine Utf8; export multihoja; origen _HOJA/_FILA en op. 4")
-        Component(console, "Consola", "file_input, sheet_input, file_output, RichProgress, USER_CONSOLE", "Prompts validados, progreso y mensajes al usuario en la misma consola")
-        Component(logging, "Logging", "LoggerAdapter, TechOnlyLogger, RichHandler", "tech → logs.log · user_msg → consola (TechOnlyLogger lo descarta en op. 6)")
+        Component(excel_io, "Excel", "ExcelLoader", "calamine Utf8")
+        Component(console, "Consola", "file_input, sheet_input, RichProgress, USER_CONSOLE", "Prompts validados, progreso y mensajes al usuario en la misma consola")
+        Component(logging, "Logging", "LoggerAdapter, TechOnlyLogger, RichHandler", "tech → logs.log · user_msg → consola (TechOnlyLogger lo descarta en op. 3)")
         Component(reporting, "Hallazgos", "FindingsWriter, XlsxFindingsWriter, PhaseFindingsReporter", "Un libro por tipo de hallazgo en logs/<opcion>/<fecha>/")
         Component(config, "Config / BD", "config.py, database.py, models.py", "DIRECTORY, TIAN_NIT, sesión SQLAlchemy")
     }
 
     Rel(scrapping, odooInjection, "XmlRpcOdooRepository")
     Rel(billers, scrapping, "RUESNitService")
-    Rel(company, scrapping, "RUESNitService")
     Rel(assign, scrapping, "RUESNitService")
     Rel(assign, odooInjection, "XmlRpcOdooRepository")
     Rel(assign, company, "Imedical/Tian repos")
     Rel(assign, catalogs, "Catálogos + rates")
-    Rel(rates, catalogs, "Upsert catálogos")
-    Rel(dataProcessing, catalogs, "Lee cups")
     Rel(preInvoice, catalogs, "Nombres de CUP")
     Rel(assign, normalizers, "NIT, nombres, fechas")
-    Rel(company, normalizers, "normalize_document")
     Rel(assign, fuzz, "Ciudades, nombres")
     Rel(preInvoice, excel_io, "openpyxl")
     Rel(billers, reporting, "FindingsWriter")
@@ -134,7 +129,7 @@ C4Component
 
 ## Nivel 4: Diagrama de Código (Módulo Assign)
 
-El módulo más complejo: la asignación de tarifas (opción 6).
+El módulo más complejo: la asignación de tarifas (opción 3).
 
 ```mermaid
 classDiagram
@@ -394,7 +389,7 @@ flowchart TD
     SYNC --> H[Positivos nuevos de RUES → companies · data.json]
 ```
 
-## Flujo: Pipeline de Asignar Tarifas (opción 6)
+## Flujo: Pipeline de Asignar Tarifas (opción 3)
 
 ```mermaid
 flowchart TD
@@ -446,12 +441,12 @@ flowchart TD
     P5 -->|Sí| C5[Fase 5 · #9DC3E6]
     P5 -->|No| P6{Cualquier rateable<br/>+ cualquier ciudad + CUP}
     P6 -->|Sí| C6[Fase 6 · #D5A6E6]
-    P6 -->|No| X["Sin resolver · valor 1 → sin_resolver.xlsx / opción 9"]
+    P6 -->|No| X["Sin resolver · valor 1 → sin_resolver.xlsx"]
 ```
 
 > Las fases 3, 5 y 6 toman la primera fila que devuelve la BD (consulta sin `ORDER BY`). Odoo: solo precios > 0, sin validar la vigencia de la tarifa; la ciudad se compara por nombre normalizado exacto. Cada fase local (1–6) y el sin resolver van a su libro en `logs/asignar_tarifas/<fecha>/`.
 
-## Flujo: Inyección a Odoo (opción 8, deshabilitada)
+## Flujo: Inyección a Odoo (opción 5, deshabilitada)
 
 ```mermaid
 flowchart TD
@@ -486,8 +481,6 @@ flowchart LR
     subgraph IN[Entradas Excel]
         X1[Libro nits]
         X2[Libro gestores]
-        X3[Libro de tarifas]
-        X5[Libro empresas-paquetes]
         X6[Libro atenciones]
         X6b[Libro facturas]
     end
@@ -506,31 +499,20 @@ flowchart LR
 
     X1 --> O1[1 Web Scrapping] --> T1
     ODOO --> O1
-    ODOO --> O5
     ODOO -->|tarifas especial/base| O6
     O1 --> J[data.json]
     X2 --> O2[2 Facturadores] --> T2
     J --> O2
-    X3 --> O3[3 Tratamiento] --> N[facturacion_normalizada.xlsx]
-    T6 --> O3
-    N --> O4[4 Cargar Tarifas] --> T3 & T4
-    X5 --> O5[5 Registrar Empresas] --> T5
-    J --> O5
-    O5 --> T1
-    X6 --> O6[6 Asignar Tarifas]
+    X6 --> O6[3 Asignar Tarifas]
     X6b -.->|fuera de rango de días| O6
     T1 & T2 & T3 & T4 & T5 & T7 --> O6
     O6 --> CONS[CONSOLIDADO.xlsx]
     O6 --> T7
-    CONS --> O9[9 Faltantes] --> FALTANTES[faltantes.xlsx]
-    CONS --> O7[7 Pre Facturas] --> PF[pre-facturas/]
-    PF -.-> O8[8 Inyección Odoo<br/>deshabilitada]
-    T1 --> O10[10 Duplicados] --> DUP[empresas_duplicadas.xlsx]
+    CONS --> O7[4 Pre Facturas] --> PF[pre-facturas/]
+    PF -.-> O8[5 Inyección Odoo<br/>deshabilitada]
+    T1 --> O10[6 Duplicados] --> DUP[empresas_duplicadas.xlsx]
     O2 --> F2["logs/facturadores/"]
-    O4 --> F4["logs/cargar_tarifas/"]
-    O5 --> F5["logs/registrar_empresas/"]
     O6 --> F6["logs/asignar_tarifas/"]
-    FALTANTES -.->|completar tarifas| X3
 ```
 
 ---

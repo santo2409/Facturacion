@@ -85,7 +85,7 @@ def test_user_docs_do_not_describe_user_audit_as_current():
 
 def test_user_docs_describe_findings_folders():
     guide = _read("docs/USER_GUIDE.md")
-    for folder in ("logs/cargar_tarifas", "logs/facturadores", "logs/registrar_empresas", "logs/asignar_tarifas"):
+    for folder in ("logs/facturadores", "logs/asignar_tarifas"):
         assert folder in guide
 
     technical = _read("docs/TECHNICAL_DOCUMENTATION.md")

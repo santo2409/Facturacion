@@ -44,10 +44,10 @@ El sistema automatiza la facturación mensual de exámenes médicos ocupacionale
 | Lectura Excel | **fastexcel / calamine** vía `ExcelLoader` | Lee todo como texto (`Utf8`) |
 | Escritura Excel | **xlsxwriter** (CONSOLIDADO, normalizados) · Polars `write_excel` sobre xlsxwriter (libros de hallazgos) · **openpyxl** (pre-facturas, logs con formato) | openpyxl también se usa para **leer** el número de fila real de cada hoja en `MegaDataFrames` |
 | BD | PostgreSQL, SQLAlchemy 2.0, psycopg2-binary, Alembic | |
-| Scraping | **Playwright** (Firefox headless) contra `rues.org.co` | Opciones 1, 2, 5, 6 |
-| ERP | `xmlrpc.client` → Odoo 14 | `res.partner`, `account.move`, `product.product`…; `account.base.rate`, `account.base.rate.line`, `res.city` (tarifas, solo lectura, opción 6) |
+| Scraping | **Playwright** (Firefox headless) contra `rues.org.co` | Opciones 1, 2, 3 |
+| ERP | `xmlrpc.client` → Odoo 14 | `res.partner`, `account.move`, `product.product`…; `account.base.rate`, `account.base.rate.line`, `res.city` (tarifas, solo lectura, opción 3) |
 | Fuzzy | **RapidFuzz** + Unidecode | Ciudades, paquetes, facturadores, empresas |
-| CLI | **Rich** | Menú, prompts, barras de progreso, mensajes al usuario (`USER_CONSOLE`), tabla resumen de la opción 6 |
+| CLI | **Rich** | Menú, prompts, barras de progreso, mensajes al usuario (`USER_CONSOLE`), tabla resumen de la opción 3 |
 | Tests | pytest 8.2.2 | Fakes manuales en `tests/fakes/` |
 | Calidad | cspell, `.editorconfig` | No hay ruff/mypy/black/pre-commit |
 
@@ -84,12 +84,11 @@ Reglas (constitución v1.1.0):
 |---|---|---|
 | `scrapping` | Validación de NITs: Odoo (fuente de verdad) → BD local (respaldo) → RUES; sincroniza la BD local con Odoo | 1 |
 | `billers` | Facturadores y vínculo empresa↔facturador | 2 |
-| `dataProcessing` | Normalización de paquetes/proveedores/especiales + corrección de CUPs | 3 |
-| `rates` | Importación de tarifas a BD | 4 |
-| `company` | Empresas, vínculo empresa↔paquete, duplicados, i-medical, TIAN | 5, 10 |
-| `assign` | Asignación de tarifas (Odoo especial → base, luego cascada local) → `CONSOLIDADO.xlsx` + libros por fase; faltantes | 6, 9 |
-| `preInvoice` | Split del CONSOLIDADO por facturador/NIT | 7 |
-| `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 5, 6): búsqueda de clientes por `ref_num` → `vat` y lectura de tarifas para la opción 6 | 8 (deshabilitada) |
+| `rates` | Entidad y repositorio de tarifas (solo lectura desde la opción 3; las tarifas se cargan fuera de esta app) | — |
+| `company` | Empresas, duplicados, i-medical, TIAN y redirecciones de facturación | 3, 6 |
+| `assign` | Asignación de tarifas (Odoo especial → base, luego cascada local) → `CONSOLIDADO.xlsx` + libros por fase | 3 |
+| `preInvoice` | Split del CONSOLIDADO por facturador/NIT | 4 |
+| `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 3): búsqueda de clientes por `ref_num` → `vat` y lectura de tarifas para la opción 3 | 5 (deshabilitada) |
 | `package`, `provider`, `special`, `city`, `cup`, `activity` | Catálogos | — |
 | `shared` | BD, Excel, consola, utilidades, logging, reporting (`FindingsWriter`), config | — |
 
@@ -97,10 +96,11 @@ Reglas (constitución v1.1.0):
 
 `main.py`:
 
-- `console_app()` (l.103-130) pinta el menú y pide `Seleccione una opción` (por defecto `0`).
-- `dispatch_option()` (l.39-83) despacha al controller.
-- `safe_dispatch()` (l.86-100) captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
-- Todos los controllers reciben `tech_logger` (`LoggerAdapter`). La opción 6 lo envuelve en `TechOnlyLogger`, que descarta `user_msg`.
+- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas (desconectada), 6 Detectar Empresas Duplicadas, 0 Salir. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
+- `console_app()` pinta el menú y pide `Seleccione una opción` (por defecto `0`).
+- `dispatch_option()` despacha al controller.
+- `safe_dispatch()` captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
+- Todos los controllers reciben `tech_logger` (`LoggerAdapter`). La opción 3 lo envuelve en `TechOnlyLogger`, que descarta `user_msg`.
 
 ## 4. Configuración del entorno
 
@@ -136,7 +136,7 @@ La URL es `postgresql+psycopg2://…?sslmode=require`; la app crea el engine con
 |---|---|---|
 | `DIRECTORY` | `.` (`src/shared/config.py`, `get_paths_config`) | Dónde quedan `data.json` y `logs.log` |
 | `BOOK_ROUTE`, `BOOK_NAME` | **sin defecto** | Libro de entrada de la opción 1 |
-| `DAY_INITIAL`, `DAY_FINAL` | **sin defecto** (obligatorias) | Opción 6: pide libro de facturas si `día < DAY_INITIAL` o `día > DAY_FINAL` |
+| `DAY_INITIAL`, `DAY_FINAL` | **sin defecto** (obligatorias) | Opción 3: pide libro de facturas si `día < DAY_INITIAL` o `día > DAY_FINAL` |
 | `TIAN_NIT` | **sin defecto** a propósito (`get_tian_config`) | NIT al que se redirigen las empresas TIAN; si falta, se omite el tratamiento |
 
 **Scraping / matching (opción 1):**
@@ -217,7 +217,7 @@ imedical / tian: tablas de corrección indexadas por nit_error (sin FK)
 
 ### 5.4 Modelos de Odoo que se leen (solo lectura)
 
-Todo acceso a Odoo desde las opciones 1, 2, 5 y 6 usa `search_read` o `read`; ningún flujo activo escribe en Odoo.
+Todo acceso a Odoo desde las opciones 1, 2 y 3 usa `search_read` o `read`; ningún flujo activo escribe en Odoo.
 
 | Modelo | Campos usados | Nota |
 |---|---|---|
@@ -233,24 +233,20 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
 ```
  Libro NITs ──► [1] Web Scrapping ──► data.json + companies (caché) + empresas_no_encontradas.xlsx + logs/web_scrapping/<fecha>/
  Libro gestores ─► [2] Facturadores ──► billers, companies_billers + logs/facturadores/<fecha>/
- Libro tarifas ─► [3] Tratamiento ──► facturacion_normalizada.xlsx + novedades_cups.xlsx
-                       │
-                       ▼
-                  [4] Cargar Tarifas ──► cities, packages, providers, specials, rates + logs/cargar_tarifas/<fecha>/
- Libro empresas ─► [5] Registrar Empresas ──► companies, companies_packages (+ no_vinculadas) + logs/registrar_empresas/<fecha>/
+ Tarifas, paquetes de empresa y CUPs: se mantienen fuera de esta app (Odoo y BD)
  Odoo (tarifas especial/base) ──┐
- Consolidado de atenciones ─► [6] Asignar Tarifas ──► CONSOLIDADO.xlsx (colores por fase) + logs/asignar_tarifas/<fecha>/
+ Consolidado de atenciones ─► [3] Asignar Tarifas ──► CONSOLIDADO.xlsx (colores por fase) + logs/asignar_tarifas/<fecha>/
                                                            │
-                       ┌───────────────────────────────────┼───────────────────┐
-                       ▼                                   ▼                   ▼
-             [7] Pre Facturas ──► pre-facturas/…   [9] Faltantes     (revisión manual)
+                       ┌───────────────────────────────────┴───────────────────┐
+                       ▼                                                       ▼
+             [4] Pre Facturas ──► pre-facturas/…                     (revisión manual: sin_resolver.xlsx)
                        │
                        ▼
-             [8] Inyección Odoo (DESHABILITADA en main.py)
- [10] Detectar duplicados: lectura de companies en cualquier momento
+             [5] Inyección Odoo (DESHABILITADA en main.py)
+ [6] Detectar duplicados: lectura de companies en cualquier momento
 ```
 
-**Contrato crítico:** el formato del `CONSOLIDADO.xlsx` (nombres de columna, hoja `Consolidado` y colores de relleno) lo consume `preInvoice`. Cambiarlo rompe la opción 7. `split_by_nit` solo copia los rellenos de su lista blanca `_PHASE_COLORS_6`: un color nuevo en la opción 6 debe agregarse allí (la spec 010, RF-16, agregó `E2EFDA`).
+**Contrato crítico:** el formato del `CONSOLIDADO.xlsx` (nombres de columna, hoja `Consolidado` y colores de relleno) lo consume `preInvoice`. Cambiarlo rompe la opción 4. `split_by_nit` solo copia los rellenos de su lista blanca `_PHASE_COLORS_6`: un color nuevo en la opción 3 debe agregarse allí (la spec 010, RF-16, agregó `E2EFDA`).
 
 ## 7. Detalle por opción del menú
 
@@ -305,60 +301,7 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
   - `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción): empresas agregadas o corregidas en la BD local con datos de Odoo (spec 016).
   - Al terminar, la consola muestra el resumen de `summarize_findings`.
 
-### 7.3 Opción 3 — Tratamiento de Información (`src/dataProcessing`)
-
-- **Cadena:** `import_information` → `NormalizeInformationFromExcel` → `NormalizePackage` / `NormalizeProvider` / `NormalizeSpecial` → `CupColumnValidator` → servicio de dominio `CupResolver` (`domain/services/cup_resolver.py:36`).
-- **Entrada:** hojas `Paquetes`, `Proveedores` y todas las que empiezan por `TarifasEspeciales` (se concatenan). Columnas `CONTRATO`, `CIUDAD`, `CUP`, `EXAMEN`, `INTRA O EXTRA`, `VALOR`.
-- **Normalización:** limpia espacios. En Proveedores y Especiales unifica el `CONTRATO` por slug (unidecode + solo letras).
-- **Cascada de corrección de CUP** (spec 005):
-
-| Fase | Regla | ¿Aplica? |
-|---|---|---|
-| F0 | CUP inválido y VALOR con forma de código válido → intercambio | Sí |
-| F1 | `EXAMEN` normalizado == `cups.name` (claves en colisión excluidas) | Sí |
-| F2 | Co-ocurrencia inequívoca del mismo EXAMEN en la hoja | Sí (si hay >1 candidato: "CUPs en conflicto") |
-| F3 | Homologación de sufijo `904704-1` → `904704` | Sí |
-| F4 | Fuzzy ≥ 90 | **Solo sugiere** |
-
-- **Salidas:** `<dir>/facturacion_normalizada.xlsx` (`ExcelExporter`; parte las hojas de más de 1.048.575 filas) y `logs/novedades_cups.xlsx` (se reemplaza en cada corrida).
-- **BD:** solo lee `cups`.
-
-### 7.4 Opción 4 — Cargar Tarifas (`src/rates`)
-
-- **Cadena:** `import_rates` (`infrastructure/console/import_rates_controller.py:50-57`; dependencias en `_build_use_case` l.32-47) → `ImportRatesFromExcel.execute` (`application/use_cases/import_rates_from_excel.py:86`).
-- **Entrada:** hojas `Paquetes`, `Proveedores`, `TarifasEspeciales*` y `Ciudades`. Columnas `CIUDAD`, `CONTRATO`, `CUP`, `VALOR`, `INTRA O EXTRA`.
-- **Reclasificación de `CONTRATO`** (`src/shared/utils/mega_dataframes.py`, `total_dataframe` l.55+). Antes, `_load_tagged` (l.34) agrega a cada fila `_HOJA` y `_FILA` (número de fila real en Excel, leído con openpyxl; en secuencia si no se puede leer, p. ej. `.xls`). Esas columnas no se persisten:
-  - Lo que empieza por TARIFA o PAQUETE → paquete.
-  - Lo que contiene PROVEEDOR → proveedor.
-  - El resto → especial.
-- **Resolución de nombres:**
-  - Exacto, o fuzzy ≥ **95**.
-  - Los especiales con match fuzzy distinto se **renombran** en sitio (`_resolve_names_with_renames`, p.ej. `ALQUERIA 2025` → `ALQUERIA 2026`) y conservan el `id`.
-  - Las ciudades usan alias fuzzy ≥ **90** (`BOGOTA` → `BOGOTA D.C`).
-- **Persistencia:** lotes de 1000.
-  - `_save_deduped` deduplica por la PK compuesta (gana la última fila). PostgreSQL rechaza `ON CONFLICT DO UPDATE` si hay claves repetidas en el mismo batch.
-  - Upsert en `SaRatesRepository.save_batch` (`sa_rates_repository.py:128`).
-- **Errores por fila:** contrato, ciudad, CUP o actividad inexistentes, o valor vacío → se registra en el log técnico, se salta la fila y queda en `logs/cargar_tarifas/<AAAA-MM-DD_HHMM>/` (spec 011):
-  - Libros: `contrato_no_existe`, `ciudad_no_existe`, `cup_no_existe`, `actividad_invalida`, `tarifa_vacia`.
-  - Columnas: Hoja, Fila, CONTRATO, CIUDAD, CUP, INTRA O EXTRA, VALOR (el VALOR original, antes de limpiarlo). Deduplicado por (tipo, hoja, fila).
-  - La consola muestra un único resumen. Como la opción crea antes los contratos y ciudades del Excel, en la práctica aparecen sobre todo `cup_no_existe`, `actividad_invalida` y `tarifa_vacia`.
-
-### 7.5 Opción 5 — Registrar Empresas - Paquetes (`src/company`)
-
-- **Cadena:** `import_companies` (`infrastructure/console/import_companies_rates_controller.py:81-95`; sesión cerrada en `finally`) → `ImportCompaniesFromExcel.execute` (`application/use_cases/import_companies_from_excel.py:67`).
-- **Entrada:** columnas `NIT`, `RAZON SOCIAL`, `PAQUETE`.
-- **Fase 1 `_progress_companies`:**
-  - Normaliza con `normalize_document`: NIT o cédula, validación de DV (ver §8). Un documento acotado con DV inválido va a `documento_acotado` (Documento original, Documento acotado).
-  - Envía **todos** los documentos del Excel, también los que ya existen en `companies`, a `RUESNitService.search(docs, rues_cache=…)`: Odoo primero (spec 016). `data.json` solo aporta la caché de RUES y se reescribe con los resultados de la corrida. La razón social de las empresas conocidas la corrige el buscador (libro `bd_local_actualizada`).
-  - Hace `save_batch` solo de las empresas **nuevas** (*Empresas creadas* cuenta solo esas). Los no encontrados se **agregan** a `empresas_no_encontradas.xlsx` (esta opción no retira los resueltos).
-- **Fase 2 `_progress_companies_to_packages`:**
-  - Arma un catálogo unificado de packages, providers y specials (esquema `id/name/model`). Si un origen está vacío lo advierte; si están los tres vacíos, envía todo a no vinculadas.
-  - Resuelve `PAQUETE` por fuzzy ≥ **95**.
-  - Deduplica por `company_id` (gana la última fila). Cada repetición va a `paquetes_en_conflicto` (Documento, Paquete descartado, Paquete vigente); un paquete no resuelto va a `paquete_no_encontrado` (Documento, Razón social, Paquete).
-  - Hace upsert `ON CONFLICT(company_id)`.
-- **Salidas:** `logs/empresas_no_vinculadas.xlsx` (se reemplaza), `logs/empresas_no_encontradas.xlsx` (acumulativo; solo la opción 1 retira NITs resueltos) y `logs/registrar_empresas/<AAAA-MM-DD_HHMM>/`. El resumen final en consola es *Empresas creadas … Filas sin vincular … Hallazgos en …* (o *Sin hallazgos.*).
-
-### 7.6 Opción 6 — Asignar Tarifas (`src/assign`)
+### 7.3 Opción 3 — Asignar Tarifas (`src/assign`)
 
 - **Cadena:** `assign_rates(logger, with_invoices)` (`infrastructure/console/assigned_rates_controller.py:95`) → `AssignRatesFromExcel.execute` (`application/use_cases/assigned_rates.py:219-313`).
 - **Dependencias:**
@@ -456,7 +399,7 @@ Detalles:
 - El nombre queda `"<razón social>(TIAN)"`, sin duplicar el sufijo.
 - Heredan el facturador, el paquete y las tarifas de TIAN, incluida la tarifa Odoo del `TIAN_NIT` (`_load_odoo_rates` corre después de `_apply_tian`).
 - Se abortan sin error (con aviso) si falta `TIAN_NIT`, si TIAN no existe en `companies` o si no tiene paquete.
-- Se escribe `logs/empresas_tian.xlsx` (se reemplaza en cada corrida). En la opción 6 los avisos van solo a `logs.log` (`TechOnlyLogger`).
+- Se escribe `logs/empresas_tian.xlsx` (se reemplaza en cada corrida). En la opción 3 los avisos van solo a `logs.log` (`TechOnlyLogger`).
 
 **Unificación de nombre por NIT:** si un mismo NIT llega con varios nombres, se toma el canónico con prioridad Odoo > BD > primer visto. Nunca se compara por similitud.
 
@@ -465,7 +408,7 @@ Detalles:
 - Requiere `N° Identificación` y `# FACTURA`; si falta alguna, `ValueError`.
 - Las facturas múltiples de una misma identificación se concatenan con `", "`. Se cruzan por left join con el consolidado y llenan la columna `FACTURAS`.
 
-### 7.7 Opción 7 — Generar Pre Facturas (`src/preInvoice`)
+### 7.4 Opción 4 — Generar Pre Facturas (`src/preInvoice`)
 
 - **Cadena:** `generate_pre_invoices` (`infrastructure/console/pre_invoice_controller.py`) → `SplitByNit(logger, cup_repo, RichProgress()).execute(...)` (`application/use_cases/split_by_nit.py`).
 - **Rutas fijas:** entrada `CONSOLIDADO.xlsx` (hoja `Consolidado`), salida `pre-facturas/`.
@@ -485,7 +428,7 @@ Detalles:
 - **Spec 009:** `Fecha Ingreso` se conserva en todas las carpetas, incluida `General sin factura`.
 - Si un NIT falla, se loguea y se continúa con el siguiente.
 
-### 7.8 Opción 8 — Inyección en Odoo (`src/odooInjection`) — **DESHABILITADA**
+### 7.5 Opción 5 — Inyección en Odoo (`src/odooInjection`) — **DESHABILITADA**
 
 `main.py:69-71` solo imprime el mensaje; la llamada `inject_invoices(logger)` está comentada y no hay otro entry point. El módulo está completo y testeado:
 
@@ -503,13 +446,7 @@ Detalles:
   5. **`account.move`:** `out_invoice`, `draft`, `invoice_date` = hoy, vencimiento a +N días, `journal_id`, `date_of_service` = último día del mes anterior, `range_id`.
   6. **Log:** `odoo-output/log_inyeccion.xlsx`. Estados OK, VERIFICAR o ERROR; el histórico se fusiona y gana el resultado más reciente.
 
-### 7.9 Opción 9 — Generar Faltantes (`src/assign`)
-
-- **Cadena:** `generate_missing_rates` (`missing_rates_controller.py`) → `missing_rates.py`.
-- **Entrada:** normalmente `CONSOLIDADO.xlsx`. Columnas `NIT`, `Empresa`, `PAQUETE`, `Ciudad`, `TIPO DE ACTIVIDAD`, `Base` y las columnas CUP.
-- **Salida:** `<dir>/faltantes.xlsx`, hoja `Faltantes`. Tiene una fila por cada celda CUP que siga en `"1"`, deduplicada por NIT+PAQUETE+Ciudad+Actividad+CUP+Base.
-
-### 7.10 Opción 10 — Detectar Empresas Duplicadas (`src/company`)
+### 7.6 Opción 6 — Detectar Empresas Duplicadas (`src/company`)
 
 - **Cadena:** `detect_duplicate_companies` → `DetectDuplicateCompanies` (`application/use_cases/detect_duplicate_companies.py`) → servicio de dominio `DuplicateCompanyDetector` (`domain/services/duplicate_company_detector.py`).
 - **Regla A:** misma clave de nombre (sin puntuación ni espacios) con NIT distinto.
@@ -522,22 +459,18 @@ Detalles:
 | Utilidad | Ubicación | Comportamiento |
 |---|---|---|
 | `ExcelLoader` | `src/shared/excel/excel_loader.py` | `load`, `load_sheet`, `load_sheets_by_prefix`. Calamine, todo `Utf8`, encabezados con `strip`. Descarta las filas totalmente vacías |
-| `MegaDataFrames` | `src/shared/utils/mega_dataframes.py` | Reclasifica `CONTRATO` (opción 4) y etiqueta cada fila con `_HOJA`/`_FILA` de origen (`_load_tagged`) |
-| `ExcelExporter` | `src/shared/excel/excel_exporter.py` | Exporta varias hojas, parte las de más de 1.048.575 filas, `sanitize_sheet_name` (31 caracteres) |
 | `normalize_nit` | `src/shared/utils/text_normalizer.py:48` | Solo dígitos, **primeros 9** |
-| `normalize_document` | `src/shared/utils/document_normalizer.py` | NIT si tiene 9–10 dígitos y empieza por 8/9 (el de 10 se acota y se valida su DV DIAN); en otro caso **CEDULA íntegra**. Devuelve `DocumentResult(value, kind, original, truncated, dv_valid)` |
-| `calculate_dian_dv` | idem | Pesos DIAN 3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71 |
 | `normalize_company_name` / `normalize_text_key` | `text_normalizer.py` | unidecode, mayúsculas, `[A-Z&Ñ0-9\s]`; versiones Polars `pl_normalize_*` |
 | `CompanyNameNormalizer` | `company_name_normalizer.py` | Quita sufijos SAS/SA/BIC/LTDA/ESP/EU y agrupa por fuzzy (85) |
 | `RapidFuzzBiller` | `rapidfuzz_biller.py` | `fuzz_property(name, catalog, threshold=90)`: `token_sort_ratio`, luego `partial_ratio`. `similarity(a, b)` |
 | `get_paths_config` / `get_tian_config` | `src/shared/config.py` | `DIRECTORY` (por defecto `.`), `TIAN_NIT` (sin defecto) |
-| Consola | `src/shared/console/` | `file_input` (valida `.xlsx`/`.xls` existente), `sheet_input`, `file_output` (valida directorio), `RichProgress` (usa `USER_CONSOLE`), `user_console.py` (`USER_CONSOLE`, `build_user_console_handler`) |
+| Consola | `src/shared/console/` | `file_input` (valida `.xlsx`/`.xls` existente), `sheet_input`, `RichProgress` (usa `USER_CONSOLE`), `user_console.py` (`USER_CONSOLE`, `build_user_console_handler`) |
 | `FindingsWriter` / `summarize_findings` | `src/shared/reporting/findings_writer.py` | Puerto `write(books, columns) -> Path \| None`; resumen *Sin hallazgos.* o *Hallazgos en <carpeta>: tipo=n, …* |
 | `XlsxFindingsWriter` | `src/shared/reporting/xlsx_findings_writer.py` | Un libro por tipo en `<base>/<AAAA-MM-DD_HHMM>/`; no crea carpeta si no hay filas |
 | `TechOnlyLogger` | `src/shared/logging/infrastructure/logging/tech_only_logger.py` | Decorador de `LoggerAdapter` que descarta `user_msg` |
-| `OdooRateIndex` | `src/assign/domain/odoo_rate_index.py` | Índice de precios de Odoo (ver §7.6) |
+| `OdooRateIndex` | `src/assign/domain/odoo_rate_index.py` | Índice de precios de Odoo (ver §7.3) |
 
-> **NIT vs cédula.** El NIT se acota a 9 dígitos sin DV y la cédula se conserva entera. El DV no clasifica el documento. Usar `normalize_document` donde pueda llegar una cédula y `normalize_nit` donde el dato es NIT con certeza.
+> **NIT.** `normalize_nit` acota a 9 dígitos sin DV; no distingue cédulas (el antiguo `normalize_document` de la opción Registrar Empresas se eliminó con ella).
 
 ## 9. Logging y auditoría
 
@@ -565,13 +498,12 @@ self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 
 | Archivo | Opción | Política |
 |---|---|---|
-| `logs/empresas_no_encontradas.xlsx` | 1, 5, 6 | Acumulativo. Solo la opción 1 retira un NIT resuelto; las opciones 5 y 6 solo agregan los no encontrados |
-| `logs/novedades_cups.xlsx` | 3 | Se reemplaza |
-| `logs/empresas_no_vinculadas.xlsx` | 5 | Se reemplaza |
-| `logs/empresas_tian.xlsx` | 6 | Se reemplaza |
-| `logs/empresas_duplicadas.xlsx` | 10 | Se reemplaza |
-| `odoo-output/log_inyeccion.xlsx` | 8 | Acumulativo (anti-duplicados) |
-| `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 4, 5, 6 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
+| `logs/empresas_no_encontradas.xlsx` | 1, 3 | Acumulativo. Solo la opción 1 retira un NIT resuelto; la opción 3 solo agrega los no encontrados |
+| `logs/empresas_tian.xlsx` | 3 | Se reemplaza |
+| `logs/empresas_redirigidas.xlsx` | 3 | Se reemplaza (solo si hubo redirecciones de `billing_redirects`) |
+| `logs/empresas_duplicadas.xlsx` | 6 | Se reemplaza |
+| `odoo-output/log_inyeccion.xlsx` | 5 | Acumulativo (anti-duplicados) |
+| `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 3 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
 
 **Hallazgos por opción:**
 
@@ -579,9 +511,7 @@ self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 |---|---|---|
 | 1 | `logs/web_scrapping/` | `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
 | 2 | `logs/facturadores/` | `empresa_no_encontrada`, `facturador_no_encontrado` (NIT, Facturador); `vinculacion_duplicada` (NIT, Empresa, Facturador descartado, Facturador vigente); `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
-| 4 | `logs/cargar_tarifas/` | `contrato_no_existe`, `ciudad_no_existe`, `cup_no_existe`, `actividad_invalida`, `tarifa_vacia` (Hoja, Fila, CONTRATO, CIUDAD, CUP, INTRA O EXTRA, VALOR) |
-| 5 | `logs/registrar_empresas/` | `documento_acotado` (Documento original, Documento acotado); `paquetes_en_conflicto` (Documento, Paquete descartado, Paquete vigente); `paquete_no_encontrado` (Documento, Razón social, Paquete); `bd_local_actualizada` (NIT, Nombre en BD local, Nombre en Odoo, Acción) |
-| 6 | `logs/asignar_tarifas/` | `fase_01`…`fase_06`, `sin_resolver` (NIT, Empresa, Paciente, N° Identificación, Ciudad, TIPO DE ACTIVIDAD, CUP, Precio asignado, Origen); `empresas_odoo` (NIT, Empresa, Motivo) |
+| 3 | `logs/asignar_tarifas/` | `fase_01`…`fase_06`, `sin_resolver` (NIT, Empresa, Paciente, N° Identificación, Ciudad, TIPO DE ACTIVIDAD, CUP, Precio asignado, Origen); `empresas_odoo` (NIT, Empresa, Motivo) |
 
 ## 10. Testing
 
@@ -608,7 +538,6 @@ pytest tests/assign/test_assigned_rates.py::TestX::test_y -v
 | shared | 121 |
 | company | 109 |
 | odooInjection | 75 |
-| dataProcessing | 65 |
 | rates | 39 |
 | billers | 37 |
 | preInvoice | 22 |
@@ -623,6 +552,8 @@ pytest tests/assign/test_assigned_rates.py::TestX::test_y -v
 - Un spec con preguntas abiertas no avanza a plan.
 - Las tasks declaran un contrato de alcance (Crear / Modificar / PROHIBIDO tocar) y el test que debe fallar primero.
 - `verify.md` cruza cada AC con su test y audita el drift de alcance.
+
+Los temas usan la numeración del menú vigente cuando se escribió cada spec (antes del 2026-11-23: 6 → 3, 7 → 4, 8 → 5, 10 → 6; las opciones 3, 4, 5 y 9 de entonces ya no existen).
 
 | Spec | Tema |
 |---|---|
@@ -652,26 +583,20 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 | # | Área | Hallazgo | Ubicación |
 |---|---|---|---|
 | 1 | Código | **Resuelto en `assign` (spec 010).** Queda `FFB6C1` / *Fase 7* en la lista blanca y la Leyenda de las pre-facturas | `split_by_nit.py:50,63` |
-| 2 | Opción 8 | Inyección deshabilitada (llamada comentada, sin import) | `main.py:69-71` |
+| 2 | Opción 5 | Inyección deshabilitada (llamada comentada, sin import) | `main.py` |
 | 3 | Opción 1 | **Resuelto (spec 014):** el scraper `datos_gov_scraper.py` (no se usaba y no implementaba `search_by_name`) se eliminó. La cascada real es Odoo → BD local → RUES (spec 016) | — |
 | 4 | Opción 2 | El fallback de vínculo por nombre sigue siendo exacto (spec 003 RF-02 pedía fuzzy; tasks sin marcar) | `import_billers_from_excel.py:167-173` |
-| 5 | Opciones 2 y 5 | **Cambió (spec 016):** `data.json` se reescribe con los resultados de la corrida (también los de RUES que vinieron de la caché), pero pierde los de NIT que no estaban en el Excel de esa corrida | `import_billers_from_excel.py`, `import_companies_from_excel.py` |
-| 6 | Opción 3 | `str.replace("[\s]{2,}", "")` reemplaza solo la primera ocurrencia y pega palabras | normalizadores `dataProcessing` |
-| 7 | Opción 3 | `VERIFIED=True` significa que el CUP sigue **sin** existir (semántica invertida) | `cup_column_validator.py:197` |
-| 8 | Opción 3 | `VALOR` "5.000" → 5 | `_is_success` |
-| 9 | Opción 5 | `SaCompanyNitCacheRepository.save_many` usa `normalize_nit`, y una cédula de 10 o más dígitos puede quedar truncada | `sa_company_nit_cache_repository.py:64-67` |
-| 10 | Opción 5 | Un paquete no encontrado va a `paquete_no_encontrado.xlsx` (spec 011), pero sigue sin entrar a `empresas_no_vinculadas.xlsx` | `import_companies_from_excel.py:322-331` |
-| 11 | Opción 6 | Las fases comodín (3, 5, 6) no son deterministas (sin `ORDER BY`) | `sa_rates_repository.py:89,122` |
-| 12 | Opción 6 | `DAY_INITIAL`/`DAY_FINAL` vacíos → `int()` falla (lo captura `safe_dispatch`) | `main.py:59-65` |
-| 13 | Opción 7 | El mensaje de consolidado faltante usa `print` y muestra `[red]` literal | `pre_invoice_controller.py:19-21` |
+| 5 | Opción 2 | **Cambió (spec 016):** `data.json` se reescribe con los resultados de la corrida (también los de RUES que vinieron de la caché), pero pierde los de NIT que no estaban en el Excel de esa corrida | `import_billers_from_excel.py` |
+| 11 | Opción 3 | Las fases comodín (3, 5, 6) no son deterministas (sin `ORDER BY`) | `sa_rates_repository.py:89,122` |
+| 12 | Opción 3 | `DAY_INITIAL`/`DAY_FINAL` vacíos → `int()` falla (lo captura `safe_dispatch`) | `main.py` |
+| 13 | Opción 4 | El mensaje de consolidado faltante usa `print` y muestra `[red]` literal | `pre_invoice_controller.py:19-21` |
 | 14 | BD | La app ignora `DATABASE_URL`; Alembic la usa. Sin ella, ambas usan la misma URL (5432 y `sslmode=require`, AUD-45) | `database.py`, `migrations/env.py` |
-| 15 | BD | Los controllers de las opciones 4 y 10 no cierran la sesión | spec 007, no-objetivos |
+| 15 | BD | El controller de la opción 6 no cierra la sesión | spec 007, no-objetivos |
 | 16 | Arquitectura | `SaBillerRepository` / `SaBillerCompanyRepository` no heredan su ABC; `rates` no tiene ABC | `src/billers`, `src/rates` |
-| 17 | Opción 6 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |
-| 18 | Opción 6 | `render_summary` se imprime con un `Console()` nuevo y no con `USER_CONSOLE` | `assigned_rates_controller.py:156` |
-| 19 | Opción 6 | La ciudad de Odoo se compara por nombre normalizado exacto ; no se valida el estado y la tarifa vencida se asigna y se reporta en `odoo_tarifa_vencida.xlsx` | `odoo_rate_index.py` |
-| 20 | Opción 5 | `paquetes_en_conflicto` se registra aunque la empresa se repita con el **mismo** paquete (la regla "mismo valor no es conflicto" de la spec 015 solo se aplicó a la opción 2) | `import_companies_from_excel.py:305-320` |
+| 17 | Opción 3 | `TechOnlyLogger` oculta en consola los avisos de i-medical, TIAN (incluido *No se definió TIAN_NIT*), empresas no encontradas y fechas: solo quedan en `logs.log` | `assigned_rates_controller.py:120` |
+| 18 | Opción 3 | `render_summary` se imprime con un `Console()` nuevo y no con `USER_CONSOLE` | `assigned_rates_controller.py:156` |
+| 19 | Opción 3 | La ciudad de Odoo se compara por nombre normalizado exacto ; no se valida el estado y la tarifa vencida se asigna y se reporta en `odoo_tarifa_vencida.xlsx` | `odoo_rate_index.py` |
 | 21 | Odoo | `create_client` escribe solo `vat`, no `ref_num` (no se invoca) | `xmlrpc_odoo_repository.py:238-249` |
 | 22 | Datos Odoo | 54 partners duplicados creados solo con `vat` (2026-05-07 a 2026-06-02); el administrador de Odoo debe fusionarlos o archivarlos | Odoo, `res.partner` |
-| 23 | `empresas_no_encontradas` | Las opciones 5 y 6 solo agregan no encontrados y nunca retiran los resueltos; solo la opción 1 limpia el libro | `import_companies_from_excel.py`, `assigned_rates.py:698` |
-| 24 | Opción 6 | La opción 6 valida las empresas Odoo-primero pero no sincroniza la BD local con Odoo (sí lo hacen las opciones 1, 2 y 5, spec 016) | `assigned_rates.py` |
+| 23 | `empresas_no_encontradas` | La opción 3 solo agrega no encontrados y nunca retira los resueltos; solo la opción 1 limpia el libro | `assigned_rates.py` |
+| 24 | Opción 3 | La opción 3 valida las empresas Odoo-primero pero no sincroniza la BD local con Odoo (sí lo hacen las opciones 1 y 2, spec 016) | `assigned_rates.py` |

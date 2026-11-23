@@ -1,5 +1,4 @@
 from src.company.domain.entities.company import Company
-from src.company.domain.entities.company_package import CompanyPackage
 
 
 def test_company_creation():
@@ -23,9 +22,3 @@ def test_company_preserves_none_nit():
     c = Company(None, "EMPRESA A")
     assert c.nit is None
 
-
-def test_company_package_creation():
-    cp = CompanyPackage(1, 10, "Package")
-    assert cp.company_id == 1
-    assert cp.package_id == 10
-    assert cp.model == "Package"

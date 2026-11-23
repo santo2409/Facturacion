@@ -1,48 +1,57 @@
-"""Tests del menú principal con etiqueta de desuso (spec 019, AC-04/AC-05)."""
+"""Pruebas del menú principal: las opciones en desuso (antes 3, 4, 5 y 9) se
+eliminaron y el menú se renumeró."""
 
 import main
 from rich.console import Console
-from rich.text import Text
 
-from src.shared.utils.deprecated import DEPRECATED_LABEL, deprecated, is_deprecated
-
-
-def test_menu_label_appends_label_only_when_deprecated():
-    @deprecated()
-    def old():
-        pass
-
-    def current():
-        pass
-
-    assert main.menu_label("Opción", old) == f"Opción {DEPRECATED_LABEL}"
-    assert main.menu_label("Opción", current) == "Opción"
-    assert main.menu_label("Salir", None) == "Salir"
+EXPECTED_MENU = [
+    ("1", "Web Scrapping"),
+    ("2", "Facturadores"),
+    ("3", "Asignar Tarifas"),
+    ("4", "Generar Pre Facturas"),
+    ("5", "Cargar Pre Facturas"),
+    ("6", "Detectar Empresas Duplicadas"),
+    ("0", "Salir"),
+]
 
 
-# Opciones en desuso: 3, 4 y 5 (spec 019) y 9 (a196be6; confirmado en P-01 de docs/auditoria.md).
-DEPRECATED_OPTIONS = {"3", "4", "5", "9"}
-ACTIVE_OPTIONS = {"1", "2", "6", "7", "10"}
+def test_menu_tiene_solo_las_opciones_vigentes_renumeradas():
+    assert main.MENU_OPTIONS == EXPECTED_MENU
 
 
-def test_option_controllers_3_4_5_9_are_deprecated():
-    options = {option: func for option, _, func in main.MENU_OPTIONS}
-
-    for option in sorted(DEPRECATED_OPTIONS):
-        assert is_deprecated(options[option]), f"opción {option} sin @deprecated"
-    for option in sorted(ACTIVE_OPTIONS):
-        assert not is_deprecated(options[option]), f"opción {option} deprecada"
-
-
-def test_rendered_menu_marks_only_options_3_4_5_9():
+def test_menu_renderizado_no_muestra_opciones_eliminadas():
     recorder = Console(record=True, width=120)
     recorder.print(main.build_menu_table())
-    lines = recorder.export_text().splitlines()
-    # Texto visible de la etiqueta, sin markup (af5f906 la cambió de "Desuso" a "**deprecated**").
-    label_text = Text.from_markup(DEPRECATED_LABEL).plain
+    text = recorder.export_text()
 
-    marked = {
-        line.split()[0] for line in lines if line.strip() and label_text in line
-    }
+    for removed in ("Tratamiento Información", "Cargar Tarifas", "Registrar Empresas", "Generar Faltantes", "deprecated"):
+        assert removed not in text
+    for _, description in EXPECTED_MENU:
+        assert description in text
 
-    assert marked == DEPRECATED_OPTIONS
+
+def test_opciones_que_ya_no_existen_son_invalidas(monkeypatch):
+    printed = []
+    monkeypatch.setattr(main.console, "print", lambda msg, *a, **k: printed.append(str(msg)))
+
+    for option in ("7", "8", "9", "10"):
+        assert main.dispatch_option(option, logger=None) is True
+
+    assert printed == ["[red]Opción inválida[/red]"] * 4
+
+
+def test_cada_opcion_llama_a_su_controller(monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(main.console, "print", lambda *a, **k: None)
+    monkeypatch.setenv("DAY_INITIAL", "1")
+    monkeypatch.setenv("DAY_FINAL", "31")
+    monkeypatch.setattr(main, "execute_web_scrapping", lambda logger: llamadas.append("1"))
+    monkeypatch.setattr(main, "import_billers", lambda logger: llamadas.append("2"))
+    monkeypatch.setattr(main, "assign_rates", lambda logger, with_invoices: llamadas.append("3"))
+    monkeypatch.setattr(main, "generate_pre_invoices", lambda logger: llamadas.append("4"))
+    monkeypatch.setattr(main, "detect_duplicate_companies", lambda logger: llamadas.append("6"))
+
+    for option in ("1", "2", "3", "4", "5", "6"):
+        main.dispatch_option(option, logger=None)
+
+    assert llamadas == ["1", "2", "3", "4", "6"]
