@@ -1,0 +1,686 @@
+[
+ {
+  "id": 9001,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "700777777",
+  "orden_llamada": 0,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 104,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 2,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 2",
+   "partner_id": 505,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9001
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "700777777",
+  "orden_llamada": 1,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9002,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "800222222",
+  "orden_llamada": 2,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "AUDIOMETRIA",
+      "price_unit": 1.0,
+      "product_id": 604,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 1",
+   "partner_id": 506,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9002
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "800222222",
+  "orden_llamada": 3,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9003,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "811111111",
+  "orden_llamada": 4,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 1",
+   "partner_id": 501,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9003
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "811111111",
+  "orden_llamada": 5,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9004,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "811111112",
+  "orden_llamada": 6,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 1",
+   "partner_id": 502,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9004
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "811111112",
+  "orden_llamada": 7,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9005,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "822222222",
+  "orden_llamada": 8,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "AUDIOMETRIA",
+      "price_unit": 1.0,
+      "product_id": 604,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 1",
+   "partner_id": 503,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9005
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "822222222",
+  "orden_llamada": 9,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9006,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "900111111",
+  "orden_llamada": 10,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 105,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "CONSULTA ESPECIALISTA",
+      "price_unit": 1.0,
+      "product_id": 602,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "COLESTEROL TOTAL SUERO",
+      "price_unit": 1.0,
+      "product_id": 603,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 3",
+   "partner_id": 504,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9006
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "900111111",
+  "orden_llamada": 11,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9007,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "901000001",
+  "orden_llamada": 12,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42650,
+      "analytic_account_id": 105,
+      "name": "EXAMEN GRAVADO",
+      "price_unit": 1.0,
+      "product_id": 605,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 101,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 102,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 105,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 2,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 106,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 107,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 109,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 111,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 11136,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ],
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 105,
+      "name": "CONSULTA ESPECIALISTA",
+      "price_unit": 1.0,
+      "product_id": 602,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 14",
+   "partner_id": 507,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9007
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "901000001",
+  "orden_llamada": 13,
+  "vals": {
+   "invoice_date_due": false
+  }
+ },
+ {
+  "id": 9008,
+  "metodo": "create",
+  "modelo": "account.move",
+  "nit": "901000004",
+  "orden_llamada": 14,
+  "vals": {
+   "invoice_line_ids": [
+    [
+     0,
+     0,
+     {
+      "account_id": 42653,
+      "analytic_account_id": 105,
+      "name": "CONSULTA MEDICINA GENERAL",
+      "price_unit": 1.0,
+      "product_id": 601,
+      "product_uom_id": 1,
+      "quantity": 1,
+      "tax_ids": [
+       [
+        6,
+        0,
+        [
+         701,
+         702
+        ]
+       ]
+      ]
+     }
+    ]
+   ],
+   "journal_id": 47,
+   "move_type": "out_invoice",
+   "narration": "Pre-factura automatica. Pacientes: 1",
+   "partner_id": 510,
+   "state": "draft"
+  }
+ },
+ {
+  "ids": [
+   9008
+  ],
+  "metodo": "write",
+  "modelo": "account.move",
+  "nit": "901000004",
+  "orden_llamada": 15,
+  "vals": {
+   "invoice_date_due": false
+  }
+ }
+]

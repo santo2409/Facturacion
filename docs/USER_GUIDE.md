@@ -69,7 +69,7 @@ La configura normalmente el equipo técnico una sola vez. Lo que te conviene sab
    2     Facturadores
    3     Asignar Tarifas
    4     Generar Pre Facturas
-   5     Cargar Pre Facturas          (deshabilitada)
+   5     Cargar Pre Facturas
    6     Detectar Empresas Duplicadas
    0     Salir
 ```
@@ -237,12 +237,33 @@ Si no existe el CONSOLIDADO, verás *"Archivo CONSOLIDADO.xlsx no encontrado. No
 
 ### Opción 5 — Cargar Pre Facturas (Odoo)
 
-**Actualmente deshabilitada.** Al elegirla solo verás *"Inyectando Facturas..."* y no ocurrirá nada. Las facturas se cargan en Odoo por el procedimiento manual habitual.
+**Para qué:** crear en Odoo **una factura borrador por empresa** a partir de las pre-facturas. Hace exactamente lo mismo que el script ETL-Avancys (`Pipeline.py`) que se usaba hasta ahora.
 
-> Cuando se habilite, creará facturas **borrador** en Odoo para las empresas de `General sin factura`:
-> - No duplicará las ya cargadas.
-> - Marcará como **VERIFICAR** las empresas que no encuentre en Odoo, sin crearlas.
-> - Dejará el resultado en `odoo-output/log_inyeccion.xlsx`.
+**Antes de correrla, revisa `configuracion_inyeccion.xlsx`** (en la carpeta desde la que abres el sistema; otra ruta con `INYECCION_CONFIG_XLSX`). La primera vez el sistema lo crea con los valores que tenía el ETL y se detiene para que lo revises. Tiene tres hojas:
+
+| Hoja | Columnas | Qué hace |
+|---|---|---|
+| `NITS_BLOQUEADOS` | NIT, MOTIVO | El NIT existe en Odoo pero apunta a otro tercero: no se factura (VERIFICAR) |
+| `EMPRESAS_BLOQUEADAS` | NOMBRE, MOTIVO | Empresas que no se suben; basta con que el nombre **empiece** así |
+| `YA_SUBIDAS` | NIT, FACTURA | **Vaciar cada mes.** Solo para repetir una corrida que se cortó a la mitad sin duplicar lo que ya entró |
+
+**Te pedirá:** la carpeta con las pre-facturas a cargar (por ejemplo, una copia de las carpetas que genera la opción 4). Se leen los `.xlsx` de esa carpeta, sin subcarpetas; se ignoran `NITs_consolidado.xlsx` y los archivos temporales `~$`.
+
+**Qué hace con cada empresa:**
+- Busca el tercero en Odoo **solo por NIT** (`N. identificación`). Si no existe o hay más de uno → **VERIFICAR**; nunca crea terceros.
+- Arma una línea por examen y cuenta analítica (cantidad = pacientes). La cuenta sale de la sede y la ciudad; si no se puede imputar con certeza, ese paciente **se aparta** (no se manda a Bogotá).
+- Crea la factura **sin fechas**, en el diario de pre-facturas, con las dos autorretenciones. El precio queda en el de lista; se trae con el botón "Actualizar precios" de Odoo (o automáticamente si `ODOO_ACTUALIZAR_PRECIOS=true`).
+- No duplica: si hoy ya creaste un borrador para ese cliente, lo reporta y no crea otro.
+
+**Al terminar verás un resumen** (empresas OK, para verificar y con error) y la carpeta de la corrida, `logs/cargar_prefacturas/<AAAA-MM-DD_HHMM>/`, con:
+
+| Archivo | Qué revisar |
+|---|---|
+| `log_inyeccion.xlsx` | Una fila por empresa con estado, detalle y enlace a la factura |
+| `pendientes_facturador.xlsx` | Hoja *Subir a mano*: exámenes que quedaron por fuera (agregarlos a mano). Hoja *Empresas sin factura*: empresas que no se facturaron y qué hacer |
+| `cuentas_por_revisar.xlsx` | Qué ciudades o productos arreglar en Odoo para la próxima corrida |
+| `facturas_creadas.csv` | Ids de las facturas creadas en la corrida |
+| `verificar/` | Copias de los archivos que no se pudieron leer (plantilla cambiada) |
 
 ### Opción 6 — Detectar Empresas Duplicadas
 

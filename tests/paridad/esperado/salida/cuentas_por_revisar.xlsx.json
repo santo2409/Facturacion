@@ -1,0 +1,62 @@
+{
+ "Arreglar en Odoo": {
+  "filas": [
+   [
+    "Problema",
+    "Ciudad / Codigo",
+    "Examenes sin subir",
+    "Pacientes",
+    "Empresas",
+    "Valor archivo",
+    "Sedes que aparecen",
+    "Por que no se pudo subir",
+    "Que hay que hacer"
+   ],
+   [
+    "SIN CUENTA ANALITICA",
+    "PUEBLO INVENTADO",
+    2,
+    2,
+    2,
+    60000,
+    "SEDE NORTE",
+    "Ciudad 'PUEBLO INVENTADO' no esta en el mapa de cuentas analiticas; lo mas parecido en el mapa es 'APARTADO' (60%) — confirmar, no asumir",
+    "NO se agrego a la factura: hay que agregar esas lineas A MANO. Para la proxima corrida, buscar la cuenta analitica de esta ciudad en Odoo y agregarla a CIUDAD_CUENTA (por codigo) o a CIUDAD_CUENTA_ID (si la cuenta no tiene codigo). Si no existe, crearla primero"
+   ],
+   [
+    "PRODUCTO NO ENCONTRADO",
+    "999999",
+    1,
+    1,
+    1,
+    12500,
+    "SEDE NORTE",
+    "No hay producto con referencia '999999' en Odoo",
+    "NO se agrego a la factura: no existe el producto '999999' en Odoo. Hay que agregar esa linea A MANO, paciente por paciente (ver la hoja 'Subir a mano'). Va a seguir saliendo aqui cada mes mientras el producto no exista con esa referencia exacta"
+   ],
+   [
+    "SIN CUENTA ANALITICA",
+    "BOGOTA",
+    1,
+    1,
+    1,
+    45000,
+    "EXTRAMURAL SERVICIO A DOMICILIO",
+    "Ninguna cuenta analitica de Odoo se llama como la ciudad 'BOGOTA'",
+    "NO se agrego a la factura: agregar A MANO y revisar con el facturador"
+   ],
+   [
+    "SIN CUENTA ANALITICA",
+    "CALI",
+    1,
+    1,
+    1,
+    30000,
+    "SEDE 103",
+    "La sede 'SEDE 103' esta mapeada a AA8638 (BOGOTA D.C.) pero la fila dice ciudad 'CALI' — revisar SEDE_CUENTA",
+    "La sede esta mapeada a una cuenta de otra ciudad: revisar la tabla SEDE_CUENTA del script. La linea hay que agregarla A MANO"
+   ]
+  ],
+  "hipervinculos": {}
+ }
+}

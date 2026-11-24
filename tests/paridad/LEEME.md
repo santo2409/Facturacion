@@ -98,3 +98,18 @@ Para validar el simulador contra la instancia de pruebas real, ver `docs/etl-ana
 - NIT con dos terceros: el log dice primero "coincide con varios terceros" y luego "Sin tercero con N. identificacion".
 - `GUADALAJARA DE BUGA` resuelve por palabra a `BUGA`, pero avisa "El codigo AA10460 del mapa no es de…"
   porque compara el nombre completo de la ciudad con el de la cuenta.
+
+## Prueba de paridad (`test_paridad.py`)
+
+`pytest tests/paridad -v` ejecuta la opción 5 real (`LoadPreInvoicesToOdoo` con sus adaptadores) sobre
+`entradas/prefacturas/` contra el mismo `OdooParidad`, exporta igual que `capturar_referencia.py`, aplica N2 y
+compara con `esperado/`: `odoo_escrituras.json`, los tres libros y `facturas_creadas.csv` iguales exactos, y
+`verificar/` con los mismos archivos sin cambios. `log_inyeccion.txt` no se compara: la integración escribe el
+log técnico en `logs.log` (diferencia aceptada, `docs/diseno-integracion.md`).
+
+`PARIDAD_ESPERADO=<carpeta>` compara contra otra captura (por ejemplo, una nueva en `/tmp`).
+
+`verificar_lector.py` (con el intérprete del ETL) compara el lector sin pandas con `pd.read_excel` sobre cualquier
+carpeta: el 2026-11-23 dio 0 diferencias en las 19 entradas y en las 315 pre-facturas reales de `ETL-Avancys/datos/Entrada/`.
+Ese mismo día, con un Odoo simulado sintético para esas 315 pre-facturas, ETL e integración produjeron salidas
+idénticas (548 escrituras, 274 facturas, 41 VERIFICAR; datos solo en `/tmp`, borrados después).

@@ -96,7 +96,7 @@ Reglas (constitución v1.1.0):
 
 `main.py`:
 
-- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas (desconectada), 6 Detectar Empresas Duplicadas, 0 Salir. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
+- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas, 6 Detectar Empresas Duplicadas, 0 Salir. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
 - `console_app()` pinta el menú y pide `Seleccione una opción` (por defecto `0`).
 - `dispatch_option()` despacha al controller.
 - `safe_dispatch()` captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
@@ -138,6 +138,9 @@ La URL es `postgresql+psycopg2://…?sslmode=require`; la app crea el engine con
 | `BOOK_ROUTE`, `BOOK_NAME` | **sin defecto** | Libro de entrada de la opción 1 |
 | `DAY_INITIAL`, `DAY_FINAL` | **sin defecto** (obligatorias) | Opción 3: pide libro de facturas si `día < DAY_INITIAL` o `día > DAY_FINAL` |
 | `TIAN_NIT` | **sin defecto** a propósito (`get_tian_config`) | NIT al que se redirigen las empresas TIAN; si falta, se omite el tratamiento |
+| `ODOO_ACTUALIZAR_PRECIOS` | `false` (`get_injection_config`) | Opción 5: dispara "Actualizar precios" tras crear cada factura |
+| `INYECCION_CONFIG_XLSX` | `configuracion_inyeccion.xlsx` | Opción 5: Excel con NITs/empresas bloqueados y ya subidas (se crea la primera vez) |
+| `INYECCION_SALIDA` | `logs/cargar_prefacturas` | Opción 5: carpeta base de los libros; una subcarpeta `<AAAA-MM-DD_HHMM>` por corrida |
 
 **Scraping / matching (opción 1):**
 
@@ -428,23 +431,17 @@ Detalles:
 - **Spec 009:** `Fecha Ingreso` se conserva en todas las carpetas, incluida `General sin factura`.
 - Si un NIT falla, se loguea y se continúa con el siguiente.
 
-### 7.5 Opción 5 — Inyección en Odoo (`src/odooInjection`) — **DESHABILITADA**
+### 7.5 Opción 5 — Cargar Pre Facturas (`src/odooInjection`)
 
-`main.py:69-71` solo imprime el mensaje; la llamada `inject_invoices(logger)` está comentada y no hay otro entry point. El módulo está completo y testeado:
+Integración de ETL-Avancys (`Pipeline.py`, commit `7bb6784`) con paridad exacta. Diseño en `docs/diseno-integracion.md`; contrato del ETL (reglas T1-T30) en `docs/etl-analisis.md`.
 
-- **Cadena:** `inject_invoices` (`inject_invoices_controller.py:23-52`) → `InjectInvoicesToOdoo.execute` (`application/use_cases/inject_invoices_to_odoo.py:34-99`).
-- **Dependencias:** `ExcelPreInvoiceReader`, `XmlRpcOdooRepository`, `CityAccountResolver` y `ExcelLogGenerator`.
-- **Flujo:**
-  1. **Lectura:** los `.xlsx` de `pre-facturas/General sin factura` (fila 2 = encabezado; 14 columnas fijas; CUP desde la columna 15).
-  2. **Anti-duplicados (ADR-009):** excluye los NIT con estado `OK` en `odoo-output/log_inyeccion.xlsx`.
-  3. **Cliente (ADR-010):** `find_client` delega en `find_clients_batch([nit])`: `ref_num` exacto → `ref_num =like 'NIT%'` → `vat` exacto → `vat =like 'NIT%'` (spec 012). Si no aparece, el use case llama `find_client_by_name` (`name ilike` sin sufijo societario). Si tampoco → **VERIFICAR**. `create_client` existe en el repositorio (solo llena `vat`) pero **no se invoca**.
-  4. **Líneas:**
-     - Cuenta los exámenes por (CUP, cuenta analítica). La cuenta analítica sale de la ciudad: exacta o WRatio ≥ 80; si no hay, `AA8638`.
-     - Producto por `default_code`.
-     - Cuenta de ingresos gravados o excluidos según `ODOO_PRODUCTOS_GRAVADOS`.
-     - Impuestos de autorretención y UoM.
-  5. **`account.move`:** `out_invoice`, `draft`, `invoice_date` = hoy, vencimiento a +N días, `journal_id`, `date_of_service` = último día del mes anterior, `range_id`.
-  6. **Log:** `odoo-output/log_inyeccion.xlsx`. Estados OK, VERIFICAR o ERROR; el histórico se fusiona y gana el resultado más reciente.
+- **Cadena:** `load_pre_invoices` (`infrastructure/console/load_pre_invoices_controller.py`) → `LoadPreInvoicesToOdoo.execute` (`application/use_cases/load_pre_invoices_to_odoo.py`).
+- **Puertos y adaptadores:** `PreInvoiceSource` → `XlsxPreInvoiceSource` (reproduce `pd.read_excel(header=None, dtype=str)` sin pandas); `InjectionSettingsSource` → `XlsxInjectionSettingsSource`; `InjectionGateway` → `XmlRpcInjectionGateway` (compone `XmlRpcOdooRepository`); `InjectionReportWriter` → `EtlInjectionReportWriter`.
+- **Dominio:** `etl_constants.py` (mapas de cuentas, plantilla), `city_key.py`, `nit_rules.py`, `analytic_account_resolver.py`, `pending_registry.py`, `injection_settings.py`.
+- **Flujo:** lee y valida la plantilla → agrupa por NIT → conecta (3 intentos) → por empresa: cobro doble, empresa bloqueada, `YA_SUBIDAS`, NIT bloqueado, tercero por `ref_num` exacto (0 o 2+ → VERIFICAR), cuenta por paciente (sede → EXTRAMURAL → id → código confirmado por nombre → PROVEEDORES; sin respaldo), líneas ordenadas, cuadre, guarda anti-duplicados del día, `create` + borrar vencimiento. Reintenta la empresa ante fallos de red (3 veces, 10 s). Libros cada 10 empresas y al final.
+- **No usa la BD local.** Nunca crea terceros (ADR-010).
+- **Pruebas:** `tests/odooInjection/` (reglas) y `tests/paridad/test_paridad.py` (salidas idénticas a las del ETL contra el Odoo simulado).
+- **Flujo anterior** (`InjectInvoicesToOdoo`, `ExcelPreInvoiceReader`, `CityAccountResolver`, `ExcelLogGenerator`, `inject_invoices_controller`): sigue en el código sin conexión al menú hasta su retiro (paso *retiro* del diseño).
 
 ### 7.6 Opción 6 — Detectar Empresas Duplicadas (`src/company`)
 
@@ -583,7 +580,7 @@ Lo que sigue se detectó al documentar y **no se corrigió**. Cada punto es cand
 | # | Área | Hallazgo | Ubicación |
 |---|---|---|---|
 | 1 | Código | **Resuelto en `assign` (spec 010).** Queda `FFB6C1` / *Fase 7* en la lista blanca y la Leyenda de las pre-facturas | `split_by_nit.py:50,63` |
-| 2 | Opción 5 | Inyección deshabilitada (llamada comentada, sin import) | `main.py` |
+| 2 | Opción 5 | **Resuelto (2026-11-23):** la opción 5 ejecuta la integración de ETL-Avancys | `main.py` |
 | 3 | Opción 1 | **Resuelto (spec 014):** el scraper `datos_gov_scraper.py` (no se usaba y no implementaba `search_by_name`) se eliminó. La cascada real es Odoo → BD local → RUES (spec 016) | — |
 | 4 | Opción 2 | El fallback de vínculo por nombre sigue siendo exacto (spec 003 RF-02 pedía fuzzy; tasks sin marcar) | `import_billers_from_excel.py:167-173` |
 | 5 | Opción 2 | **Cambió (spec 016):** `data.json` se reescribe con los resultados de la corrida (también los de RUES que vinieron de la caché), pero pierde los de NIT que no estaban en el Excel de esa corrida | `import_billers_from_excel.py` |

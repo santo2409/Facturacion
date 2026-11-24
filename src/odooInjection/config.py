@@ -39,3 +39,21 @@ def get_odoo_config() -> dict:
         "fecha_servicio": _fecha_servicio(),
         "fecha_vencimiento_dias": int(os.getenv("ODOO_FECHA_VENCIMIENTO_DIAS", "30")),
     }
+
+
+_VERDADERO = {"1", "true", "si", "sí", "yes", "on"}
+
+
+def get_injection_config() -> dict:
+    """Configuración propia de la carga de pre-facturas (opción 5), además de get_odoo_config.
+
+    - ODOO_ACTUALIZAR_PRECIOS: dispara el botón "Actualizar precios" tras crear cada
+      factura (ACTUALIZAR_PRECIOS del ETL). Apagado por defecto (E-05).
+    - INYECCION_CONFIG_XLSX: Excel con NITs/empresas bloqueados y ya subidas (E-04).
+    - INYECCION_SALIDA: carpeta base; cada corrida escribe en <base>/<AAAA-MM-DD_HHMM>/.
+    """
+    return {
+        "actualizar_precios": os.getenv("ODOO_ACTUALIZAR_PRECIOS", "false").strip().lower() in _VERDADERO,
+        "config_xlsx": os.getenv("INYECCION_CONFIG_XLSX") or "configuracion_inyeccion.xlsx",
+        "salida": os.getenv("INYECCION_SALIDA") or "logs/cargar_prefacturas",
+    }

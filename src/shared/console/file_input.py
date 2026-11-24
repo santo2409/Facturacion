@@ -14,3 +14,13 @@ def ask_excel_path(label: str = "Ruta completa del archivo Excel") -> Path:
             return file
 
         console.print("Archivo inválido, intente de nuevo")
+
+
+def ask_folder_path(label: str = "Ruta completa de la carpeta") -> Path:
+    while True:
+        folder = Path(Prompt.ask(label).strip().strip('"'))
+
+        if folder.is_dir():
+            return folder
+
+        console.print("Carpeta inválida, intente de nuevo")

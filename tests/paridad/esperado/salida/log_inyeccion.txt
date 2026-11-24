@@ -1,0 +1,211 @@
+<FECHA_HORA> | INFO | ============================================================
+<FECHA_HORA> | INFO |   SOANDES — INYECCION MASIVA DE PRE-FACTURAS
+<FECHA_HORA> | INFO | ============================================================
+<FECHA_HORA> | INFO |   Entrada:   /tmp/etl_paridad_trabajo/datos/Entrada
+<FECHA_HORA> | INFO |   Salida:    /tmp/etl_paridad_trabajo/datos/Salida
+<FECHA_HORA> | INFO |   Verificar: /tmp/etl_paridad_trabajo/datos/Salida/verificar
+<FECHA_HORA> | INFO | 
+18 archivo(s) encontrado(s)
+<FECHA_HORA> | INFO | 
+----------------------------------------
+<FECHA_HORA> | INFO | CHEQUEO PREVIO — revisar antes de seguir
+<FECHA_HORA> | INFO | ----------------------------------------
+<FECHA_HORA> | INFO |   Carpeta de entrada: /tmp/etl_paridad_trabajo/datos/Entrada
+<FECHA_HORA> | INFO |   Actualizar precios: False  (las lineas suben en 1; el precio se trae a mano en Odoo)
+<FECHA_HORA> | WARNING |   NITS_BLOQUEADOS: 830121897, 900448167 — no se facturan hasta que se resuelvan
+<FECHA_HORA> | WARNING |   EMPRESAS_BLOQUEADAS: SGS COLOMIA
+<FECHA_HORA> | INFO | 
+----------------------------------------
+<FECHA_HORA> | INFO | FASE 1: Leyendo y consolidando pre-facturas...
+<FECHA_HORA> | INFO | ----------------------------------------
+<FECHA_HORA> | INFO |   OK: pre_factura_12345_NIT CORTO.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_555555555_DESCONOCIDA XYZ.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_700777777_EMPRESA GAMMA (General sin factura).xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_700777777_EMPRESA GAMMA.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_800222222_EMPRESA BETA LTDA.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_811111111_COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_811111112_COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_822222222_EMPRESA A_B_ SAS.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_900111111_EMPRESA ALFA SAS (segundo archivo).xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_900111111_EMPRESA ALFA SAS.xlsx | 2 pacientes | 3 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_900448167_NIT BLOQUEADO PRUEBA.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_901000001_CASOS SEDES SAS.xlsx | 15 pacientes | 4 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_901000002_SGS COLOMIA PRUEBA.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_901000003_TERCERO DUPLICADO.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_901000004_NOMBRE DISTINTO.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | ERROR |   ERROR leyendo pre_factura_901000005_PLANTILLA SIN NIT.xlsx: La plantilla cambio: faltan las columnas NIT. Se leen por nombre exacto en la fila 2 del Excel, asi que un cambio de mayusculas o un espacio de mas las pierde. Columnas que si trae el archivo: Base, Cargo, Ciudad, Empresa, Empresa Misión, Especial / General, FACTURADOR, FACTURAS, Fecha Ingreso, Ingreso N°, Medio de Pago, N° Identificación, Número de Póliza, ORDEN, CENTRO DE COSTO, CECO, PET, ORDEN, CENTRO DE COSTO, CECO, PET_1, Observaciones Ingreso, PAQUETE, Paciente, Sede, TIPO DE ACTIVIDAD, Tipo Examen, Total
+<FECHA_HORA> | INFO |   OK: pre_factura_901000006_SIN LINEAS.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO |   OK: pre_factura_912345678_EMPRESA RUES SAS.xlsx | 1 pacientes | 1 examenes
+<FECHA_HORA> | INFO | 
+Total pacientes: 32
+<FECHA_HORA> | INFO | Total examenes:  7
+<FECHA_HORA> | INFO | 
+Periodos que trae la carpeta (columna Base):
+<FECHA_HORA> | INFO |       21  IMEDICAL OCTUBRE 1-20
+<FECHA_HORA> | INFO |       10  OCT
+<FECHA_HORA> | INFO |        1  IMEDICAL SEPTIEMBRE 21-30
+<FECHA_HORA> | WARNING |   OJO: hay MAS DE UN MES en la carpeta (OCT, OCTUBRE, SEPTIEMBRE). Confirmar que es lo que se quiere facturar antes de seguir.
+<FECHA_HORA> | INFO | 
+----------------------------------------
+<FECHA_HORA> | INFO | FASE 2: Agrupando por empresa...
+<FECHA_HORA> | INFO | ----------------------------------------
+<FECHA_HORA> | ERROR |   1 filas SIN NIT: no se facturan y no quedan en ninguna factura. Archivos: pre_factura_901000001_CASOS SEDES SAS.xlsx
+<FECHA_HORA> | ERROR |       P14 SIN NIT | CASOS SEDES SAS | pre_factura_901000001_CASOS SEDES SAS.xlsx
+<FECHA_HORA> | INFO | Empresas unicas: 15
+<FECHA_HORA> | INFO | 
+----------------------------------------
+<FECHA_HORA> | INFO | FASE 3: Conectando a Odoo...
+<FECHA_HORA> | INFO | ----------------------------------------
+<FECHA_HORA> | INFO | Conectado a Odoo. UID: 2
+<FECHA_HORA> | INFO | 
+----------------------------------------
+<FECHA_HORA> | INFO | FASE 4: Inyectando facturas en Odoo...
+<FECHA_HORA> | INFO | ----------------------------------------
+<FECHA_HORA> | INFO | 
+[1/15] NIT CORTO SAS
+<FECHA_HORA> | INFO |   Empresa: NIT CORTO SAS | NIT: 12345 | Pacientes: 1
+<FECHA_HORA> | WARNING |   NIT invalido en la pre-factura: '12345' -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[2/15] DESCONOCIDA XYZ
+<FECHA_HORA> | INFO |   Empresa: DESCONOCIDA XYZ | NIT: 555555555 | Pacientes: 1
+<FECHA_HORA> | WARNING |   Sin tercero con N. identificacion = 555555555 en Odoo -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[3/15] EMPRESA GAMMA
+<FECHA_HORA> | INFO |   Empresa: EMPRESA GAMMA | NIT: 700777777 | Pacientes: 2
+<FECHA_HORA> | INFO |   Cliente por NIT: [700777777] EMPRESA GAMMA
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO | Indice de cuentas analiticas: 12 cuentas, 10 combinaciones ciudad+familia
+<FECHA_HORA> | INFO |   Linea: 890201 x2 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE CALI - CALI | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 2 examenes = 2 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9001 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9001&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[4/15] EMPRESA BETA LTDA
+<FECHA_HORA> | INFO |   Empresa: EMPRESA BETA LTDA | NIT: 800222222 | Pacientes: 1
+<FECHA_HORA> | INFO |   Cliente por NIT: [800222222] EMPRESA BETA LTDA
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 871121 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 1 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9002 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9002&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[5/15] COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A
+<FECHA_HORA> | INFO |   Empresa: COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A | NIT: 811111111 | Pacientes: 1
+<FECHA_HORA> | INFO |   Cliente por NIT: [811111111] COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 1 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9003 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9003&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[6/15] COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B
+<FECHA_HORA> | INFO |   Empresa: COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B | NIT: 811111112 | Pacientes: 1
+<FECHA_HORA> | INFO |   Cliente por NIT: [811111112] COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 1 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9004 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9004&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[7/15] EMPRESA A/B: SAS
+<FECHA_HORA> | INFO |   Empresa: EMPRESA A/B: SAS | NIT: 822222222 | Pacientes: 1
+<FECHA_HORA> | INFO |   Cliente por NIT: [822222222] EMPRESA A_B_ SAS
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 871121 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 1 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9005 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9005&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[8/15] EMPRESA ALFA SAS
+<FECHA_HORA> | INFO |   Empresa: EMPRESA ALFA SAS | NIT: 900111111 | Pacientes: 3
+<FECHA_HORA> | INFO |   Cliente por NIT: [900111111] EMPRESA ALFA SAS
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890202 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 903810-01 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 4 examenes = 4 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9006 | Lineas: 4
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9006&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[9/15] NIT BLOQUEADO PRUEBA
+<FECHA_HORA> | INFO |   Empresa: NIT BLOQUEADO PRUEBA | NIT: 900448167 | Pacientes: 1
+<FECHA_HORA> | WARNING |   NIT bloqueado: El Excel lo llama COMPONENTE SERVIEX SAS pero en Odoo es DIGITALBNK SERVICIOS TRANSACCIONALES SAS -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[10/15] CASOS SEDES SAS
+<FECHA_HORA> | INFO |   Empresa: CASOS SEDES SAS | NIT: 901000001 | Pacientes: 14
+<FECHA_HORA> | WARNING |   OJO cobro doble: el paciente 2011 (ingreso 7) esta en 2 filas y repite 890201
+<FECHA_HORA> | INFO |   Cliente por NIT: [901000001] CASOS SEDES SAS
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | WARNING |   Ciudad 'TABIO' no esta en el mapa: se encontro su cuenta por nombre -> SEDE SOA - PROVEEDORES - TABIO. Conviene agregarla a CIUDAD_CUENTA
+<FECHA_HORA> | WARNING |   El codigo AA10460 del mapa no es de 'GUADALAJARA DE BUGA': se uso la cuenta por nombre -> SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE BUGA - BUGA
+<FECHA_HORA> | WARNING |   APARTADOS 3 examenes por ciudad sin cuenta: BOGOTA, CALI, PUEBLO INVENTADO
+<FECHA_HORA> | INFO |   Linea: 100006 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE 103 - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - ZONA INDUSTRIAL - BOGOTA D.C. | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x2 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SEDE SOA - PROVEEDORES - TABIO | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SEDE SOA - PROVEEDORES - BARRANQUILLA | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE BUGA - BUGA | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SEDE SOA - EXTRAMURAL - EXTRAMURAL - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SEDE SOA - PROVEEDORES - MARIQUITA | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Linea: 890202 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 15 examenes = 11 facturados + 4 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9007 | Lineas: 10
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form
+<FECHA_HORA> | INFO | Log Excel guardado: /tmp/etl_paridad_trabajo/datos/Salida/log_inyeccion.xlsx
+<FECHA_HORA> | INFO | Pendientes del facturador: /tmp/etl_paridad_trabajo/datos/Salida/pendientes_facturador.xlsx
+<FECHA_HORA> | INFO | Cuentas por revisar: /tmp/etl_paridad_trabajo/datos/Salida/cuentas_por_revisar.xlsx
+<FECHA_HORA> | INFO | 
+[11/15] SGS COLOMIA PRUEBA SAS
+<FECHA_HORA> | INFO |   Empresa: SGS COLOMIA PRUEBA SAS | NIT: 901000002 | Pacientes: 1
+<FECHA_HORA> | WARNING |   NO SE PUEDE SUBIR - Error en libro consolidado -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[12/15] TERCERO DUPLICADO SAS
+<FECHA_HORA> | INFO |   Empresa: TERCERO DUPLICADO SAS | NIT: 901000003 | Pacientes: 1
+<FECHA_HORA> | WARNING |   NIT 901000003 coincide con varios terceros: [(508, 'TERCERO DUPLICADO SAS'), (509, 'TERCERO DUPLICADO SAS (COPIA)')]
+<FECHA_HORA> | WARNING |   Sin tercero con N. identificacion = 901000003 en Odoo -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[13/15] NOMBRE DISTINTO SAS
+<FECHA_HORA> | INFO |   Empresa: NOMBRE DISTINTO SAS | NIT: 901000004 | Pacientes: 1
+<FECHA_HORA> | WARNING |   NIT 901000004 coincide pero el nombre difiere (32%): Excel='NOMBRE DISTINTO SAS' vs Odoo='OTRA RAZON SOCIAL TOTALMENTE DIFERENTE'
+<FECHA_HORA> | INFO |   Cliente por NIT: [901000004] OTRA RAZON SOCIAL TOTALMENTE DIFERENTE
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | INFO |   Linea: 890201 x1 @ $1.0 | analitica: SALUD OCUPACIONAL DE LOS ANDES LTDA - INTRAMURAL - SEDE MEDELLIN - MEDELLIN | taxes: [701, 702] | uom: 1
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 1 facturados + 0 apartados
+<FECHA_HORA> | INFO |   FACTURA ID: 9008 | Lineas: 1
+<FECHA_HORA> | INFO |   LINK: http://odoo.simulado.invalid/web#id=9008&model=account.move&view_type=form
+<FECHA_HORA> | INFO | 
+[14/15] SIN LINEAS SAS
+<FECHA_HORA> | INFO |   Empresa: SIN LINEAS SAS | NIT: 901000006 | Pacientes: 1
+<FECHA_HORA> | INFO |   Cliente por NIT: [901000006] SIN LINEAS SAS
+<FECHA_HORA> | INFO |   Impuestos a aplicar: [701, 702]
+<FECHA_HORA> | WARNING |   APARTADOS 1 examenes por ciudad sin cuenta: PUEBLO INVENTADO
+<FECHA_HORA> | INFO |   Cuadre OK: 1 examenes = 0 facturados + 1 apartados
+<FECHA_HORA> | WARNING |   Ninguna linea se pudo armar. Ciudades sin cuenta: PUEBLO INVENTADO.  -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | 
+[15/15] EMPRESA RUES SAS
+<FECHA_HORA> | INFO |   Empresa: EMPRESA RUES SAS | NIT: 912345678 | Pacientes: 1
+<FECHA_HORA> | WARNING |   Sin tercero con N. identificacion = 912345678 en Odoo -> VERIFICAR (no se crea)
+<FECHA_HORA> | INFO | Log Excel guardado: /tmp/etl_paridad_trabajo/datos/Salida/log_inyeccion.xlsx
+<FECHA_HORA> | INFO | Pendientes del facturador: /tmp/etl_paridad_trabajo/datos/Salida/pendientes_facturador.xlsx
+<FECHA_HORA> | INFO | Cuentas por revisar: /tmp/etl_paridad_trabajo/datos/Salida/cuentas_por_revisar.xlsx
+<FECHA_HORA> | INFO | 
+============================================================
+<FECHA_HORA> | INFO |   RESUMEN FINAL
+<FECHA_HORA> | INFO | ============================================================
+<FECHA_HORA> | INFO |   Archivos en la carpeta: 18
+<FECHA_HORA> | ERROR |   NO SE PUDIERON LEER: 1 (copiados a /tmp/etl_paridad_trabajo/datos/Salida/verificar)
+<FECHA_HORA> | ERROR |       pre_factura_901000005_PLANTILLA SIN NIT.xlsx — La plantilla cambio: faltan las columnas NIT. Se leen por nombre exacto en la fila 2 del Excel, asi que un cam
+<FECHA_HORA> | INFO |   Empresas procesadas: 15
+<FECHA_HORA> | INFO |   Exitosas:            8
+<FECHA_HORA> | INFO |   Para verificar:      7
+<FECHA_HORA> | INFO |   Errores:             1
+<FECHA_HORA> | WARNING |   SIN SUBIR:           5 examenes de 5 pacientes  ($147,500 segun el archivo)
+<FECHA_HORA> | WARNING |   SIN FACTURAR:        7 empresas, 7 pacientes  ($191,001)
+<FECHA_HORA> | WARNING |   NIT POR CREAR:       4 terceros que no existen en Odoo  ($101,001)
+<FECHA_HORA> | WARNING |   Lo que falta a mano:  /tmp/etl_paridad_trabajo/datos/Salida/pendientes_facturador.xlsx
+<FECHA_HORA> | WARNING |   Que arreglar en Odoo: /tmp/etl_paridad_trabajo/datos/Salida/cuentas_por_revisar.xlsx
+<FECHA_HORA> | INFO |   Log Excel:           /tmp/etl_paridad_trabajo/datos/Salida/log_inyeccion.xlsx
+<FECHA_HORA> | INFO |   Log texto:           /tmp/etl_paridad_trabajo/datos/Salida/log_inyeccion.txt
+<FECHA_HORA> | INFO | ============================================================

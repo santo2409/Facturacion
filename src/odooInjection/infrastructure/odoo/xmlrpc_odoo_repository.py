@@ -92,6 +92,14 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
                 else:
                     raise e
 
+    @property
+    def uid(self):
+        return self._uid
+
+    def execute(self, model: str, method: str, *args, **kwargs):
+        """execute_kw con la sesión actual (lo usa XmlRpcInjectionGateway)."""
+        return self._execute(model, method, *args, **kwargs)
+
     def _execute(self, model: str, method: str, *args, **kwargs):
         return self._models.execute_kw(
             self._db, self._uid, self._api_key, model, method, *args, **kwargs

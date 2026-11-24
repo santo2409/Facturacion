@@ -1,0 +1,291 @@
+{
+ "Empresas sin factura": {
+  "filas": [
+   [
+    "Que falta",
+    "NIT",
+    "Empresa (pre-factura)",
+    "Pacientes",
+    "Examenes",
+    "Valor archivo",
+    "Por que no se facturo",
+    "Que hay que hacer"
+   ],
+   [
+    "NIT POR CREAR",
+    "912345678",
+    "EMPRESA RUES SAS",
+    1,
+    1,
+    41000,
+    "Sin tercero con N. identificacion = 912345678 en Odoo",
+    "CREAR EL TERCERO en Odoo con ese NIT en 'Numero de identificacion' y volver a correr el Pipeline"
+   ],
+   [
+    "NIT POR CREAR",
+    "12345",
+    "NIT CORTO SAS",
+    1,
+    1,
+    30000,
+    "NIT invalido en la pre-factura: '12345'",
+    "CREAR EL TERCERO en Odoo con ese NIT en 'Numero de identificacion' y volver a correr el Pipeline"
+   ],
+   [
+    "OTRO",
+    "900448167",
+    "NIT BLOQUEADO PRUEBA",
+    1,
+    1,
+    30000,
+    "NIT bloqueado: El Excel lo llama COMPONENTE SERVIEX SAS pero en Odoo es DIGITALBNK SERVICIOS TRANSACCIONALES SAS",
+    "Revisar el motivo y subir la factura a mano"
+   ],
+   [
+    "OTRO",
+    "901000002",
+    "SGS COLOMIA PRUEBA SAS",
+    1,
+    1,
+    30000,
+    "NO SE PUEDE SUBIR - Error en libro consolidado",
+    "Revisar el motivo y subir la factura a mano"
+   ],
+   [
+    "NIT POR CREAR",
+    "901000003",
+    "TERCERO DUPLICADO SAS",
+    1,
+    1,
+    30000,
+    "Sin tercero con N. identificacion = 901000003 en Odoo",
+    "CREAR EL TERCERO en Odoo con ese NIT en 'Numero de identificacion' y volver a correr el Pipeline"
+   ],
+   [
+    "OTRO",
+    "901000006",
+    "SIN LINEAS SAS",
+    1,
+    1,
+    30000,
+    "Ninguna linea se pudo armar. Ciudades sin cuenta: PUEBLO INVENTADO. ",
+    "Revisar el motivo y subir la factura a mano"
+   ],
+   [
+    "NIT POR CREAR",
+    "555555555",
+    "DESCONOCIDA XYZ",
+    1,
+    1,
+    1,
+    "Sin tercero con N. identificacion = 555555555 en Odoo",
+    "CREAR EL TERCERO en Odoo con ese NIT en 'Numero de identificacion' y volver a correr el Pipeline"
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    "EMPRESAS SIN FACTURAR",
+    7,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    "   de esas, por NIT que no existe",
+    4,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    "PACIENTES SIN FACTURAR",
+    7,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    "VALOR SEGUN EL ARCHIVO",
+    191001,
+    null,
+    null,
+    null,
+    null
+   ]
+  ],
+  "hipervinculos": {}
+ },
+ "Subir a mano": {
+  "filas": [
+   [
+    "NIT",
+    "Empresa",
+    "Factura ID",
+    "Link Odoo",
+    "Paciente",
+    "Identificacion",
+    "Ciudad",
+    "Sede",
+    "Fecha Ingreso",
+    "Tipo Examen",
+    "Codigo examen",
+    "Valor archivo",
+    "Problema",
+    "Por que no se subio"
+   ],
+   [
+    "901000001",
+    "CASOS SEDES SAS",
+    9007,
+    "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+    "P04 EXTRA BOGOTA",
+    "2004",
+    "BOGOTA",
+    "EXTRAMURAL SERVICIO A DOMICILIO",
+    "05/10/2026",
+    "INGRESO",
+    "890202",
+    45000,
+    "SIN CUENTA ANALITICA",
+    "Ninguna cuenta analitica de Odoo se llama como la ciudad 'BOGOTA'"
+   ],
+   [
+    "901000001",
+    "CASOS SEDES SAS",
+    9007,
+    "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+    "P03 SEDE103 EN CALI",
+    "2003",
+    "CALI",
+    "SEDE 103",
+    "05/10/2026",
+    "INGRESO",
+    "890201",
+    30000,
+    "SIN CUENTA ANALITICA",
+    "La sede 'SEDE 103' esta mapeada a AA8638 (BOGOTA D.C.) pero la fila dice ciudad 'CALI' — revisar SEDE_CUENTA"
+   ],
+   [
+    "901000001",
+    "CASOS SEDES SAS",
+    9007,
+    "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+    "P09 GRAVADO",
+    "2009",
+    "MEDELLIN",
+    "SEDE NORTE",
+    "05/10/2026",
+    "INGRESO",
+    "999999",
+    12500,
+    "PRODUCTO NO ENCONTRADO",
+    "No hay producto con referencia '999999' en Odoo"
+   ],
+   [
+    "901000001",
+    "CASOS SEDES SAS",
+    9007,
+    "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+    "P07 PUEBLO",
+    "2007",
+    "PUEBLO INVENTADO",
+    "SEDE NORTE",
+    "05/10/2026",
+    "INGRESO",
+    "890201",
+    30000,
+    "SIN CUENTA ANALITICA",
+    "Ciudad 'PUEBLO INVENTADO' no esta en el mapa de cuentas analiticas; lo mas parecido en el mapa es 'APARTADO' (60%) — confirmar, no asumir"
+   ],
+   [
+    "901000006",
+    "SIN LINEAS SAS",
+    null,
+    null,
+    "PACIENTE 901000006",
+    "3006",
+    "PUEBLO INVENTADO",
+    "SEDE NORTE",
+    "05/10/2026",
+    "INGRESO",
+    "890201",
+    30000,
+    "SIN CUENTA ANALITICA",
+    "Ciudad 'PUEBLO INVENTADO' no esta en el mapa de cuentas analiticas; lo mas parecido en el mapa es 'APARTADO' (60%) — confirmar, no asumir"
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    "EXAMENES SIN SUBIR",
+    5,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    "VALOR SEGUN EL ARCHIVO",
+    147500,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  ],
+  "hipervinculos": {
+   "D2": "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+   "D3": "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+   "D4": "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form",
+   "D5": "http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form"
+  }
+ }
+}

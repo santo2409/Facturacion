@@ -49,9 +49,10 @@ def test_cada_opcion_llama_a_su_controller(monkeypatch):
     monkeypatch.setattr(main, "import_billers", lambda logger: llamadas.append("2"))
     monkeypatch.setattr(main, "assign_rates", lambda logger, with_invoices: llamadas.append("3"))
     monkeypatch.setattr(main, "generate_pre_invoices", lambda logger: llamadas.append("4"))
+    monkeypatch.setattr(main, "load_pre_invoices", lambda logger: llamadas.append("5"))
     monkeypatch.setattr(main, "detect_duplicate_companies", lambda logger: llamadas.append("6"))
 
     for option in ("1", "2", "3", "4", "5", "6"):
         main.dispatch_option(option, logger=None)
 
-    assert llamadas == ["1", "2", "3", "4", "6"]
+    assert llamadas == ["1", "2", "3", "4", "5", "6"]

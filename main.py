@@ -11,6 +11,9 @@ from src.billers.infrastructure.console.import_billers_controller import import_
 from src.company.infrastructure.console.detect_duplicates_controller import (
     detect_duplicate_companies,
 )
+from src.odooInjection.infrastructure.console.load_pre_invoices_controller import (
+    load_pre_invoices,
+)
 from src.preInvoice.infrastructure.console.pre_invoice_controller import (
     generate_pre_invoices,
 )
@@ -25,8 +28,7 @@ tech_logger = LoggerAdapter("tech_logger")
 
 load_env()
 
-# (opción, descripción). La opción 5 está desconectada: la reemplazará la
-# integración de ETL-Avancys.
+# (opción, descripción). La opción 5 es la integración de ETL-Avancys.
 MENU_OPTIONS: list[tuple[str, str]] = [
     ("1", "Web Scrapping"),
     ("2", "Facturadores"),
@@ -56,8 +58,8 @@ def dispatch_option(option, logger) -> bool:
         console.print("[green]Generando Pre Facturas...[/green]")
         generate_pre_invoices(logger)
     elif option == "5":
-        console.print("[green]Inyectando Facturas...[/green]")
-        # inject_invoices(logger)
+        console.print("[green]Cargando Pre Facturas en Odoo...[/green]")
+        load_pre_invoices(logger)
     elif option == "6":
         console.print("[green]Detectando Empresas Duplicadas...[/green]")
         detect_duplicate_companies(logger)

@@ -1,0 +1,9 @@
+factura_id;nit;empresa;url
+9001;700777777;EMPRESA GAMMA;http://odoo.simulado.invalid/web#id=9001&model=account.move&view_type=form
+9002;800222222;EMPRESA BETA LTDA;http://odoo.simulado.invalid/web#id=9002&model=account.move&view_type=form
+9003;811111111;COMPANIA DE SERVICIOS TEMPORALES DEL NORTE A;http://odoo.simulado.invalid/web#id=9003&model=account.move&view_type=form
+9004;811111112;COMPANIA DE SERVICIOS TEMPORALES DEL NORTE B;http://odoo.simulado.invalid/web#id=9004&model=account.move&view_type=form
+9005;822222222;EMPRESA A/B: SAS;http://odoo.simulado.invalid/web#id=9005&model=account.move&view_type=form
+9006;900111111;EMPRESA ALFA SAS;http://odoo.simulado.invalid/web#id=9006&model=account.move&view_type=form
+9007;901000001;CASOS SEDES SAS;http://odoo.simulado.invalid/web#id=9007&model=account.move&view_type=form
+9008;901000004;NOMBRE DISTINTO SAS;http://odoo.simulado.invalid/web#id=9008&model=account.move&view_type=form
