@@ -70,6 +70,7 @@ La configura normalmente el equipo técnico una sola vez. Lo que te conviene sab
    3     Asignar Tarifas
    4     Generar Pre Facturas
    5     Cargar Pre Facturas
+   6     Empresas Facturadas a Otro NIT
    0     Salir
 ```
 
@@ -263,6 +264,35 @@ Si no existe el CONSOLIDADO, verás *"Archivo CONSOLIDADO.xlsx no encontrado. No
 | `facturas_creadas.csv` | Ids de las facturas creadas en la corrida |
 | `verificar/` | Copias de los archivos que no se pudieron leer (plantilla cambiada) |
 
+### Opción 6 — Empresas Facturadas a Otro NIT
+
+**Para qué:** registrar las empresas filiales que no se facturan con su propio NIT sino con el de otra empresa (TIAN, VISE, RSG, CLIP SALUD…). En la opción 3, sus atenciones pasan al NIT de destino y la empresa queda como `"<razón social>(<ETIQUETA>)"`, por ejemplo `AQUIA SAS(ASTAF)`; así toman el facturador, el paquete y las tarifas del destino.
+
+**Te pedirá:** el Excel y la hoja. La hoja debe tener en la fila 1:
+
+| NIT_ORIGEN | NIT_DESTINO | ETIQUETA | NOMBRE (opcional) | ACTIVO (opcional) |
+|---|---|---|---|---|
+| 101907357 | 860507033 | VISE | DEAS LTDA ROLLS | |
+| 830121897 | 830068110 | ASTAF | AQUIA SAS | |
+| 900111111 | | | | NO |
+
+- **NIT sin dígito de verificación.** Los puntos, guiones y espacios se ignoran.
+- **ETIQUETA** es el sufijo que se agrega al nombre (máximo 50 caracteres; usa nombres cortos: `TIAN`, `VISE`, `RSG`).
+- **Solo agrega o actualiza:** las empresas que ya estaban cargadas y no vienen en el archivo se quedan como estaban. Para **quitar** una, pon su NIT_ORIGEN con `ACTIVO = NO`.
+- Si un NIT_ORIGEN aparece dos veces, gana la **última** fila.
+
+**Requisito del destino:** la empresa de destino debe existir en la base, tener paquete y, para que sus pre-facturas no salgan en GENERAL, facturador. Si no, la fila se carga igual pero se avisa.
+
+**Al terminar verás un resumen** (nuevas, actualizadas, desactivadas, con error) y, si hubo algo que revisar, una carpeta `logs/redirecciones/<AAAA-MM-DD_HHMM>/` con:
+
+| Libro | Qué significa |
+|---|---|
+| `filas_con_error` | Filas que **no** se cargaron: NIT vacío o con letras, sin etiqueta, etiqueta muy larga, origen igual al destino o el NIT de TIAN como origen |
+| `filas_repetidas` | NIT_ORIGEN repetido: qué fila quedó |
+| `destinos_por_revisar` | Destinos que no existen en la base, sin paquete (sus empresas no se redirigen hasta corregirlo) o sin facturador (salen en GENERAL) |
+| `origenes_en_tian` | NIT que también están en la tabla `tian`: TIAN tiene prioridad mientras sigan allí |
+| `desactivadas` | Filas con `ACTIVO = NO` y si estaban activas |
+
 ## 6. Cómo leer el CONSOLIDADO
 
 `CONSOLIDADO.xlsx` tiene la hoja **Consolidado** y, si hubo celdas coloreadas o con tarifa de Odoo, la hoja **Leyenda**.
@@ -302,7 +332,8 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 | Archivo | Lo genera | ¿Acumula? | Qué revisar |
 |---|---|---|---|
 | `empresas_no_encontradas.xlsx` | 1, 3 | Sí. Solo la opción 1 retira las empresas ya resueltas; la opción 3 solo agrega las que no encuentra | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar). En las filas de RUES puede sumarse *NIT corregido* o *Nombre corregido*. Solo lista empresas que **no existen en Odoo**: las que Odoo ya tiene no aparecen, aunque se hayan corregido o no se hayan podido guardar en la base local (eso va a `bd_local_actualizada.xlsx`) |
-| `empresas_tian.xlsx` | 3 | No | Empresas redirigidas a TIAN en esta corrida |
+| `empresas_tian.xlsx` | 3 | No | Empresas redirigidas a TIAN (tabla `tian`) en esta corrida |
+| `empresas_redirigidas.xlsx` | 3 | No | Empresas redirigidas por la opción 6 (`billing_redirects`) en esta corrida |
 | `logs/cargar_prefacturas/<fecha>/log_inyeccion.xlsx` | 5 | No (una carpeta por corrida) | OK · VERIFICAR · ERROR por empresa, con enlace a la factura |
 | `logs/cargar_prefacturas/<fecha>/pendientes_facturador.xlsx` | 5 | No | Exámenes por subir a mano y empresas sin factura |
 

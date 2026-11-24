@@ -8,6 +8,9 @@ from rich.table import Table
 
 from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
 from src.billers.infrastructure.console.import_billers_controller import import_billers
+from src.company.infrastructure.console.import_billing_redirects_controller import (
+    import_billing_redirects,
+)
 from src.odooInjection.infrastructure.console.load_pre_invoices_controller import (
     load_pre_invoices,
 )
@@ -32,6 +35,7 @@ MENU_OPTIONS: list[tuple[str, str]] = [
     ("3", "Asignar Tarifas"),
     ("4", "Generar Pre Facturas"),
     ("5", "Cargar Pre Facturas"),
+    ("6", "Empresas Facturadas a Otro NIT"),
     ("0", "Salir"),
 ]
 
@@ -56,6 +60,9 @@ def dispatch_option(option, logger) -> bool:
     elif option == "5":
         console.print("[green]Cargando Pre Facturas en Odoo...[/green]")
         load_pre_invoices(logger)
+    elif option == "6":
+        console.print("[green]Cargando empresas facturadas a otro NIT...[/green]")
+        import_billing_redirects(logger)
     elif option == "0":
         console.print("[red]Saliendo...[/red]")
         return False

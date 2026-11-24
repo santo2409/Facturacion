@@ -85,7 +85,7 @@ Reglas (constitución v1.1.0):
 | `scrapping` | Validación de NITs: Odoo (fuente de verdad) → BD local (respaldo) → RUES; sincroniza la BD local con Odoo | 1 |
 | `billers` | Facturadores y vínculo empresa↔facturador | 2 |
 | `rates` | Entidad y repositorio de tarifas (solo lectura desde la opción 3; las tarifas se cargan fuera de esta app) | — |
-| `company` | Empresas, i-medical, TIAN y redirecciones de facturación | 3 |
+| `company` | Empresas, i-medical, TIAN y redirecciones de facturación | 3, 6 |
 | `assign` | Asignación de tarifas (Odoo especial → base, luego cascada local) → `CONSOLIDADO.xlsx` + libros por fase | 3 |
 | `preInvoice` | Split del CONSOLIDADO por facturador/NIT | 4 |
 | `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 3): búsqueda de clientes por `ref_num` → `vat` y lectura de tarifas para la opción 3 | 5 (deshabilitada) |
@@ -96,7 +96,7 @@ Reglas (constitución v1.1.0):
 
 `main.py`:
 
-- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas, 0 Salir. La detección de empresas duplicadas (antes opción 6) se eliminó el 2026-11-24. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
+- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas, 6 Empresas Facturadas a Otro NIT, 0 Salir. La detección de empresas duplicadas (antes opción 6) se eliminó el 2026-11-24. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
 - `console_app()` pinta el menú y pide `Seleccione una opción` (por defecto `0`).
 - `dispatch_option()` despacha al controller.
 - `safe_dispatch()` captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
@@ -440,6 +440,14 @@ Integración de ETL-Avancys (`Pipeline.py`, commit `7bb6784`) con paridad exacta
 - **Pruebas:** `tests/odooInjection/` (reglas) y `tests/paridad/test_paridad.py` (salidas idénticas a las del ETL contra el Odoo simulado).
 - **Flujo anterior** (`InjectInvoicesToOdoo`, `ExcelPreInvoiceReader`, `CityAccountResolver`, `ExcelLogGenerator`): **eliminado el 2026-11-24** (paso *retiro* del diseño), junto con los métodos del adaptador que solo él usaba (`create_client`, `find_analytic_account`, `find_date_range`, `create_invoice`) y las variables `ODOO_CUENTA_RECEIVABLE`, `ODOO_CUENTA_PAYABLE` y `ODOO_FECHA_VENCIMIENTO_DIAS`.
 
+### 7.6 Opción 6 — Empresas Facturadas a Otro NIT (`src/company`)
+
+- **Cadena:** `import_billing_redirects` (`infrastructure/console/import_billing_redirects_controller.py`) → `ImportBillingRedirectsFromExcel` (`application/use_cases/import_billing_redirects_from_excel.py`) → `SaBillingRedirectRepository.upsert_many` / `deactivate`.
+- **Plantilla:** `NIT_ORIGEN`, `NIT_DESTINO`, `ETIQUETA` (obligatorias; nombres sin distinguir mayúsculas ni espacios/guion bajo), `NOMBRE` y `ACTIVO` opcionales. NIT solo dígitos (se aceptan `.`, `-`, `,`, espacios y un `.0` final); etiqueta en mayúsculas, máximo 50.
+- **Modo:** solo agrega o actualiza (y reactiva) en `billing_redirects`; `ACTIVO=NO` marca `deleted_at`. TIAN se carga como una etiqueta más; la tabla `tian` sigue vigente y tiene prioridad en la opción 3.
+- **Errores:** filas inválidas, repetidas (gana la última), destinos sin empresa/paquete/facturador y orígenes que están en `tian` van a libros de hallazgos en `logs/redirecciones/<fecha>/` (`XlsxFindingsWriter`). Si la escritura en BD falla, no se guarda ninguna fila.
+- **Efecto:** la opción 3 aplica las redirecciones en `_apply_redirects` (después de `_apply_tian`).
+
 ## 8. Utilidades compartidas
 
 | Utilidad | Ubicación | Comportamiento |
@@ -487,6 +495,7 @@ self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 | `logs/empresas_no_encontradas.xlsx` | 1, 3 | Acumulativo. Solo la opción 1 retira un NIT resuelto; la opción 3 solo agrega los no encontrados |
 | `logs/empresas_tian.xlsx` | 3 | Se reemplaza |
 | `logs/empresas_redirigidas.xlsx` | 3 | Se reemplaza (solo si hubo redirecciones de `billing_redirects`) |
+| `logs/redirecciones/<AAAA-MM-DD_HHMM>/` | 6 | Nuevo en cada ejecución, solo si hubo hallazgos |
 | `logs/cargar_prefacturas/<AAAA-MM-DD_HHMM>/` | 5 | Nuevo en cada ejecución: `log_inyeccion.xlsx`, `pendientes_facturador.xlsx`, `cuentas_por_revisar.xlsx`, `facturas_creadas.csv`, `verificar/` |
 | `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 3 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
 

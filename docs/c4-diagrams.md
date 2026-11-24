@@ -91,7 +91,7 @@ C4Component
         Component(scrapping, "scrapping (op. 1)", "SearchNitsWithOdooFallbackUseCase", "Cascada Odoo (fuente de verdad) → BD local (respaldo) → RUES por NIT y por nombre; sincroniza la BD local con Odoo. data.json (solo caché de RUES) + empresas_no_encontradas.xlsx + bd_local_actualizada")
         Component(billers, "billers (op. 2)", "ImportBillersFromExcel", "Facturadores por fuzzy (90) y vínculo empresa↔facturador (1:1); duplicado: gana el último. Hallazgos en logs/facturadores")
         Component(rates, "rates", "SaRatesRepository", "Lectura de tarifas locales para op. 3 (se cargan fuera de esta app)")
-        Component(company, "company", "Sa*Repository", "Repos de empresas, imedical, tian y billing_redirects que usa op. 3")
+        Component(company, "company (op. 6)", "ImportBillingRedirectsFromExcel", "Carga de empresas facturadas a otro NIT (billing_redirects); repos de empresas, imedical y tian que usa op. 3")
         Component(assign, "assign (op. 3)", "AssignRatesFromExcel", "i-medical, cascada de empresas, TIAN y redirecciones, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas")
         Component(preInvoice, "preInvoice (op. 4)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
         Component(odooInjection, "odooInjection (op. 5)", "LoadPreInvoicesToOdoo", "Integración de ETL-Avancys: una factura borrador por empresa, cliente por ref_num exacto, VERIFICAR en vez de crear, guarda anti-duplicados del día. Su XmlRpcOdooRepository se reutiliza en op. 1, 2 y 3: búsqueda por ref_num → vat y lectura de tarifas para op. 3")
@@ -515,6 +515,8 @@ flowchart LR
     O6 --> T7
     CONS --> O7[4 Pre Facturas] --> PF[pre-facturas/]
     PF -.-> O8[5 Cargar Pre Facturas] --> ODOOW[Odoo: borradores]
+    X10[Excel redirecciones] --> O10[6 Empresas facturadas a otro NIT] --> BR[(billing_redirects)]
+    BR --> O6
     O2 --> F2["logs/facturadores/"]
     O6 --> F6["logs/asignar_tarifas/"]
 ```
