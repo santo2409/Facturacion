@@ -8,9 +8,6 @@ from rich.table import Table
 
 from src.assign.infrastructure.console.assigned_rates_controller import assign_rates
 from src.billers.infrastructure.console.import_billers_controller import import_billers
-from src.company.infrastructure.console.detect_duplicates_controller import (
-    detect_duplicate_companies,
-)
 from src.odooInjection.infrastructure.console.load_pre_invoices_controller import (
     load_pre_invoices,
 )
@@ -35,7 +32,6 @@ MENU_OPTIONS: list[tuple[str, str]] = [
     ("3", "Asignar Tarifas"),
     ("4", "Generar Pre Facturas"),
     ("5", "Cargar Pre Facturas"),
-    ("6", "Detectar Empresas Duplicadas"),
     ("0", "Salir"),
 ]
 
@@ -60,9 +56,6 @@ def dispatch_option(option, logger) -> bool:
     elif option == "5":
         console.print("[green]Cargando Pre Facturas en Odoo...[/green]")
         load_pre_invoices(logger)
-    elif option == "6":
-        console.print("[green]Detectando Empresas Duplicadas...[/green]")
-        detect_duplicate_companies(logger)
     elif option == "0":
         console.print("[red]Saliendo...[/red]")
         return False

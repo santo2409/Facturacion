@@ -10,7 +10,6 @@ EXPECTED_MENU = [
     ("3", "Asignar Tarifas"),
     ("4", "Generar Pre Facturas"),
     ("5", "Cargar Pre Facturas"),
-    ("6", "Detectar Empresas Duplicadas"),
     ("0", "Salir"),
 ]
 
@@ -34,10 +33,10 @@ def test_opciones_que_ya_no_existen_son_invalidas(monkeypatch):
     printed = []
     monkeypatch.setattr(main.console, "print", lambda msg, *a, **k: printed.append(str(msg)))
 
-    for option in ("7", "8", "9", "10"):
+    for option in ("6", "7", "8", "9", "10"):
         assert main.dispatch_option(option, logger=None) is True
 
-    assert printed == ["[red]Opción inválida[/red]"] * 4
+    assert printed == ["[red]Opción inválida[/red]"] * 5
 
 
 def test_cada_opcion_llama_a_su_controller(monkeypatch):
@@ -50,9 +49,8 @@ def test_cada_opcion_llama_a_su_controller(monkeypatch):
     monkeypatch.setattr(main, "assign_rates", lambda logger, with_invoices: llamadas.append("3"))
     monkeypatch.setattr(main, "generate_pre_invoices", lambda logger: llamadas.append("4"))
     monkeypatch.setattr(main, "load_pre_invoices", lambda logger: llamadas.append("5"))
-    monkeypatch.setattr(main, "detect_duplicate_companies", lambda logger: llamadas.append("6"))
 
-    for option in ("1", "2", "3", "4", "5", "6"):
+    for option in ("1", "2", "3", "4", "5"):
         main.dispatch_option(option, logger=None)
 
-    assert llamadas == ["1", "2", "3", "4", "5", "6"]
+    assert llamadas == ["1", "2", "3", "4", "5"]

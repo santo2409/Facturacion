@@ -69,7 +69,6 @@ python main.py
 | 3 | Asignar Tarifas | Tarifa Odoo (especial → base), luego cascada local de 6 fases; i-medical, TIAN → `CONSOLIDADO.xlsx` + libros por fase |
 | 4 | Generar Pre Facturas | Separa el CONSOLIDADO por facturador y NIT |
 | 5 | Cargar Pre Facturas | Crea una factura borrador por empresa en Odoo (integración de ETL-Avancys) |
-| 6 | Detectar Empresas Duplicadas | Reporte de posibles duplicados (solo lectura) |
 
 ### Flujo típico de facturación
 

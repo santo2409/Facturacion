@@ -70,7 +70,6 @@ La configura normalmente el equipo técnico una sola vez. Lo que te conviene sab
    3     Asignar Tarifas
    4     Generar Pre Facturas
    5     Cargar Pre Facturas
-   6     Detectar Empresas Duplicadas
    0     Salir
 ```
 
@@ -88,7 +87,6 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 | 2 | **2 · Facturadores** | Cuando cambian las asignaciones gestor↔empresa | Facturador de cada empresa + hallazgos en `logs/facturadores/` |
 | 3 | **3 · Asignar Tarifas** | **Cada mes** | **`CONSOLIDADO.xlsx`** + resumen en consola + `logs/asignar_tarifas/` (revisa `sin_resolver.xlsx`) |
 | 4 | **4 · Generar Pre Facturas** | Tras revisar el CONSOLIDADO | Carpeta `pre-facturas/` |
-| — | **6 · Duplicados** | Cuando quieras (solo lectura) | `empresas_duplicadas.xlsx` |
 
 > Los pasos 1 y 2 no son obligatorios cada mes; dependen de si cambiaron empresas o asignaciones. El paso 3 sí se ejecuta todos los meses. Las tarifas y los paquetes de cada empresa se mantienen fuera de esta aplicación (Odoo y la base de datos).
 
@@ -152,7 +150,7 @@ Cada paso usa lo que dejó el anterior. Este es el orden recomendado:
 
 | Mensaje | Qué significa |
 |---|---|
-| *Ya existe una empresa con el nombre '…' (NIT …). Se omite.* | Posible empresa duplicada con otro NIT; revísala con la opción 6 |
+| *Ya existe una empresa con el nombre '…' (NIT …). Se omite.* | Posible empresa duplicada con otro NIT; revísala en la base de datos |
 
 ### Opción 3 — Asignar Tarifas ⭐
 
@@ -265,17 +263,6 @@ Si no existe el CONSOLIDADO, verás *"Archivo CONSOLIDADO.xlsx no encontrado. No
 | `facturas_creadas.csv` | Ids de las facturas creadas en la corrida |
 | `verificar/` | Copias de los archivos que no se pudieron leer (plantilla cambiada) |
 
-### Opción 6 — Detectar Empresas Duplicadas
-
-**Para qué:** encontrar empresas registradas dos veces con NIT distinto.
-
-**No pregunta nada ni modifica nada.** Genera `logs/empresas_duplicadas.xlsx` con las parejas sospechosas. El motivo puede ser:
-
-- *Nombre idéntico (ignorando puntuación y espacios)*
-- *NIT difiere en el dígito final*: típico de un NIT guardado con el dígito de verificación pegado.
-
-La corrección se hace a mano en la base de datos o con el equipo técnico.
-
 ## 6. Cómo leer el CONSOLIDADO
 
 `CONSOLIDADO.xlsx` tiene la hoja **Consolidado** y, si hubo celdas coloreadas o con tarifa de Odoo, la hoja **Leyenda**.
@@ -316,7 +303,6 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 |---|---|---|---|
 | `empresas_no_encontradas.xlsx` | 1, 3 | Sí. Solo la opción 1 retira las empresas ya resueltas; la opción 3 solo agrega las que no encuentra | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar). En las filas de RUES puede sumarse *NIT corregido* o *Nombre corregido*. Solo lista empresas que **no existen en Odoo**: las que Odoo ya tiene no aparecen, aunque se hayan corregido o no se hayan podido guardar en la base local (eso va a `bd_local_actualizada.xlsx`) |
 | `empresas_tian.xlsx` | 3 | No | Empresas redirigidas a TIAN en esta corrida |
-| `empresas_duplicadas.xlsx` | 6 | No | Parejas de empresas sospechosas de estar duplicadas |
 | `logs/cargar_prefacturas/<fecha>/log_inyeccion.xlsx` | 5 | No (una carpeta por corrida) | OK · VERIFICAR · ERROR por empresa, con enlace a la factura |
 | `logs/cargar_prefacturas/<fecha>/pendientes_facturador.xlsx` | 5 | No | Exámenes por subir a mano y empresas sin factura |
 

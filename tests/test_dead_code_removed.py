@@ -39,6 +39,12 @@ _DEAD_MODULES = {
     "src.odooInjection.domain.entities.invoice_result": ("InvoiceResult",),
     "src.odooInjection.domain.repositories.pre_invoice_reader_repository": ("PreInvoiceReaderRepository",),
     "src.odooInjection.domain.entities.invoice_line": ("InvoiceLine",),
+    # Detección de empresas duplicadas (antigua opción 6), eliminada el 2026-11-24.
+    "src.company.application.use_cases.detect_duplicate_companies": ("DetectDuplicateCompanies",),
+    "src.company.domain.services.duplicate_company_detector": ("DuplicateCompanyDetector",),
+    "src.company.domain.entities.duplicate_candidate": ("DuplicateCandidate",),
+    "src.company.infrastructure.console.detect_duplicates_controller": ("detect_duplicate_companies",),
+    "src.company.infrastructure.reporting.duplicate_companies_log_generator": ("DuplicateCompaniesLogGenerator",),
 }
 
 

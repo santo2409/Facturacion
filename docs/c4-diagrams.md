@@ -49,7 +49,7 @@ C4Container
     System_Boundary(sistema, "Sistema de Facturación (proceso Python único)") {
         Container(cli, "Aplicación CLI", "Python 3.12 / Rich", "main.py: menú, dispatch_option y safe_dispatch (contiene excepciones por opción)")
         Container(core, "Casos de uso", "Python / Polars", "application/use_cases por módulo: validación, asignación, split, inyección")
-        Container(domain, "Dominio", "dataclasses + ABC", "Entidades, puertos (repositorios ABC) y servicios puros: CupResolver, DuplicateCompanyDetector, OdooRateIndex")
+        Container(domain, "Dominio", "dataclasses + ABC", "Entidades, puertos (repositorios ABC) y servicios puros: AnalyticAccountResolver, OdooRateIndex")
         Container(persistence, "Adaptadores de persistencia", "SQLAlchemy 2.0 / Alembic", "Repositorios Sa* que devuelven list[dict]")
         Container(scraper, "Scraper RUES", "Playwright (Firefox headless)", "RuesPlaywrightScraper: búsqueda por NIT y por nombre")
         Container(odoo_client, "Cliente Odoo", "xmlrpc.client", "XmlRpcOdooRepository: clientes (búsqueda por documento en 4 etapas), tarifas especial/base (account.base.rate.line), productos, impuestos, account.move")
@@ -91,7 +91,7 @@ C4Component
         Component(scrapping, "scrapping (op. 1)", "SearchNitsWithOdooFallbackUseCase", "Cascada Odoo (fuente de verdad) → BD local (respaldo) → RUES por NIT y por nombre; sincroniza la BD local con Odoo. data.json (solo caché de RUES) + empresas_no_encontradas.xlsx + bd_local_actualizada")
         Component(billers, "billers (op. 2)", "ImportBillersFromExcel", "Facturadores por fuzzy (90) y vínculo empresa↔facturador (1:1); duplicado: gana el último. Hallazgos en logs/facturadores")
         Component(rates, "rates", "SaRatesRepository", "Lectura de tarifas locales para op. 3 (se cargan fuera de esta app)")
-        Component(company, "company (op. 6)", "DetectDuplicateCompanies", "Duplicados; repos imedical/tian/billing_redirects que usa op. 3")
+        Component(company, "company", "Sa*Repository", "Repos de empresas, imedical, tian y billing_redirects que usa op. 3")
         Component(assign, "assign (op. 3)", "AssignRatesFromExcel", "i-medical, cascada de empresas, TIAN y redirecciones, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas")
         Component(preInvoice, "preInvoice (op. 4)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
         Component(odooInjection, "odooInjection (op. 5)", "LoadPreInvoicesToOdoo", "Integración de ETL-Avancys: una factura borrador por empresa, cliente por ref_num exacto, VERIFICAR en vez de crear, guarda anti-duplicados del día. Su XmlRpcOdooRepository se reutiliza en op. 1, 2 y 3: búsqueda por ref_num → vat y lectura de tarifas para op. 3")
@@ -514,8 +514,7 @@ flowchart LR
     O6 --> CONS[CONSOLIDADO.xlsx]
     O6 --> T7
     CONS --> O7[4 Pre Facturas] --> PF[pre-facturas/]
-    PF -.-> O8[5 Inyección Odoo<br/>deshabilitada]
-    T1 --> O10[6 Duplicados] --> DUP[empresas_duplicadas.xlsx]
+    PF -.-> O8[5 Cargar Pre Facturas] --> ODOOW[Odoo: borradores]
     O2 --> F2["logs/facturadores/"]
     O6 --> F6["logs/asignar_tarifas/"]
 ```

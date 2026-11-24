@@ -60,7 +60,7 @@ src/<módulo>/
 ├── domain/
 │   ├── entities/        # dataclasses puras
 │   ├── repositories/    # puertos (ABC)
-│   ├── services/        # lógica de dominio pura (p.ej. CupResolver, DuplicateCompanyDetector)
+│   ├── services/        # lógica de dominio pura (p.ej. AnalyticAccountResolver)
 │   └── *.py             # objetos de dominio sueltos (p.ej. assign/domain/odoo_rate_index.py: OdooRateIndex)
 ├── application/
 │   └── use_cases/       # orquestación; método execute()
@@ -85,7 +85,7 @@ Reglas (constitución v1.1.0):
 | `scrapping` | Validación de NITs: Odoo (fuente de verdad) → BD local (respaldo) → RUES; sincroniza la BD local con Odoo | 1 |
 | `billers` | Facturadores y vínculo empresa↔facturador | 2 |
 | `rates` | Entidad y repositorio de tarifas (solo lectura desde la opción 3; las tarifas se cargan fuera de esta app) | — |
-| `company` | Empresas, duplicados, i-medical, TIAN y redirecciones de facturación | 3, 6 |
+| `company` | Empresas, i-medical, TIAN y redirecciones de facturación | 3 |
 | `assign` | Asignación de tarifas (Odoo especial → base, luego cascada local) → `CONSOLIDADO.xlsx` + libros por fase | 3 |
 | `preInvoice` | Split del CONSOLIDADO por facturador/NIT | 4 |
 | `odooInjection` | Inyección en Odoo + `XmlRpcOdooRepository` (reutilizado por 1, 2, 3): búsqueda de clientes por `ref_num` → `vat` y lectura de tarifas para la opción 3 | 5 (deshabilitada) |
@@ -96,7 +96,7 @@ Reglas (constitución v1.1.0):
 
 `main.py`:
 
-- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas, 6 Detectar Empresas Duplicadas, 0 Salir. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
+- Menú (`MENU_OPTIONS`): 1 Web Scrapping, 2 Facturadores, 3 Asignar Tarifas, 4 Generar Pre Facturas, 5 Cargar Pre Facturas, 0 Salir. La detección de empresas duplicadas (antes opción 6) se eliminó el 2026-11-24. Las antiguas opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empresas - Paquetes y Generar Faltantes) se eliminaron el 2026-11-23 y el menú se renumeró (antes 6 → 3, 7 → 4, 8 → 5, 10 → 6).
 - `console_app()` pinta el menú y pide `Seleccione una opción` (por defecto `0`).
 - `dispatch_option()` despacha al controller.
 - `safe_dispatch()` captura cualquier excepción no controlada, la loguea con `user_msg` y vuelve al menú (spec 007 RF-09).
@@ -243,8 +243,7 @@ Flujo secuencial y stateful. Cada opción consume la salida de la anterior y no 
              [4] Pre Facturas ──► pre-facturas/…                     (revisión manual: sin_resolver.xlsx)
                        │
                        ▼
-             [5] Inyección Odoo (DESHABILITADA en main.py)
- [6] Detectar duplicados: lectura de companies en cualquier momento
+             [5] Cargar Pre Facturas ──► Odoo (borradores)
 ```
 
 **Contrato crítico:** el formato del `CONSOLIDADO.xlsx` (nombres de columna, hoja `Consolidado` y colores de relleno) lo consume `preInvoice`. Cambiarlo rompe la opción 4. `split_by_nit` solo copia los rellenos de su lista blanca `_PHASE_COLORS_6`: un color nuevo en la opción 3 debe agregarse allí (la spec 010, RF-16, agregó `E2EFDA`).
@@ -441,14 +440,6 @@ Integración de ETL-Avancys (`Pipeline.py`, commit `7bb6784`) con paridad exacta
 - **Pruebas:** `tests/odooInjection/` (reglas) y `tests/paridad/test_paridad.py` (salidas idénticas a las del ETL contra el Odoo simulado).
 - **Flujo anterior** (`InjectInvoicesToOdoo`, `ExcelPreInvoiceReader`, `CityAccountResolver`, `ExcelLogGenerator`): **eliminado el 2026-11-24** (paso *retiro* del diseño), junto con los métodos del adaptador que solo él usaba (`create_client`, `find_analytic_account`, `find_date_range`, `create_invoice`) y las variables `ODOO_CUENTA_RECEIVABLE`, `ODOO_CUENTA_PAYABLE` y `ODOO_FECHA_VENCIMIENTO_DIAS`.
 
-### 7.6 Opción 6 — Detectar Empresas Duplicadas (`src/company`)
-
-- **Cadena:** `detect_duplicate_companies` → `DetectDuplicateCompanies` (`application/use_cases/detect_duplicate_companies.py`) → servicio de dominio `DuplicateCompanyDetector` (`domain/services/duplicate_company_detector.py`).
-- **Regla A:** misma clave de nombre (sin puntuación ni espacios) con NIT distinto.
-- **Regla B:** un NIT es igual al otro más un dígito (DV pegado) y `token_sort_ratio` de los nombres ≥ **85**.
-- Se descartó el fuzzy general porque daba ~14 falsos positivos por cada duplicado real.
-- Es de solo lectura. Salida: `logs/empresas_duplicadas.xlsx` (se reemplaza en cada corrida).
-
 ## 8. Utilidades compartidas
 
 | Utilidad | Ubicación | Comportamiento |
@@ -496,7 +487,6 @@ self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 | `logs/empresas_no_encontradas.xlsx` | 1, 3 | Acumulativo. Solo la opción 1 retira un NIT resuelto; la opción 3 solo agrega los no encontrados |
 | `logs/empresas_tian.xlsx` | 3 | Se reemplaza |
 | `logs/empresas_redirigidas.xlsx` | 3 | Se reemplaza (solo si hubo redirecciones de `billing_redirects`) |
-| `logs/empresas_duplicadas.xlsx` | 6 | Se reemplaza |
 | `logs/cargar_prefacturas/<AAAA-MM-DD_HHMM>/` | 5 | Nuevo en cada ejecución: `log_inyeccion.xlsx`, `pendientes_facturador.xlsx`, `cuentas_por_revisar.xlsx`, `facturas_creadas.csv`, `verificar/` |
 | `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 3 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
 
