@@ -75,28 +75,8 @@ class FakeOdooRepo:
         wanted = set(rate_ids)
         return [i for i in self._rate_info if i["rate_id"] in wanted]
 
-    def create_client(self, nit, name):
-        self.write_attempts.append("create_client")
-        cid = self._next_client_id
-        self._next_client_id += 1
-        self._clients[nit] = {"id": cid, "name": name}
-        return cid
-
-    def find_analytic_account(self, code):
-        return 100
-
     def find_tax(self, name):
         return 10
 
     def find_uom(self, name):
         return 1
-
-    def find_date_range(self, date):
-        return 5
-
-    def create_invoice(self, vals):
-        self.write_attempts.append("create_invoice")
-        fid = self._next_invoice_id
-        self._next_invoice_id += 1
-        self._created_invoices.append(vals)
-        return fid

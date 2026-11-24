@@ -99,8 +99,6 @@ def normalizadores():
             {"nombre": "BOGOTA D.C", "catalogo": ["BOGOTA", "MEDELLIN"], "umbral": 95},
             {"nombre": "XYZ", "catalogo": [], "umbral": 90},
         ],
-        "ciudades_cuenta_analitica": ["BOGOTA", "Bogotá D.C.", "MEDELLIN", "MEDELIN", "BELLO",
-                                      "ITAGUI", "LIBANO", "PALMIRA", "CIUDAD INEXISTENTE", "", None],  # [AUD-08, AUD-09]
         "claves_texto": ["Clínica San José", "EMPRESA ALFA S.A.S.", "  Bogotá, D.C. ", "Ñandú & Cía"],
     })
 
@@ -332,95 +330,6 @@ def opcion7():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-def _prefactura(ruta: Path, filas_datos: list[dict], cups: list, encabezados_cup=None, columnas=None):
-    columnas = columnas or PREFACTURA_COLS
-    encabezados_cup = encabezados_cup or cups
-    nombres = {c["code"]: c["name"] for c in CUPS}
-    fila1 = [None] * len(columnas) + [nombres.get(str(c), "") for c in cups]
-    fila2 = list(columnas) + list(encabezados_cup)
-    datos = [[f.get(c) for c in columnas] + [f.get(cup) for cup in cups] for f in filas_datos]
-    _libro(ruta, {"BASE GENERAL": [fila1, fila2] + datos, "Leyenda": [["Color", "Significado"]]})
-
-
-def opcion8():
-    d = RAIZ / "opcion8_inyeccion"
-    entrada = d / "pre-facturas" / "General sin factura"
-    base = {"Base": "OCTUBRE 1-20", "Sede": "SEDE NORTE", "FACTURADOR": "GENERAL", "Fecha Ingreso": "2026-10-05"}
-    _prefactura(entrada / "pre_factura_912345678_EMPRESA RUES SAS.xlsx", [
-        {**base, "NIT": "912345678", "Empresa": "EMPRESA RUES SAS", "Ciudad": "CALI", "Paciente": "A", "890201": 41000, "890202": 1},
-        {**base, "NIT": "912345678", "Empresa": "EMPRESA RUES SAS", "Ciudad": "BELLO", "Paciente": "B", "890201": 41000},       # [AUD-09]
-        {**base, "NIT": "912345678", "Empresa": "EMPRESA RUES SAS", "Ciudad": "MEDELIN", "Paciente": "C", "890202": 0},         # fuzzy; 0 = sin examen
-        {**base, "NIT": "912345678", "Empresa": "EMPRESA RUES SAS", "Ciudad": "CIUDAD X", "Paciente": "D", "903810-01": 12000}, # [AUD-08]
-        {**base, "NIT": "912345678", "Empresa": "EMPRESA RUES SAS", "Ciudad": None, "Paciente": "E", "903810-01": "1",
-         "Fecha Ingreso": "05/10/2026"},                                                                                      # [AUD-23]
-    ], ["890201", "890202", "903810-01"])
-    _prefactura(entrada / "pre_factura_900111111-1_EMPRESA ALFA.xlsx", [
-        {**base, "NIT": "900111111-1", "Empresa": "EMPRESA ALFA SAS", "Ciudad": "CALI", "Paciente": "F", "890201": 1},          # [AUD-10, AUD-21]
-    ], ["890201"])
-    _prefactura(entrada / "pre_factura_830050228_GRUPO ADECCO.xlsx", [
-        {**base, "NIT": "830050228", "Empresa": "GRUPO ADECCO", "Ciudad": "ITAGUI", "Paciente": "G", "903810": 1, "871121": 1},
-    ], ["903810", "871121"], encabezados_cup=["903810.0", "871121"])  # texto, como lo deja pandas                                                         # [AUD-19]
-    # 8 columnas extra al inicio: NIT queda en la posición 16, fuera de las 14 que se leen
-    desplazado = [f"EXTRA {i}" for i in range(1, 9)] + PREFACTURA_COLS
-    _prefactura(entrada / "pre_factura_desplazado.xlsx", [
-        {**base, "NIT": "830050228", "Empresa": "GRUPO ADECCO", "Ciudad": "CALI", "Paciente": "H", "890201": 1},              # [AUD-20]
-    ], ["890201"], columnas=desplazado)
-    _prefactura(entrada / "pre_factura_600666666_DUPLICADA.xlsx", [
-        {**base, "NIT": "600666666", "Empresa": "EMPRESA DUPLICADA", "Ciudad": "CALI", "Paciente": "I", "890201": 1},         # [AUD-22]
-    ], ["890201"])
-    _prefactura(entrada / "pre_factura_700777777_EMPRESA GAMMA.xlsx", [
-        {**base, "NIT": "700777777", "Empresa": "EMPRESA GAMMA", "Ciudad": "CALI", "Paciente": "J", "890201": 1},             # [AUD-07]
-    ], ["890201"])
-    _prefactura(entrada / "NITs_consolidado.xlsx", [
-        {**base, "NIT": "999999999", "Empresa": "NO DEBE LEERSE", "Ciudad": "CALI", "Paciente": "K", "890201": 1},
-    ], ["890201"])
-    # Log de una corrida anterior (otro mes): 700777777 quedó OK → hoy se omite [AUD-07]
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Log"
-    ws.append(["#", "NIT", "Empresa", "Estado", "Detalle", "Factura ID", "Link Odoo", "Fecha/Hora"])
-    ws.append([1, "700777777", "EMPRESA GAMMA", "OK", "Factura creada (septiembre)", 8001,
-               "https://odoo.example/web#id=8001", "2026-09-30 10:00:00"])
-    ws.append([2, "830050228", "GRUPO ADECCO", "ERROR", "Timeout", None, None, "2026-09-30 10:01:00"])
-    wb.properties.created = wb.properties.modified = datetime(2026, 1, 1)
-    (d / "odoo-output").mkdir(parents=True, exist_ok=True)
-    wb.save(d / "odoo-output" / "log_inyeccion.xlsx")
-
-    productos = [{"id": 100 + c["id"], "name": c["name"], "default_code": c["code"], "list_price": 30000.0 + c["id"]}
-                 for c in CUPS if c["code"] != "903810"]                                  # 903810 no existe en Odoo
-    _json(d / "odoo.json", {
-        "res.partner": [
-            _partner(10, "EMPRESA ALFA S.A.S.", ref_num="900111111"),
-            _partner(11, "GRUPO ADECCO", ref_num="830050228"),
-            _partner(13, "EMPRESA GAMMA", ref_num="700777777"),
-            _partner(15, "EMPRESA RUES SAS", ref_num="912345678"),
-            _partner(16, "EMPRESA ALFA SAS SUCURSAL", ref_num="111222333"),
-            _partner(17, "EMPRESA ALFA AGRO LTDA", ref_num="444555666"),                  # la toma el ilike por nombre [AUD-10]
-            _partner(21, "EMPRESA DUPLICADA (B)", ref_num="600666666"),
-            _partner(20, "EMPRESA DUPLICADA (A)", ref_num="600666666"),
-        ],
-        "product.product": productos,
-        "account.analytic.account": [
-            {"id": 301, "code": "AA10813", "name": "CALI"},
-            {"id": 302, "code": "AA10801", "name": "BELLO"},
-            {"id": 303, "code": "AA10801", "name": "CHINCHINA"},
-            {"id": 304, "code": "AA8638", "name": "BOGOTA"},
-            {"id": 305, "code": "AA10806", "name": "MEDELLIN"},
-        ],
-        "account.tax": [
-            {"id": 41, "name": "AUTORRETENCION IMPUESTO RENTA 2%", "type_tax_use": "sale"},
-            {"id": 42, "name": "AUTORRETENCION COMPRA IMPUESTO RENTA 2,5%", "type_tax_use": "purchase"},  # [AUD-24]
-        ],
-        "uom.uom": [{"id": 1, "name": "Unidades"}],
-        "date.range": [
-            {"id": 71, "name": "SEP-2026", "date_start": "2026-09-01", "date_end": "2026-09-30"},
-            {"id": 72, "name": "OCT-2026", "date_start": "2026-10-01", "date_end": "2026-10-31"},
-            {"id": 73, "name": "NOV-2026", "date_start": "2026-11-01", "date_end": "2026-11-30"},  # respaldo [AUD-23]
-        ],
-    })
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 def menu():
     d = RAIZ / "menu_ventana_dias"
     _json(d / "casos.json", {
@@ -433,7 +342,7 @@ def menu():
     })
 
 
-ESCENARIOS = [normalizadores, opcion1, opcion2, opcion6, opcion7, opcion8, menu]
+ESCENARIOS = [normalizadores, opcion1, opcion2, opcion6, opcion7, menu]
 
 
 def main(forzar: bool):

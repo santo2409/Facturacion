@@ -160,12 +160,10 @@ La URL es `postgresql+psycopg2://…?sslmode=require`; la app crea el engine con
 | `ODOO_URL`, `ODOO_DB`, `ODOO_USERNAME`, `ODOO_API_KEY` | `""` (sin usuario/API key se omite Odoo) |
 | `ODOO_DIARIO_ID` | 47 |
 | `ODOO_CUENTA_INGRESOS_EXCLUIDOS` / `_GRAVADOS` | 42653 / 42650 |
-| `ODOO_CUENTA_RECEIVABLE` / `_PAYABLE` | 40921 / 41977 |
 | `ODOO_PRODUCTOS_GRAVADOS` | `"100006"` (CSV) |
 | `ODOO_TAX_AUTORRETENCION_RENTA` | `AUTORRETENCION IMPUESTO RENTA 2%` |
 | `ODOO_TAX_AUTORRETENCION_COMPRAS` | `AUTORRETENCION COMPRA IMPUESTO RENTA 2%` |
 | `ODOO_UOM` | `Unidades` |
-| `ODOO_FECHA_VENCIMIENTO_DIAS` | 30 |
 
 > ⚠️ Una variable numérica **definida pero vacía** (como viene en `.env.example`, p.ej. `ODOO_DIARIO_ID=` o `DAY_INITIAL=`) hace fallar `int("")`. Hay que dejarla con valor o comentarla.
 
@@ -441,7 +439,7 @@ Integración de ETL-Avancys (`Pipeline.py`, commit `7bb6784`) con paridad exacta
 - **Flujo:** lee y valida la plantilla → agrupa por NIT → conecta (3 intentos) → por empresa: cobro doble, empresa bloqueada, `YA_SUBIDAS`, NIT bloqueado, tercero por `ref_num` exacto (0 o 2+ → VERIFICAR), cuenta por paciente (sede → EXTRAMURAL → id → código confirmado por nombre → PROVEEDORES; sin respaldo), líneas ordenadas, cuadre, guarda anti-duplicados del día, `create` + borrar vencimiento. Reintenta la empresa ante fallos de red (3 veces, 10 s). Libros cada 10 empresas y al final.
 - **No usa la BD local.** Nunca crea terceros (ADR-010).
 - **Pruebas:** `tests/odooInjection/` (reglas) y `tests/paridad/test_paridad.py` (salidas idénticas a las del ETL contra el Odoo simulado).
-- **Flujo anterior** (`InjectInvoicesToOdoo`, `ExcelPreInvoiceReader`, `CityAccountResolver`, `ExcelLogGenerator`, `inject_invoices_controller`): sigue en el código sin conexión al menú hasta su retiro (paso *retiro* del diseño).
+- **Flujo anterior** (`InjectInvoicesToOdoo`, `ExcelPreInvoiceReader`, `CityAccountResolver`, `ExcelLogGenerator`): **eliminado el 2026-11-24** (paso *retiro* del diseño), junto con los métodos del adaptador que solo él usaba (`create_client`, `find_analytic_account`, `find_date_range`, `create_invoice`) y las variables `ODOO_CUENTA_RECEIVABLE`, `ODOO_CUENTA_PAYABLE` y `ODOO_FECHA_VENCIMIENTO_DIAS`.
 
 ### 7.6 Opción 6 — Detectar Empresas Duplicadas (`src/company`)
 
@@ -499,7 +497,7 @@ self.logger.info("Resumen", user_msg=summarize_findings(self._findings, folder))
 | `logs/empresas_tian.xlsx` | 3 | Se reemplaza |
 | `logs/empresas_redirigidas.xlsx` | 3 | Se reemplaza (solo si hubo redirecciones de `billing_redirects`) |
 | `logs/empresas_duplicadas.xlsx` | 6 | Se reemplaza |
-| `odoo-output/log_inyeccion.xlsx` | 5 | Acumulativo (anti-duplicados) |
+| `logs/cargar_prefacturas/<AAAA-MM-DD_HHMM>/` | 5 | Nuevo en cada ejecución: `log_inyeccion.xlsx`, `pendientes_facturador.xlsx`, `cuentas_por_revisar.xlsx`, `facturas_creadas.csv`, `verificar/` |
 | `logs/<opcion>/<AAAA-MM-DD_HHMM>/*.xlsx` | 1, 2, 3 | Nuevo en cada ejecución; dos corridas en el mismo minuto comparten carpeta y la segunda reemplaza los libros con el mismo nombre |
 
 **Hallazgos por opción:**

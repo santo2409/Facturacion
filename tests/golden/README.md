@@ -34,12 +34,11 @@ importados en los controllers.
 
 | Escenario | Qué ejecuta | Casos fijados |
 |---|---|---|
-| `normalizadores` | Funciones puras | `normalize_nit` (AUD-28, P-09), `fuzz_property` (AUD-03), ciudad → cuenta analítica (AUD-08, AUD-09) |
+| `normalizadores` | Funciones puras | `normalize_nit` (AUD-28, P-09), `fuzz_property` (AUD-03) |
 | `opcion1_web_scrapping` | `execute_web_scrapping` | Cascada Odoo → BD → RUES, nombre corto ⊂ partner de Odoo cambia el NIT (AUD-03), RUES sin respuesta = "No encontrado" (AUD-06), NIT solo en BD fuera del libro (AUD-14), NIT vacío como "None" (AUD-72), cédula de 10 dígitos |
 | `opcion2_facturadores` | `import_billers` | Gestor por fuzzy, cédula truncada (AUD-26), empresa no verificada guardada (AUD-27), vínculo duplicado: gana la última fila |
 | `opcion6_asignar` | `assign_rates(with_invoices=True)` | Odoo especial/base, truncamiento `int()`, precio 0 ignorado, tarifa vencida; fases 1 a 6 y sin resolver; AUD-05 (dos candidatos en fase 3), AUD-18 (ciudad inexistente), fechas (AUD-48), Total con 1 y 2 (AUD-49, P-18), i-medical, TIAN, empresa por nombre en Odoo, NOVEDAD, FACTURAS |
 | `opcion7_prefacturas` | `generate_pre_invoices` | Carpetas por facturador, SET / sin factura / SIN_FACTURADOR, NIT partido en dos carpetas (P-22), fila sin NIT, nombres de hoja de 31 caracteres (AUD-76), caracteres inválidos, Leyenda con "Fase 7" (AUD-56) |
-| `opcion8_inyeccion` | `inject_invoices` (2 corridas) | Anti-duplicados histórico (AUD-07), respaldo Bogotá (AUD-08), códigos analíticos repetidos (AUD-09), cliente por nombre equivocado (AUD-10), `rstrip(".0")` (AUD-19), columnas por posición (AUD-20), NIT con DV (AUD-21), partner duplicado → menor id (AUD-22), `range_id` de respaldo (AUD-23), impuesto por `ilike` (AUD-24), producto gravado con espacio (AUD-63), se excluye `*consolidado*` |
 | `menu_ventana_dias` | `main.dispatch_option` / `safe_dispatch` | Ventana DAY_INITIAL–DAY_FINAL y sus bordes (AUD-50), variable vacía o ausente (AUD-30) |
 
 **No cubierto:** opciones 5 y 9 (en desuso) y 10; el scraper Playwright por dentro
@@ -60,7 +59,7 @@ a propósito.
 | N2 | Ruta absoluta del directorio temporal → `<TMP>` | `normalizar` | Cada corrida usa un directorio distinto |
 | N3 | Excel → JSON canónico: hojas en orden, valores, relleno, formato numérico, negrita, paneles inmovilizados, celdas combinadas. **No** se comparan los metadatos del archivo, anchos, bordes ni estilos de tabla | `leer_xlsx` | El `.xlsx` es un zip con fechas de creación; los bytes cambian en cada corrida aunque el contenido sea igual |
 | N4 | Ids sustitutos de la BD → nombres (vínculos de la opción 2) | `esc_opcion2` | Los ids autoincrementales dependen del orden de inserción; en PostgreSQL pasa lo mismo |
-| N5 | Entorno controlado: se borran las variables `ODOO_*`, `DIRECTORY`, `TIAN_NIT`, `BOOK_*`, `DAY_*`, etc., y se fijan por escenario. Nunca se leen sus valores reales | `entorno_controlado` | El `.env` local no debe cambiar el resultado. La configuración contable de Odoo usa los valores por defecto del código, salvo `ODOO_PRODUCTOS_GRAVADOS="890202, 903810-01"` en la opción 8 (AUD-63) |
+| N5 | Entorno controlado: se borran las variables `ODOO_*`, `DIRECTORY`, `TIAN_NIT`, `BOOK_*`, `DAY_*`, etc., y se fijan por escenario. Nunca se leen sus valores reales | `entorno_controlado` | El `.env` local no debe cambiar el resultado. La configuración contable de Odoo usa los valores por defecto del código |
 | N6 | Orden **no determinista del sistema actual** (verificado con distintos `PYTHONHASHSEED`): la lista de la columna FACTURAS (Asignar Tarifas). Se ordenan antes de comparar | `_orden_no_determinista` | El código agrupa sin `maintain_order` (AUD-80, AUD-81). No es una regla de negocio que el golden deba fijar; si se corrige, esta normalización se puede quitar |
 
 Tampoco se comparan los mensajes técnicos (`logs.log`): solo los `user_msg`, que son
@@ -78,5 +77,11 @@ Las opciones en desuso (Tratamiento Información, Cargar Tarifas, Registrar Empr
 Generar Faltantes) se eliminaron del código y el menú se renumeró. Se retiraron sus escenarios
 (`opcion3_tratamiento`, `opcion4_tarifas`) y, del escenario `normalizadores`, las claves
 `normalize_document` y `valor_opcion3` (funciones eliminadas; el resto del esperado no cambió).
-Los nombres de los escenarios que quedan (`opcion6_asignar`, `opcion7_prefacturas`, `opcion8_inyeccion`)
-conservan la numeración antigua: ahora son las opciones 3, 4 y 5 del menú.
+Los nombres de los escenarios que quedan (`opcion6_asignar`, `opcion7_prefacturas`) conservan la numeración
+antigua: ahora son las opciones 3 y 4 del menú.
+
+## Flujo viejo de inyección retirado (2026-11-24)
+
+La opción 5 ahora es la integración de ETL-Avancys, cubierta por `tests/paridad/test_paridad.py`. Se retiraron
+el escenario `opcion8_inyeccion` (congelaba el flujo viejo) y, del escenario `normalizadores`, la clave
+`cuenta_analitica` (`CityAccountResolver`, eliminado); el resto del esperado no cambió.

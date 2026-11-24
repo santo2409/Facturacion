@@ -55,19 +55,6 @@
       "umbral": 90
     }
   ],
-  "ciudades_cuenta_analitica": [
-    "BOGOTA",
-    "Bogotá D.C.",
-    "MEDELLIN",
-    "MEDELIN",
-    "BELLO",
-    "ITAGUI",
-    "LIBANO",
-    "PALMIRA",
-    "CIUDAD INEXISTENTE",
-    "",
-    null
-  ],
   "claves_texto": [
     "Clínica San José",
     "EMPRESA ALFA S.A.S.",

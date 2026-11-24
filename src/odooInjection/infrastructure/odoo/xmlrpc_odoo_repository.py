@@ -65,8 +65,6 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
         self._uid = None
         self._models = None
         self._cache_products = {}
-        self._cache_accounts = {}
-        self._cache_ranges = {}
         self._cache_taxes = {}
         self._cache_uom = {}
 
@@ -342,30 +340,6 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             return str(r[0]["vat"]).split("-")[0].strip()
         return None
 
-    def create_client(self, nit: str, name: str) -> int:
-        return self._execute(
-            "res.partner", "create",
-            [{
-                "name": name,
-                "vat": nit,
-                "is_company": True,
-                "customer_rank": 1,
-                "property_account_receivable_id": self._config["cuenta_receivable"],
-                "property_account_payable_id": self._config["cuenta_payable"],
-            }],
-        )
-
-    def find_analytic_account(self, code: str) -> int | None:
-        if code in self._cache_accounts:
-            return self._cache_accounts[code]
-        r = self._execute(
-            "account.analytic.account", "search_read",
-            [[["code", "=", code]]],
-            {"fields": ["id", "name"], "limit": 1},
-        )
-        self._cache_accounts[code] = r[0]["id"] if r else None
-        return self._cache_accounts[code]
-
     def find_tax(self, name: str) -> int | None:
         if name in self._cache_taxes:
             return self._cache_taxes[name]
@@ -403,22 +377,3 @@ class XmlRpcOdooRepository(OdooConnectionRepository):
             )
         self._cache_uom[name] = r[0]["id"] if r else None
         return self._cache_uom[name]
-
-    def find_date_range(self, date: str) -> int | None:
-        if date in self._cache_ranges:
-            return self._cache_ranges[date]
-        r = self._execute(
-            "date.range", "search_read",
-            [[["date_start", "<=", date], ["date_end", ">=", date]]],
-            {"fields": ["id"], "limit": 1},
-        )
-        if not r:
-            r = self._execute(
-                "date.range", "search_read",
-                [[]], {"fields": ["id"], "limit": 1, "order": "date_end desc"},
-            )
-        self._cache_ranges[date] = r[0]["id"] if r else None
-        return self._cache_ranges[date]
-
-    def create_invoice(self, vals: dict) -> int:
-        return self._execute("account.move", "create", [vals])

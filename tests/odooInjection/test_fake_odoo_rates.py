@@ -36,15 +36,6 @@ def test_fake_counts_calls():
     assert repo.calls == {"find_partner_rates_batch": 2, "find_rate_lines": 1}
 
 
-def test_fake_records_write_attempts():
-    repo = FakeOdooRepo()
-
-    repo.create_client("1", "A")
-    repo.create_invoice({"x": 1})
-
-    assert repo.write_attempts == ["create_client", "create_invoice"]
-
-
 def test_existing_fake_behavior_unchanged():
     repo = FakeOdooRepo(clients={"900": {"id": 7, "name": "EMPRESA"}})
 

@@ -38,8 +38,6 @@ from src.assign.application.use_cases.assigned_rates import AssignRatesFromExcel
 from src.assign.infrastructure.console import assigned_rates_controller as ctrl_opcion6
 from src.assign.infrastructure.reporting.xlsx_phase_findings_reporter import XlsxPhaseFindingsReporter
 from src.billers.infrastructure.console import import_billers_controller as ctrl_opcion2
-from src.odooInjection.domain.services.city_account_resolver import CityAccountResolver
-from src.odooInjection.infrastructure.console import inject_invoices_controller as ctrl_opcion8
 from src.preInvoice.infrastructure.console import pre_invoice_controller as ctrl_opcion7
 from src.scrapping.domain.entities.nit_result import NitResult
 from src.scrapping.infrastructure.console import import_rues_nits as ctrl_opcion1
@@ -101,8 +99,6 @@ def _reloj():
 
 
 def fijar_reloj(mp):
-    mp.setattr("src.odooInjection.config.date", _RelojDate)
-    mp.setattr("src.odooInjection.application.use_cases.inject_invoices_to_odoo.datetime", _RelojDatetime)
     mp.setattr("src.scrapping.infrastructure.reporting.not_found_companies_log_generator.datetime", _RelojDatetime)
     mp.setattr(main, "datetime", _RelojDatetime)
 
@@ -357,7 +353,6 @@ def esc_normalizadores(entradas: Path, trabajo: Path, mp) -> dict:
     casos = _leer_json(entradas / "casos.json")
     logger = LoggerGrabador()
     fuzz = RapidFuzzBiller(logger)
-    resolver = CityAccountResolver()
 
     return {
         "normalize_nit": [[v, normalize_nit(v)] for v in casos["nits"]],
@@ -365,7 +360,6 @@ def esc_normalizadores(entradas: Path, trabajo: Path, mp) -> dict:
             [c, fuzz.fuzz_property(c["nombre"], [{"name": n} for n in c["catalogo"]], threshold=c["umbral"])]
             for c in casos["fuzzy"]
         ],
-        "cuenta_analitica": [[c, list(resolver.resolve(c))] for c in casos["ciudades_cuenta_analitica"]],
         "claves_texto": [
             [t, {"normalize_name": normalize_name(t), "normalize_text_key": normalize_text_key(t),
                  "normalize_company_name": normalize_company_name(t),
@@ -494,27 +488,6 @@ def esc_opcion7(entradas: Path, trabajo: Path, mp) -> dict:
     return {"archivos": instantanea_archivos(trabajo, copiados), "mensajes_usuario": logger.mensajes_usuario}
 
 
-def esc_opcion8(entradas: Path, trabajo: Path, mp) -> dict:
-    """La opción 8 está desconectada del menú; se ejecuta su controller directamente.
-    Se corre dos veces seguidas para fijar el comportamiento del anti-duplicados."""
-    copiados = copiar_entradas(entradas, trabajo, {"pre-facturas", "odoo-output"})
-    entorno_controlado(mp, ODOO_PRODUCTOS_GRAVADOS="890202, 903810-01", **_ODOO_SIMULADO)  # [AUD-63]
-    odoo = _odoo(mp, entradas / "odoo.json")
-    corridas = []
-    for _ in range(2):
-        logger = LoggerGrabador()
-        antes = len(odoo.creados)
-        ctrl_opcion8.inject_invoices(logger)
-        corridas.append({
-            "facturas_creadas": odoo.creados[antes:],
-            "log_inyeccion": leer_xlsx(trabajo / "odoo-output" / "log_inyeccion.xlsx"),
-            "mensajes_usuario": logger.mensajes_usuario,
-        })
-    archivos = instantanea_archivos(trabajo, copiados)
-    archivos.pop("odoo-output/log_inyeccion.xlsx", None)  # ya está por corrida
-    return {"corridas": corridas, "archivos": archivos}
-
-
 def esc_menu(entradas: Path, trabajo: Path, mp) -> dict:
     casos = _leer_json(entradas / "casos.json")
     llamadas = []
@@ -553,7 +526,6 @@ ESCENARIOS = {
     "opcion2_facturadores": esc_opcion2,
     "opcion6_asignar": esc_opcion6,
     "opcion7_prefacturas": esc_opcion7,
-    "opcion8_inyeccion": esc_opcion8,
     "menu_ventana_dias": esc_menu,
 }
 

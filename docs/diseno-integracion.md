@@ -190,8 +190,8 @@ y `pre_invoice_row.py`); las filas se manejan como `dict` y tuplas, igual que en
 - `tests/paridad/test_paridad.py`: escrituras a Odoo, libros y CSV idénticos a la captura del ETL.
 - Lector sin pandas idéntico a `pd.read_excel` en las 315 pre-facturas reales (`verificar_lector.py`).
 - 315 pre-facturas reales con un Odoo sintético: 548 escrituras idénticas entre ETL e integración.
-Pendiente: paso *retiro* del flujo viejo (requiere borrar el escenario golden `opcion8_inyeccion` y la clave
-`cuenta_analitica` del esperado de `normalizadores`, que usa `CityAccountResolver`).
+Paso *retiro* hecho el 2026-11-24: flujo viejo, escenario golden `opcion8_inyeccion` y clave `cuenta_analitica`
+de `normalizadores` eliminados; guardián de código muerto ampliado.
 
 ## Plan de pasos
 | Paso | Entregable | Terminado cuando |

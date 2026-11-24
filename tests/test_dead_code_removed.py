@@ -29,6 +29,16 @@ _DEAD_MODULES = {
     "src.shared.excel.excel_exporter": ("excel_exporter",),
     "src.shared.console.file_output": ("ask_directory_path",),
     "src.shared.utils.deprecated": ("DEPRECATED_LABEL", "is_deprecated"),
+    # Flujo viejo de inyección, reemplazado por la integración de ETL-Avancys (opción 5).
+    "src.odooInjection.application.use_cases.inject_invoices_to_odoo": ("InjectInvoicesToOdoo",),
+    "src.odooInjection.infrastructure.persistence.excel_pre_invoice_reader": ("ExcelPreInvoiceReader",),
+    "src.odooInjection.domain.services.city_account_resolver": ("CityAccountResolver",),
+    "src.odooInjection.domain.entities.city_account_map": ("city_account_map",),
+    "src.odooInjection.infrastructure.reporting.excel_log_generator": ("ExcelLogGenerator",),
+    "src.odooInjection.infrastructure.console.inject_invoices_controller": ("inject_invoices_controller",),
+    "src.odooInjection.domain.entities.invoice_result": ("InvoiceResult",),
+    "src.odooInjection.domain.repositories.pre_invoice_reader_repository": ("PreInvoiceReaderRepository",),
+    "src.odooInjection.domain.entities.invoice_line": ("InvoiceLine",),
 }
 
 

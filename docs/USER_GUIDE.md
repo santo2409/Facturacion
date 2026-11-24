@@ -317,7 +317,8 @@ Todos quedan en la carpeta `logs/` salvo que se indique otra.
 | `empresas_no_encontradas.xlsx` | 1, 3 | Sí. Solo la opción 1 retira las empresas ya resueltas; la opción 3 solo agrega las que no encuentra | Columna **Estado**: *No encontrado (ni Odoo ni RUES)* · *Existe en RUES, falta en Odoo* (hay que crearla en Odoo antes de facturar). En las filas de RUES puede sumarse *NIT corregido* o *Nombre corregido*. Solo lista empresas que **no existen en Odoo**: las que Odoo ya tiene no aparecen, aunque se hayan corregido o no se hayan podido guardar en la base local (eso va a `bd_local_actualizada.xlsx`) |
 | `empresas_tian.xlsx` | 3 | No | Empresas redirigidas a TIAN en esta corrida |
 | `empresas_duplicadas.xlsx` | 6 | No | Parejas de empresas sospechosas de estar duplicadas |
-| `odoo-output/log_inyeccion.xlsx` | 5 | Sí | OK · VERIFICAR · ERROR por empresa |
+| `logs/cargar_prefacturas/<fecha>/log_inyeccion.xlsx` | 5 | No (una carpeta por corrida) | OK · VERIFICAR · ERROR por empresa, con enlace a la factura |
+| `logs/cargar_prefacturas/<fecha>/pendientes_facturador.xlsx` | 5 | No | Exámenes por subir a mano y empresas sin factura |
 
 > Los archivos que **no acumulan** se reemplazan en cada ejecución. Si necesitas conservar uno, cópialo antes de volver a ejecutar la opción.
 

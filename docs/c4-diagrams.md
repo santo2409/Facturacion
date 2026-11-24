@@ -94,7 +94,7 @@ C4Component
         Component(company, "company (op. 6)", "DetectDuplicateCompanies", "Duplicados; repos imedical/tian/billing_redirects que usa op. 3")
         Component(assign, "assign (op. 3)", "AssignRatesFromExcel", "i-medical, cascada de empresas, TIAN y redirecciones, tarifa Odoo (especial → base) y cascada local de 6 fases → CONSOLIDADO.xlsx; libros por fase en logs/asignar_tarifas")
         Component(preInvoice, "preInvoice (op. 4)", "SplitByNit", "Split por facturador/NIT conservando colores de fase (lista blanca, incluye E2EFDA)")
-        Component(odooInjection, "odooInjection (op. 5, deshabilitada)", "InjectInvoicesToOdoo", "Anti-duplicados, VERIFICAR en vez de crear, account.move borrador. Su XmlRpcOdooRepository se reutiliza en op. 1, 2 y 3: búsqueda por ref_num → vat y lectura de tarifas para op. 3")
+        Component(odooInjection, "odooInjection (op. 5)", "LoadPreInvoicesToOdoo", "Integración de ETL-Avancys: una factura borrador por empresa, cliente por ref_num exacto, VERIFICAR en vez de crear, guarda anti-duplicados del día. Su XmlRpcOdooRepository se reutiliza en op. 1, 2 y 3: búsqueda por ref_num → vat y lectura de tarifas para op. 3")
         Component(catalogs, "Catálogos", "package, provider, special, city, cup, activity", "Repos Sa* de catálogos")
     }
 
@@ -318,48 +318,53 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class InjectInvoicesToOdoo {
-        -reader_repo: PreInvoiceReaderRepository
-        -odoo_repo: OdooConnectionRepository
-        -city_resolver: CityAccountResolver
-        -log_generator: ExcelLogGenerator
-        -config: dict
-        +execute(input_dir, output_dir)
+    class LoadPreInvoicesToOdoo {
+        -gateway: InjectionGateway
+        -source: PreInvoiceSource
+        -settings: InjectionSettings
+        -writer: InjectionReportWriter
+        -resolver: AnalyticAccountResolver
+        -registry: PendingRegistry
+        +execute(input_dir) dict
     }
 
-    class PreInvoiceReaderRepository {
+    class PreInvoiceSource {
         <<abstract>>
-        +read_files(directory) tuple
+        +list_files(folder) list
+        +read(path) tuple
     }
 
-    class OdooConnectionRepository {
+    class InjectionGateway {
         <<abstract>>
         +connect()
-        +find_client(nit, name) tuple
-        +find_client_by_name(name) tuple
-        +find_product(code) dict
-        +find_tax(name) int
-        +find_uom(name) int
-        +find_analytic_account(code) int
-        +find_date_range(date) int
-        +create_client(nit, name) int
+        +find_partners_by_ref_num(valores) list
+        +find_product(codigo) dict
+        +analytic_accounts_all() list
+        +find_today_drafts(partner, journal, desde) list
         +create_invoice(vals) int
+        +clear_due_date(id)
+        +update_prices(id)
     }
 
-    class ExcelLogGenerator {
-        +generate(resultados, output_dir)
-        +read_successful_nits(log_path) set~str~
+    class InjectionReportWriter {
+        <<abstract>>
+        +write_books(resultados, registry, url)
+        +append_created(id, nit, empresa, url)
+        +copy_to_verificar(path)
     }
 
-    InjectInvoicesToOdoo --> PreInvoiceReaderRepository
-    InjectInvoicesToOdoo --> OdooConnectionRepository
-    InjectInvoicesToOdoo --> CityAccountResolver
-    InjectInvoicesToOdoo --> ExcelLogGenerator
-    PreInvoiceReaderRepository <|.. ExcelPreInvoiceReader
-    OdooConnectionRepository <|.. XmlRpcOdooRepository
+    LoadPreInvoicesToOdoo --> PreInvoiceSource
+    LoadPreInvoicesToOdoo --> InjectionGateway
+    LoadPreInvoicesToOdoo --> InjectionReportWriter
+    LoadPreInvoicesToOdoo --> AnalyticAccountResolver
+    LoadPreInvoicesToOdoo --> PendingRegistry
+    PreInvoiceSource <|.. XlsxPreInvoiceSource
+    InjectionGateway <|.. XmlRpcInjectionGateway
+    InjectionReportWriter <|.. EtlInjectionReportWriter
+    XmlRpcInjectionGateway --> XmlRpcOdooRepository
 ```
 
-> `create_client` existe en el puerto, pero el caso de uso nunca lo invoca (ADR-010, "verificar, nunca crear"). Solo llena `vat`, mientras Odoo guarda el NIT en `ref_num`: la spec 012 encontró 54 clientes duplicados creados así. `find_client` delega en `find_clients_batch([nit])`. La opción 8 está deshabilitada en `main.py`.
+> Port de ETL-Avancys `Pipeline.py` con paridad exacta (`tests/paridad/test_paridad.py`). Nunca crea terceros (ADR-010): el cliente se busca solo por `ref_num` exacto y, si no aparece o hay varios, la empresa queda en VERIFICAR. `XmlRpcOdooRepository` (puerto `OdooConnectionRepository`) sigue siendo el adaptador compartido de las opciones 1, 2 y 3.
 
 ---
 
